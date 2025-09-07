@@ -1,0 +1,11 @@
+<h2>Admin - Unverified vendors</h2>
+<ul>
+  <% vendors.forEach(v => { %>
+    <li>
+      <strong><%= v.name %></strong> — <%= v.address %>
+      <form method="post" action="/admin/vendors/<%= v.id %>/verify" style="display:inline">
+        <button type="submit">Verify</button>
+      </form>
+    </li>
+  <% }) %>
+</ul>

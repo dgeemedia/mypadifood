@@ -1,0 +1,10 @@
+:root{--accent:#ff7a18;--muted:#666}
+body{font-family:system-ui,Arial,sans-serif;line-height:1.4;margin:0;color:#222}
+.header-inner{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:#111;color:#fff}
+.logo{display:flex;gap:8px;align-items:center}
+.main-nav ul{display:flex;gap:12px;list-style:none;padding:8px 20px;margin:0;background:#f6f6f6}
+.container{padding:20px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px}
+.card{padding:12px;border:1px solid #eee;border-radius:8px;background:#fff}
+.badge{padding:4px 8px;border-radius:6px;background:var(--accent);color:#fff;font-weight:600}
+footer.site-footer{background:#222;color:#fff;padding:20px;margin-top:40px}

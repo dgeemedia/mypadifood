@@ -1,0 +1,9 @@
+<section class="vendor-profile">
+  <h1><%= vendor.name %> <span class="badge"><%= vendor.status %></span></h1>
+  <p><%= vendor.address %> </p>
+  <p>Food: <%= vendor.food_item %> — Price: ₦<%= vendor.price_min %></p>
+  <div class="actions">
+    <button id="orderNow">Order now</button>
+    <a href="https://wa.me/?text=<%= encodeURIComponent(`Booking request: Vendor: ${vendor.name} | Location: ${vendor.address}`) %>" target="_blank">Book a plate via WhatsApp</a>
+  </div>
+</section>
