@@ -1,14 +1,16 @@
+// server.js
 require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const expressLayouts = require('express-ejs-layouts');
 const session = require('express-session');
-const pgSession = require('connect-pg-simple')(session);
+const pgSessionFactory = require('connect-pg-simple'); // factory
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cors = require('cors');
 
 const staticRoutes = require('./routes/static');
+const db = require('./models/db'); // <-- shared pool
 
 const app = express();
 
@@ -24,22 +26,32 @@ app.use(expressLayouts);
 app.set('layout', 'layouts/layout');
 app.set('views', path.join(__dirname, 'views'));
 
-// Session (Postgres store)
-const sessionConfig = {
-  store: new pgSession({ conString: process.env.DATABASE_URL }),
+// Session (Postgres store) using existing pool
+const pgSession = pgSessionFactory(session);
+
+const sessionStore = new pgSession({
+  pool: db.pool,            // use our shared pool instance
+  tableName: 'session',
+  // pruneSessionInterval: 1000 * 60 * 60, // default (1 hour) - uncomment to set
+  // If pruning causes resets, set to 0 to disable automatic pruning during troubleshooting:
+  pruneSessionInterval: 0
+});
+
+app.use(session({
+  store: sessionStore,
   secret: process.env.SESSION_SECRET || 'devsecret',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 24 }
-};
-app.use(session(sessionConfig));
+  cookie: { maxAge: 1000 * 60 * 60 * 24 } // 1 day
+}));
 
+// Make `user` available in all EJS templates
 app.use((req, res, next) => {
   res.locals.user = req.session && req.session.user ? req.session.user : null;
   next();
 });
 
-// static
+// static files
 app.use(staticRoutes);
 
 // routes
@@ -51,7 +63,7 @@ app.use('/wallet', require('./routes/wallet'));
 app.use('/admin', require('./routes/admin'));
 
 app.get('/', async (req, res) => {
-  res.render('index', { title: 'Home', user: req.session.user || null });
+  res.render('index', { title: 'Home' });
 });
 
 const PORT = process.env.PORT || 3000;
