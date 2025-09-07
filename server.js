@@ -1,4 +1,3 @@
-// server.js
 require('dotenv').config();
 const path = require('path');
 const express = require('express');
@@ -31,10 +30,10 @@ const pgSession = pgSessionFactory(session);
 
 const sessionStore = new pgSession({
   pool: db.pool,            // use our shared pool instance
-  tableName: 'session',
-  // pruneSessionInterval: 1000 * 60 * 60, // default (1 hour) - uncomment to set
-  // If pruning causes resets, set to 0 to disable automatic pruning during troubleshooting:
-  pruneSessionInterval: 0
+  tableName: 'session',     // explicitly set table
+  schemaName: 'public',     // 👈 ensure correct schema
+  // pruneSessionInterval: 1000 * 60 * 60, // default (1 hour)
+  pruneSessionInterval: 0   // disable auto-pruning for now
 });
 
 app.use(session({
