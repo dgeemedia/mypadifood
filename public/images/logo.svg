@@ -1,0 +1,5 @@
+<!-- client/public/logo.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="46" fill="#0066CC"/>
+  <path d="M35 60c6-8 12-16 30-10" stroke="#FFD700" stroke-width="4" fill="none" stroke-linecap="round"/>
+</svg>

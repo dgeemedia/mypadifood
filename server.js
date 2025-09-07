@@ -34,6 +34,11 @@ const sessionConfig = {
 };
 app.use(session(sessionConfig));
 
+app.use((req, res, next) => {
+  res.locals.user = req.session && req.session.user ? req.session.user : null;
+  next();
+});
+
 // static
 app.use(staticRoutes);
 
