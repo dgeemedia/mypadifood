@@ -1,11 +1,26 @@
 // public/js/main.js
 import { getVendorsNearby, fetchVendors } from './vendors.mjs';
+import { initWhatsApp } from './wa.mjs';
 
+/* -------------------------
+   WhatsApp phone normalizer
+   (client-side equivalent of server toIntl)
+   ------------------------- */
+const FALLBACK_WA_NUMBER = '2348110252143';
+function toIntl(phone) {
+  if (!phone) return FALLBACK_WA_NUMBER;
+  let cleaned = ('' + phone).replace(/\D/g, '');
+  if (cleaned.startsWith('0')) cleaned = '234' + cleaned.slice(1);
+  if (cleaned.length < 7) return FALLBACK_WA_NUMBER;
+  return cleaned;
+}
+
+/* ----- existing DOM refs ----- */
 const vendorsList = document.getElementById('vendorsList');
 const btnFind = document.getElementById('btn-find-near');
 const filter = document.getElementById('filterStatus');
 
-/* ----- utils ----- */
+/* ----- helpers you already had (kept) ----- */
 function formatPrice(n) {
   if (n == null || n === '') return '—';
   try {
@@ -26,12 +41,12 @@ function createBadge(status) {
   return s;
 }
 
+/* ----- createCard now uses data-wa-* attributes and .wa-btn ----- */
 function createCard(vendor) {
   const card = document.createElement('article');
   card.className = 'card';
   card.setAttribute('data-id', vendor.id || '');
 
-  // image (optional)
   if (vendor.image_path || vendor.image) {
     const img = document.createElement('img');
     img.src = vendor.image_path || vendor.image;
@@ -64,13 +79,15 @@ function createCard(vendor) {
   view.href = `/vendors/${vendor.id || ''}`;
   view.textContent = 'View';
 
-  const book = document.createElement('a');
-  book.className = 'btn secondary';
-  // build whatsapp link that includes vendor name + address
-  const waText = encodeURIComponent(`Booking request: Vendor: ${vendor.name || ''} | Location: ${vendor.address || ''}`);
-  book.href = `https://wa.me/?text=${waText}`;
-  book.target = '_blank';
-  book.rel = 'noopener noreferrer';
+  // BOOK: create as a button with wa-btn class and data attributes
+  const book = document.createElement('button');
+  book.type = 'button';
+  book.className = 'btn secondary wa-btn';
+  // provide normalized phone and prefilled message
+  const waNumber = toIntl(vendor.phone || '');
+  const waText = `Booking request: Vendor: ${vendor.name || ''} | Location: ${vendor.address || ''}`;
+  book.dataset.waNumber = waNumber;
+  book.dataset.waMessage = waText;
   book.textContent = 'Book';
 
   actions.appendChild(view);
@@ -150,7 +167,6 @@ async function findNearby(radiusKm = 5) {
   if (!vendorsList) return;
   showLoading('Searching near you…');
   try {
-    // getVendorsNearby should prompt for geolocation, then return vendor array
     const v = await getVendorsNearby(radiusKm);
     if (!v || v.length === 0) {
       showEmpty('No vendors found nearby. Try a larger radius or view all vendors.');
@@ -159,7 +175,6 @@ async function findNearby(radiusKm = 5) {
     await render(v);
   } catch (err) {
     console.error('getVendorsNearby error', err);
-    // fallback to full list if location denied or function fails
     showError('Could not get nearby vendors. Showing all vendors instead.');
     await loadAll();
   }
@@ -172,7 +187,7 @@ if (btnFind) {
     const prevText = btnFind.textContent;
     btnFind.textContent = 'Searching…';
     try {
-      await findNearby(5); // default 5km radius
+      await findNearby(5);
     } finally {
       btnFind.disabled = false;
       btnFind.textContent = prevText;
@@ -182,7 +197,6 @@ if (btnFind) {
 
 if (filter) {
   filter.addEventListener('change', async () => {
-    // apply simple client-side filtering
     showLoading('Applying filter…');
     try {
       const all = await fetchVendors();
@@ -196,5 +210,8 @@ if (filter) {
   });
 }
 
-/* ----- initial load ----- */
+/* ----- initial load & initialize wa handler ----- */
 loadAll();
+
+// Initialize WhatsApp delegated handler (no duplicate behavior)
+initWhatsApp({ debug: false });
