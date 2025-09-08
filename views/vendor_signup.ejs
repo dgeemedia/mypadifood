@@ -1,138 +1,136 @@
 <main class="container">
-  <h2>Vendor Enrollment</h2>
+  <div class="signup-wrap card">
+    <header class="signup-header">
+      <h2>Vendor Enrollment</h2>
+      <p class="muted">Fill in the form below to enroll your business. Your phone and email are private and only accessible by admin.</p>
+    </header>
 
-  <% if (flash) { %>
-    <div class="flash <%= flash.type %>"><%= flash.message %></div>
-  <% } %>
+    <% if (flash) { %>
+      <div class="flash <%= flash.type %>"><%= flash.message %></div>
+    <% } %>
 
-  <p>Fill in details to enroll. Your phone/email are private and only accessible by admin.</p>
+    <form id="vendorForm" method="post" action="/vendors" class="form-grid" novalidate>
+      <fieldset>
+        <legend class="sr-only">Business details</legend>
 
-  <form id="vendorForm" method="post" action="/vendors" class="card">
-    <label>Business / Stall name <input name="name" required></label>
+        <label class="form-row">
+          <span class="label-text">Business / Stall name <span class="required">*</span></span>
+          <input name="name" id="name" required placeholder="e.g. Mama Chichi Jollof" />
+        </label>
 
-    <label>Country
-      <select name="country" id="countrySelect" required>
-        <option value="Nigeria" selected>Nigeria</option>
-      </select>
-    </label>
+        <div class="two-col">
+          <label class="form-row">
+            <span class="label-text">Country</span>
+            <select name="country" id="countrySelect" required>
+              <option value="Nigeria" selected>Nigeria</option>
+            </select>
+          </label>
 
-    <label>State
-        <select name="state" id="stateSelect" required>
-            <option value="">Select State</option>
-            <% Object.keys(states).forEach(s => { %>
-            <option value="<%= s %>"><%= s %></option>
-            <% }) %>
-        </select>
-    </label>
+          <label class="form-row">
+            <span class="label-text">Business Type</span>
+            <input name="business_type" id="business_type" placeholder="Stall, Restaurant, Caterer" />
+          </label>
+        </div>
 
-    <label>LGA
-      <select name="lga" id="lgaSelect">
-        <option value="">Select LGA</option>
-      </select>
-    </label>
+        <div class="two-col">
+          <label class="form-row">
+            <span class="label-text">State <span class="required">*</span></span>
+            <select name="state" id="stateSelect" required>
+              <option value="">Select State</option>
+              <% Object.keys(states).forEach(s => { %>
+                <option value="<%= s %>"><%= s %></option>
+              <% }) %>
+            </select>
+          </label>
 
-    <label>Manual Address (street, building, landmark) <input name="address" id="addressInput" required></label>
+          <label class="form-row">
+            <span class="label-text">LGA</span>
+            <select name="lga" id="lgaSelect">
+              <option value="">Select LGA</option>
+            </select>
+          </label>
+        </div>
 
-    <label>Food item <input name="food_item" required></label>
-    <label>Base price (NGN) <input name="price_min" type="number" required></label>
-    <label>Email <input name="email" type="email" required></label>
-    <label>Phone <input name="phone"></label>
-    <label>Business type <input name="business_type" placeholder="Stall, Restaurant, Caterer"></label>
+        <label class="form-row">
+          <span class="label-text">Manual Address <span class="required">*</span></span>
+          <input name="address" id="addressInput" required placeholder="Street, building, landmark" />
+        </label>
 
-    <div>
-      <button type="button" id="previewBtn">Preview on map</button>
-      <button type="submit">Submit for review</button>
-    </div>
-  </form>
+        <div class="two-col">
+          <label class="form-row">
+            <span class="label-text">Food item <span class="required">*</span></span>
+            <input name="food_item" id="food_item" required placeholder="e.g. Jollof Rice" />
+          </label>
 
-  <section id="mapPreview" style="margin-top:1rem; display:none;">
-    <h3>Map Preview</h3>
-    <p>Confirm the marker matches your location. If it's incorrect, edit the address field and preview again.</p>
-    <img id="previewImg" alt="Location preview" style="max-width:100%; border:1px solid #ccc;" />
-    <p id="coordsText" style="font-size:0.9rem; color:#333;"></p>
-  </section>
+          <label class="form-row">
+            <span class="label-text">Base price (NGN) <span class="required">*</span></span>
+            <input name="price_min" id="price_min" type="number" min="100" required placeholder="e.g. 1200" />
+          </label>
+        </div>
+
+        <div class="two-col">
+          <label class="form-row">
+            <span class="label-text">Email</span>
+            <input name="email" id="email" type="email" placeholder="vendor@example.com" />
+            <small class="muted">Admin will use this to contact you — not shown publicly.</small>
+          </label>
+
+          <label class="form-row">
+            <span class="label-text">Phone</span>
+            <input name="phone" id="phone" placeholder="Optional — admin only" />
+            <small class="muted">Your phone is private and only seen by admin.</small>
+          </label>
+        </div>
+
+      </fieldset>
+
+      <fieldset>
+        <legend class="sr-only">Map & preview</legend>
+
+        <div class="map-controls">
+          <div class="map-actions">
+            <button type="button" id="autoLocate" class="btn secondary">Auto-locate me</button>
+            <button type="button" id="previewBtn" class="btn">Preview on map</button>
+          </div>
+          <div class="map-help muted">Click preview to geocode the address and confirm the marker. Use Auto-locate to detect your current position.</div>
+        </div>
+
+        <div id="mapPreview" class="map-preview" aria-live="polite" hidden>
+          <div class="map-left">
+            <img id="previewImg" alt="Location preview" />
+            <p id="coordsText" class="muted kv"></p>
+          </div>
+          <div class="map-right">
+            <p><strong>Selected coordinates</strong></p>
+            <p id="coordsSmall" class="kv">None</p>
+            <p class="muted">If the marker is incorrect, edit the address and Preview again.</p>
+            <input type="hidden" name="lat" id="latInput" />
+            <input type="hidden" name="lng" id="lngInput" />
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-footer">
+        <label class="consent">
+          <input type="checkbox" id="agree" required />
+          I confirm the information is correct and accept that admin may contact me. <span class="sr-only">Required</span>
+        </label>
+
+        <div class="actions-row">
+          <button type="submit" id="submitBtn" class="btn" disabled>Submit for review</button>
+          <a class="btn secondary" href="/">Cancel</a>
+        </div>
+      </div>
+
+    </form>
+  </div>
 </main>
 
 <script>
-(function () {
-  // inject states object for JS runtime
-  const states = <%- JSON.stringify(states) %>;
-
-  const stateSelect = document.getElementById('stateSelect');
-  const lgaSelect = document.getElementById('lgaSelect');
-  const addressInput = document.getElementById('addressInput');
-  const previewBtn = document.getElementById('previewBtn');
-  const previewSection = document.getElementById('mapPreview');
-  const previewImg = document.getElementById('previewImg');
-  const coordsText = document.getElementById('coordsText');
-
-function populateLgas() {
-  const s = stateSelect.value;
-  let lgas = [];
-
-  // if JSON is in key→array format
-  if (states[s]) {
-    lgas = states[s];
-  }
-
-  // if JSON is an array of objects {state, lgas}
-  if (Array.isArray(states)) {
-    const match = states.find(st => st.state === s);
-    if (match) lgas = match.lgas;
-  }
-
-  lgaSelect.innerHTML =
-    '<option value="">Select LGA</option>' +
-    lgas.map(l => `<option value="${l}">${l}</option>`).join('');
-}
-
-  stateSelect.addEventListener('change', populateLgas);
-
-  // don’t call populateLgas() immediately, only after state is chosen
-  // (unless you want to pre-populate the first state)
-
-  async function geocode(query) {
-    const mapboxToken = '<%= mapboxToken %>';
-    if (!mapboxToken) return null;
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxToken}&limit=1`;
-    try {
-      const r = await fetch(url);
-      const data = await r.json();
-      const feat = (data && data.features && data.features[0]) || null;
-      if (!feat) return null;
-      return { lng: feat.center[0], lat: feat.center[1] };
-    } catch (err) {
-      console.error('geocode error', err);
-      return null;
-    }
-  }
-
-  function staticMapUrl(lat, lng, mapboxToken) {
-    const marker = `pin-s+ff0000(${lng},${lat})`;
-    return `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${marker}/${lng},${lat},15,0/800x400?access_token=${mapboxToken}`;
-  }
-
-  previewBtn.addEventListener('click', async () => {
-    const mapboxToken = '<%= mapboxToken %>';
-    const country = document.getElementById('countrySelect').value;
-    const lga = lgaSelect.value;
-    const state = stateSelect.value;
-    const address = addressInput.value;
-    const query = address && address.trim().length > 0
-      ? `${address}, ${lga || ''}, ${state || ''}, ${country || ''}`
-      : `${lga || ''} ${state || ''} ${country || ''}`;
-    coordsText.textContent = 'Looking up...';
-    const coords = await geocode(query);
-    if (!coords) {
-      coordsText.textContent = 'Location not found — try a more specific address.';
-      previewSection.style.display = 'block';
-      previewImg.src = '';
-      return;
-    }
-    previewImg.src = staticMapUrl(coords.lat, coords.lng, mapboxToken);
-    coordsText.textContent = `Lat: ${coords.lat.toFixed(6)}  Lng: ${coords.lng.toFixed(6)}`;
-    previewSection.style.display = 'block';
-  });
-})();
+  // inject server-side data
+  window.PADI = {
+    states: <%- JSON.stringify(states) %>,
+    mapboxToken: '<%= mapboxToken %>'
+  };
 </script>
-
+<script src="/js/vendor-signup.js" defer></script>

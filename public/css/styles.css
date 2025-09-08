@@ -257,3 +257,103 @@ a:focus, button:focus, input:focus, select:focus {
   .card img { width: 100px; height: 72px; }
   .cards { grid-template-columns: 1fr; }
 }
+
+/* --- Center & top placement for Vendor Enrollment --- */
+
+/* make sure the page container doesn't push content away;
+   reduce top margin so enrollment feels "on top" */
+.container {
+  padding-top: 8px; /* small top space */
+  padding-bottom: 28px;
+}
+
+/* center the signup card and give it a strong vertical presence */
+.signup-wrap {
+  margin: 18px auto;            /* center horizontally and give top spacing */
+  max-width: 980px;            /* overall limit on very large screens */
+  width: calc(100% - 32px);    /* full width minus page padding */
+  display: flex;
+  flex-direction: column;
+  align-items: center;         /* center child .form-grid */
+  padding: 22px;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  background: var(--surface);
+}
+
+/* center the header text and nudge the heading up */
+.signup-header {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.signup-header h2 { margin: 0 0 6px 0; font-size: 1.4rem; }
+.signup-header .muted { margin: 0 auto 12px; max-width: 720px; }
+
+/* constrain the actual form so inputs don't stretch too far on wide screens */
+.form-grid {
+  width: 100%;
+  max-width: 820px;   /* keep the form a readable width */
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* make two-col layout sit inside the constrained width */
+.two-col { display:flex; gap:12px; }
+.two-col .form-row { flex:1; }
+
+/* center map preview area horizontally inside form */
+.map-preview {
+  width: 100%;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+/* ensure map-left grows while map-right keeps a stable width */
+.map-preview .map-left { flex: 1 1 60%; margin-right: 12px; }
+.map-preview .map-right { flex: 0 0 260px; }
+
+/* form footer layout centered on wide screens with actions to the right */
+.form-footer {
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  align-items: flex-start;
+}
+
+/* on medium+ screens: align the submit area to the right of the card */
+@media (min-width: 820px) {
+  .form-footer {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  .actions-row { gap: 12px; }
+}
+
+/* keep a compact two-column layout on large screens */
+@media (min-width: 900px) {
+  .two-col { gap: 18px; }
+  .signup-wrap { padding: 24px 30px; }
+  .signup-header h2 { font-size: 1.6rem; }
+}
+
+/* small screens keep stacked layout, full-width inputs */
+@media (max-width: 640px) {
+  .signup-wrap { margin: 12px 12px; padding: 16px; }
+  .form-grid { max-width: 100%; }
+  .two-col { flex-direction: column; gap: 10px; }
+  .map-preview { flex-direction: column; }
+  .map-preview .map-right { width:100%; }
+  .signup-header h2 { font-size: 1.25rem; }
+}
+
+/* Accessibility: ensure centered focus states look good */
+.form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus {
+  box-shadow: var(--focus);
+  outline: none;
+  border-radius: 8px;
+}
+
