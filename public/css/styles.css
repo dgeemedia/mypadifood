@@ -1,359 +1,330 @@
-/* public/css/styles.css
-   Styles for Local Vendor Finder
+/*
+  public/css/styles.css
+  Professional, responsive CSS for MyPadiMan (formerly PadiFood)
+  - Mobile-first, accessible, and polished for large screens
+  - Inline comments indicate which EJS view(s) each section targets for easy review
+  - Place this file at: public/css/styles.css and ensure <link rel="stylesheet" href="/css/styles.css"> is in Views/partials/head.ejs
 */
 
-/* ====== Variables & base ====== */
+/* ==========================
+   Base variables & reset
+   (applies globally; referenced by every view)
+   Targets: Views/layouts/layout.ejs (global wrapper)
+   ========================== */
 :root{
-  --bg: #fafbfd;
+  --bg: #f7fafc;
   --surface: #ffffff;
-  --muted: #6c757d;
-  --text: #0f1720;
-  --accent: #ff7a18;     /* primary CTA */
+  --muted: #6b7280;
+  --text: #0b1220;
+  --accent: #ff7a18;
   --accent-600: #e86a08;
   --success: #16a34a;
   --danger: #c02828;
-  --card-radius: 12px;
-  --shadow: 0 6px 18px rgba(15,23,32,0.07);
-  --glass: rgba(255,255,255,0.6);
-  --max-width: 1100px;
+  --card-radius: 14px;
+  --shadow-soft: 0 6px 20px rgba(11,22,35,0.06);
+  --shadow-strong: 0 10px 30px rgba(11,22,35,0.08);
+  --max-width: 1200px;
   --gap: 16px;
-  --focus: 3px solid rgba(11,110,79,0.15);
+  --focus-ring: 4px solid rgba(255,122,24,0.12);
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   font-size: 16px;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
-/* reset / base */
-* { box-sizing: border-box; }
-html,body { height: 100%; margin: 0; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-a { color: inherit; text-decoration: none; }
-img { max-width: 100%; display: block; }
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
 
-/* page wrapper */
-.site-wrapper { max-width: var(--max-width); margin: 18px auto; padding: 0 16px; }
+/* Site wrapper (layout.ejs) */
+.site-wrapper{max-width:var(--max-width);margin:18px auto;padding:12px}
 
-/* ===== Header ===== */
-.site-header {
-  background: linear-gradient(90deg, rgba(255,255,255,0.6), rgba(255,255,255,0.6));
-  border-radius: var(--card-radius);
-  box-shadow: var(--shadow);
-  margin-bottom: var(--gap);
+/* ==========================
+   Header (Views/partials/header.ejs)
+   - ensures logo, brand, and header nav fit and collapse nicely on mobile
+   - logout and user links are handled inside .header-nav and will stack on small screens
+   ========================== */
+.site-header{
+  background:linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.9));
+  border-radius:var(--card-radius);
+  box-shadow:var(--shadow-soft);
+  margin-bottom:var(--gap);
 }
-.header-inner{
-  display:flex;
-  gap:12px;
-  align-items:center;
-  justify-content:space-between;
-  padding:14px 18px;
-}
-.logo{ display:flex; align-items:center; gap:10px; }
-.logo img{ display:block; height:40px; width:auto; }
-.brand{ font-weight:700; font-size:1.05rem; color: var(--accent-600); }
+.header-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px}
 
-/* header nav (buttons / links) */
-.header-nav{ display:flex; gap:10px; align-items:center; }
-.header-nav a,
-.header-nav button {
-  background: transparent;
-  border: 1px solid transparent;
-  padding:8px 12px;
-  border-radius:10px;
-  font-weight:600;
-  cursor:pointer;
-}
-#btn-find-near {
-  background: linear-gradient(90deg,var(--accent),var(--accent-600));
-  color: #fff; border: none;
-  box-shadow: 0 6px 14px rgba(255,122,24,0.12);
-}
-#btn-login, .header-nav a { color: var(--text); }
-.header-nav a:hover, .header-nav button:hover { transform: translateY(-1px); }
+/* Logo / brand */
+.logo{display:flex;align-items:center;gap:10px}
+.logo img{height:44px;width:auto;display:block}
+.brand{font-weight:700;font-size:1.05rem;color:var(--accent-600);letter-spacing:0.2px}
 
-/* keyboard focus */
-a:focus, button:focus, input:focus, select:focus, textarea:focus {
-  outline: none;
-  box-shadow: var(--focus);
-  border-radius: 8px;
+/* Header nav: buttons and auth links
+   - stacked on small screens, inline on larger screens
+   - targets Views/partials/header.ejs content (find vendors, login/signup, user menu) */
+.header-nav{display:flex;gap:8px;align-items:center}
+.header-nav a,.header-nav button{border-radius:10px;padding:8px 12px;font-weight:600;border:1px solid transparent;background:transparent;cursor:pointer}
+
+#btn-find-near{background:linear-gradient(90deg,var(--accent),var(--accent-600));color:#fff;border:none;box-shadow:0 8px 20px rgba(255,122,24,0.12)}
+
+/* ensure the logout stacks neatly in mobile and forms a compact pill on desktop */
+.header-nav .user-greeting{display:none;font-weight:600;color:var(--muted);margin-right:6px}
+
+/* on very small screens, stack header nav vertically */
+@media (max-width:520px){
+  .header-inner{flex-direction:column;align-items:stretch;padding:10px}
+  .header-inner .logo{justify-content:space-between;width:100%}
+  .header-nav{flex-wrap:wrap;justify-content:flex-end}
+  .header-nav a,.header-nav button{flex:0 1 auto;margin-top:6px}
+  .header-nav .user-greeting{display:block;width:100%;text-align:left;margin-top:6px}
 }
 
-/* ===== Main navigation ===== */
-.main-nav { margin: 12px 0 18px 0; border-radius: 10px; background: #fff; box-shadow: var(--shadow); padding: 8px 12px; }
-.main-nav ul { list-style:none; margin:0; padding:0; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-.main-nav a { padding:8px 12px; color:var(--muted); border-radius:8px; display:inline-block; font-weight:600; }
-.main-nav a:hover, .main-nav a:focus { color:var(--text); background: rgba(11,110,79,0.06); }
+/* ==========================
+   Main navigation (Views/partials/navigation.ejs)
+   - horizontal navigation for pages
+   ========================== */
+.main-nav{margin:12px 0 18px;border-radius:10px;background:var(--surface);box-shadow:var(--shadow-soft);padding:6px 10px}
+.main-nav ul{list-style:none;margin:0;padding:0;display:flex;gap:8px;flex-wrap:wrap}
+.main-nav li{display:inline}
+.main-nav a{display:inline-block;padding:8px 12px;border-radius:8px;color:var(--muted);font-weight:600}
+.main-nav a:hover, .main-nav a:focus{background:rgba(11,110,79,0.06);color:var(--text)}
 
-/* ===== Flash messages ===== */
-.flash { padding: 10px 14px; border-radius: 8px; margin: 12px 0; font-weight:600; max-width: 100%; box-shadow: 0 6px 12px rgba(0,0,0,0.03); }
-.flash.success { background: #e6ffed; color: #064e2b; border: 1px solid #b6f0c1; }
-.flash.error { background: #fff0f0; color: #7a1616; border: 1px solid #f7c9c9; }
-.flash.info { background: #eef6ff; color: #08406a; border: 1px solid #cfe8ff; }
+/* collapse into a condensed nav on tiny screens for comfortable tap targets */
+@media (max-width:420px){
+  .main-nav a{padding:10px 12px;font-size:0.95rem}
+}
 
-/* ===== Main content / hero ===== */
-#main-content { padding: 8px 0 40px 0; }
+/* ==========================
+   Flash messages (layout.ejs shows <% if (flash) %>)
+   - visible and accessible
+   ========================== */
+.flash{padding:10px 14px;border-radius:10px;margin:12px 0;font-weight:600;box-shadow:0 6px 12px rgba(0,0,0,0.03)}
+.flash.success{background:#e6ffed;color:#064e2b;border:1px solid #c8f7d0}
+.flash.error{background:#fff6f6;color:#7a1b1b;border:1px solid #ffd6d6}
+.flash.info{background:#eef6ff;color:#083a66;border:1px solid #cfe8ff}
 
-.container { padding: 6px 0 28px 0; }
+/* focus states for accessibility */
+:focus{outline:none;box-shadow:var(--focus-ring);border-radius:10px}
 
-/* hero */
-.hero {
+/* ==========================
+   Hero & home page (Views/index.ejs)
+   ========================== */
+.container{padding:6px 0 28px}
+.hero{background:var(--surface);border-radius:var(--card-radius);padding:18px;box-shadow:var(--shadow-soft);display:flex;flex-direction:column;gap:12px}
+.hero h1{margin:0;font-size:1.4rem;line-height:1.05}
+.hero p{margin:0;color:var(--muted)}
+.hero-cta{margin-top:8px}
+.button{display:inline-block;padding:10px 14px;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;box-shadow:0 10px 24px rgba(255,122,24,0.12)}
+.button.secondary{background:transparent;border:1px solid #e9eef2;color:var(--text)}
+
+/* Vendors list grid (Views/index.ejs -> .vendors and vendorsList) */
+.vendors{margin-top:18px}
+.controls{margin-bottom:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.cards{display:grid;grid-template-columns:repeat(1,1fr);gap:12px}
+
+/* vendor card (used widely: vendor card, admin lists) */
+.card{background:var(--surface);border-radius:12px;padding:12px;box-shadow:var(--shadow-soft);display:flex;gap:12px;align-items:center;border:1px solid #f2f5f7}
+.card img{width:120px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0}
+.card-body{flex:1;min-width:0}
+.card h3{margin:0 0 6px 0;font-size:1.05rem}
+.card .meta{margin:0 0 8px 0;color:var(--muted);font-size:0.95rem}
+.card .actions{display:flex;gap:8px;align-items:center}
+
+.badge{display:inline-block;padding:6px 8px;border-radius:8px;font-weight:700;font-size:0.85rem;color:#fff}
+.badge--green{background:var(--success)}
+.badge--orange{background:var(--accent)}
+
+/* responsive grid adjustments */
+@media (min-width:640px){
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .hero{flex-direction:row;align-items:center;justify-content:space-between}
+  .hero h1{font-size:1.6rem}
+}
+@media (min-width:900px){
+  .cards{grid-template-columns:repeat(3,1fr);gap:18px}
+  .hero h1{font-size:2rem}
+  .card img{width:160px;height:110px}
+}
+@media (min-width:1200px){
+  .cards{grid-template-columns:repeat(4,1fr)}
+}
+
+/* ==========================
+   Form styles (applies to login.ejs, signup.ejs, vendor_signup.ejs, admin_users.ejs)
+   - center simple forms like login & signup
+   - provide consistent card look for larger form pages
+   ========================== */
+form{font-size:1rem}
+label{display:block;margin-bottom:8px;color:var(--text);font-weight:600}
+input[type="text"],input[type="email"],input[type="password"],input[type="number"],select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #e6e9ec;background:#fff;margin-top:6px;font-size:1rem}
+
+/* Primary buttons used across admin and user flows */
+button,.btn,input[type="submit"]{cursor:pointer;border:none;background:var(--accent);color:#fff;padding:10px 12px;border-radius:10px;font-weight:700}
+button.secondary,.btn.secondary{background:transparent;border:1px solid #e6e8eb;color:var(--text)}
+
+/* LOGIN (Views/login.ejs) - centered small form */
+/* The login view only contains the form markup, so we provide a wrapper style here that you can apply in the EJS file (or keep global .centered-form) */
+.centered-form{max-width:420px;margin:36px auto;padding:20px;background:var(--surface);border-radius:12px;box-shadow:var(--shadow-soft)}
+.centered-form h2{text-align:center;margin:0 0 12px;color:var(--text)}
+.centered-form form{display:flex;flex-direction:column;gap:12px}
+.centered-form button{align-self:center;width:100%;max-width:260px}
+
+/* SIGNUP (Views/signup.ejs) - similar to login; header on top is in the markup */
+.signup-card { /* already exists in the main stylesheet; kept for clarity */
+  max-width: 540px;
+  margin: 28px auto;
+  padding: 20px;
+  border-radius: 12px;
   background: var(--surface);
-  border-radius: var(--card-radius);
-  padding: 18px;
-  box-shadow: var(--shadow);
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  align-items:flex-start;
+  box-shadow: var(--shadow-soft);
 }
-.hero h1 { margin:0; font-size:1.4rem; line-height:1.1; }
-.hero p { margin: 4px 0 0 0; color:var(--muted); }
-.hero-cta { margin-top:10px; }
-.button, .cta, .btn {
-  display:inline-block;
-  padding:10px 14px;
-  background: var(--accent);
-  color:#fff;
-  border-radius:10px;
-  font-weight:700;
-  box-shadow: 0 8px 18px rgba(255,122,24,0.12);
-}
-.button.secondary, .btn.secondary {
-  background: transparent;
-  border: 1px solid #e6e8eb;
+
+/* Uniform H2 for forms */
+.signup-card h2 {
+  text-align: center;
+  margin: 0 0 12px;
+  font-size: 1.25rem;    /* consistent with hero/form headings */
+  font-weight: 700;
   color: var(--text);
+  letter-spacing: 0.2px;
 }
 
-/* ===== Vendors list / cards ===== */
-.vendors { margin-top: 18px; }
-.controls { margin-bottom: 10px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-.controls label { color:var(--muted); font-weight:600; font-size:0.95rem; }
-
-.cards {
-  display:grid;
-  grid-template-columns: repeat(1, minmax(0,1fr));
+/* Layout + spacing for this compact form */
+.signup-form {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
-/* vendor card */
-.card {
-  background: var(--surface);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-  padding: 12px;
-  display:flex;
-  gap:12px;
-  align-items:center;
-  border: 1px solid #f0f2f4;
+/* Make labels readable and inputs uniform */
+.signup-form label { font-weight: 600; color: var(--text); display:block; }
+.signup-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e6e9ec;
+  background: #fff;
+  margin-top: 6px;
+  font-size: 1rem;
 }
-.card img { width:120px; height:84px; object-fit:cover; border-radius:8px; flex-shrink:0; }
-.card-body { flex:1; min-width:0; }
-.card h3 { margin:0 0 6px 0; font-size:1.05rem; }
-.card .meta { margin:0 0 8px 0; color:var(--muted); font-size:0.95rem; }
-.card .actions { display:flex; gap:8px; align-items:center; margin-top:6px; }
-.card .btn { padding:8px 10px; font-size:0.95rem; border-radius:8px; }
-.badge {
-  display:inline-block;
-  padding:6px 8px;
-  border-radius:8px;
-  font-weight:700;
-  font-size:0.85rem;
-  text-transform:capitalize;
-  color:#fff;
-}
-.badge--green { background: var(--success); }
-.badge--orange { background: #ff7a18; }
 
-/* ===== Forms & cards used across pages ===== */
-.card.form { display:block; padding:14px; }
-form label { display:block; margin-bottom:8px; color:var(--text); font-weight:600; }
-form input[type="text"], form input[type="email"], form input[type="password"], form input[type="number"], form select, form textarea {
-  width:100%;
-  padding:10px 12px;
+/* Make the submit button full-width but constrained */
+.signup-form .btn {
+  width: 100%;
+  max-width: 320px;
+  align-self: center;
+  padding: 10px 14px;
+}
+
+/* Small-screen tweak - keep inputs comfy on phones */
+@media (max-width: 520px) {
+  .signup-card { margin: 18px 12px; padding: 16px; }
+  .signup-card h2 { font-size: 1.15rem; }
+}
+
+/* ADMIN USERS (Views/admin_users.ejs)
+   - ensure header items fit (we keep header responsive) and table uses card style */
+.signup-wrap{margin:18px auto;max-width:980px;width:calc(100% - 32px);display:flex;flex-direction:column;align-items:center;padding:22px;border-radius:14px;box-shadow:var(--shadow-strong);background:var(--surface)}
+.signup-header{text-align:center;width:100%;margin-bottom:10px}
+.signup-header h2{margin:0 0 6px 0;font-size:1.4rem}
+.signup-header .muted{color:var(--muted);max-width:780px;margin:0 auto}
+.form-grid{width:100%;max-width:820px;display:flex;flex-direction:column;gap:14px}
+.two-col{display:flex;gap:12px}
+.two-col .form-row{flex:1}
+.map-preview{width:100%;display:flex;gap:12px;align-items:flex-start}
+.map-preview .map-left{flex:1 1 60%}
+.map-preview .map-right{flex:0 0 260px}
+.form-footer{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+@media (min-width:820px){.form-footer{flex-direction:row;justify-content:space-between;align-items:center;width:100%}.actions-row{display:flex;gap:12px}}
+@media (max-width:640px){.signup-wrap{padding:16px;margin:12px}.two-col{flex-direction:column}.map-preview{flex-direction:column}.map-preview .map-right{width:100%}}
+
+/* Make the map preview image constrained & pretty */
+#previewImg{width:100%;max-height:360px;object-fit:cover;border-radius:10px}
+
+/* Ensure the submit button remains disabled-looking when disabled */
+button[disabled]{opacity:0.6;cursor:not-allowed}
+
+/* ==========================
+   Vendor detail view (Views/vendor.ejs)
+   - vendor actions include a booking button and a WhatsApp booking link styled as a button
+   ========================== */
+.vendor-profile{background:var(--surface);border-radius:12px;padding:18px;box-shadow:var(--shadow-soft)}
+.vendor-profile h1{margin:0 0 6px 0;font-size:1.4rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.vendor-profile .badge{font-size:0.9rem}
+.vendor-profile p{margin:6px 0;color:var(--muted)}
+.vendor-profile .actions{margin-top:12px;display:flex;gap:12px}
+.vendor-profile .actions button,.vendor-profile .actions a{padding:10px 14px;border-radius:10px;font-weight:700}
+.vendor-profile .actions a{display:inline-block}
+.vendor-profile .actions a.button-like{background:var(--accent);color:#fff}
+
+/* small screens: stack actions */
+@media (max-width:520px){.vendor-profile .actions{flex-direction:column;align-items:stretch}}
+
+/* ==========================
+   Vendor thanks (Views/vendor_thanks.ejs)
+   - centered thank you card and readable dl list
+   ========================== */
+.card{background:var(--surface);border-radius:12px;padding:18px;box-shadow:var(--shadow-soft);max-width:780px;margin:22px auto}
+.card h2{text-align:center;margin-top:0}
+.card dl{display:grid;grid-template-columns:120px 1fr;gap:8px 18px;margin-top:14px}
+.card dt{color:var(--muted);font-weight:700}
+.card dd{margin:0}
+@media (max-width:600px){.card dl{grid-template-columns:1fr;margin-left:0}}
+
+/* ==========================
+   Footer (Views/partials/footer.ejs)
+   - stacked columns on mobile, 3 columns on larger screens
+   ========================== */
+.site-footer{margin-top:28px;background:linear-gradient(180deg,#0b1014,#071017);color:#fff;padding:28px;border-radius:12px}
+.footer-container{max-width:var(--max-width);margin:0 auto}
+.footer-columns{display:grid;grid-template-columns:repeat(1,1fr);gap:12px;margin-bottom:12px}
+.footer-column h4{margin:0 0 8px 0;font-size:1.05rem}
+.footer-column ul{list-style:none;padding:0;margin:0}
+.footer-column li{margin:6px 0}
+.footer-column a{color:#dbeeff}
+.footer-copy{color:#9fb2c7;margin-top:12px;font-size:0.95rem}
+@media (min-width:900px){.footer-columns{grid-template-columns:repeat(3,1fr)}}
+
+/* ==========================
+   Utilities & helpers
+   ========================== */
+.sr-only{position:absolute!important;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
+.kv{color:var(--muted);font-size:0.95rem}
+.flex{display:flex;gap:12px;align-items:center}
+.muted{color:var(--muted)}
+
+/* Inline validation messages + password toggle */
+.field-msg { margin-top:6px; font-size:0.92rem; color:var(--muted); display:block; }
+.field-msg.error { color: var(--danger); font-weight:600; }
+.field-msg.ok { color: var(--success); font-weight:600; }
+
+/* Password row: input + toggle button */
+.pw-row { display:flex; gap:8px; align-items:center; }
+.pw-row input { flex:1; }
+
+/* Toggle button style (small, accessible) */
+.pw-toggle {
+  padding:8px 10px;
   border-radius:8px;
   border:1px solid #e6e9ec;
-  background:#fff;
-  margin-top:6px;
-  font-size:1rem;
-}
-form .row { display:flex; gap:10px; align-items:center; }
-form .small { width:160px; }
-
-/* tables */
-table { width:100%; border-collapse: collapse; background:var(--surface); border-radius:8px; overflow:hidden; box-shadow: var(--shadow); }
-thead { background:#f6f8fa; }
-th, td { padding:10px 12px; text-align:left; border-bottom:1px solid #f3f5f6; }
-tr:last-child td { border-bottom: none; }
-
-/* Admin forms buttons */
-button, .btn, input[type="submit"] {
-  cursor:pointer;
-  border: none;
-  background: var(--accent);
-  color: #fff;
-  padding: 10px 12px;
-  border-radius: 8px;
+  background:transparent;
   font-weight:700;
+  cursor:pointer;
+  white-space:nowrap;
 }
-button.secondary { background: transparent; border:1px solid #e6e8eb; color:var(--text); }
+.pw-toggle[aria-pressed="true"] { background: rgba(11,110,79,0.06); }
 
-/* ===== Vendor signup + map preview ===== */
-#mapPreview { background: var(--surface); border-radius: 10px; padding: 12px; box-shadow: var(--shadow); }
-#previewImg { border-radius: 8px; width:100%; max-height: 360px; object-fit:cover; }
-#coordsText { color:var(--muted); margin-top:8px; }
+/* Global small tweak for disabled submit */
+button[disabled] { opacity:0.7; pointer-events:none; }
 
-/* small helper utilities */
-.sr-only { position:absolute!important; left:-10000px; top:auto; width:1px; height:1px; overflow:hidden; }
-.kv { color:var(--muted); font-size:0.95rem; }
-.flex { display:flex; gap:12px; align-items:center; }
+/* hidden helper */
+[hidden] { display:none !important; }
 
-/* ===== Footer ===== */
-.site-footer {
-  margin-top: 28px;
-  background: linear-gradient(180deg,#111,#0b1014);
-  color:#fff;
-  padding: 24px 16px;
-  border-radius: 10px;
-}
-.footer-container { max-width: var(--max-width); margin: 0 auto; }
-.footer-columns { display:grid; grid-template-columns: repeat(1,1fr); gap:12px; margin-bottom: 12px; }
-.footer-column h4 { margin:0 0 8px 0; font-size:1.05rem; color:#fff; }
-.footer-column ul { list-style:none; padding:0; margin:0; }
-.footer-column li { margin:6px 0; }
-.footer-column a { color:#e6f5ff; text-decoration:none; }
-.footer-copy { color: #9fb2c7; margin-top: 12px; font-size:0.95rem; }
-
-/* ===== Responsive layout (larger screens) ===== */
-@media (min-width: 640px) {
-  .cards { grid-template-columns: repeat(2, 1fr); }
-  .hero { flex-direction: row; align-items:center; justify-content:space-between; }
-  .hero h1 { font-size: 1.6rem; }
+/* small screen tweaks */
+@media (max-width:420px){
+  .brand{font-size:0.95rem}
+  .card img{width:100px;height:72px}
+  .cards{grid-template-columns:1fr}
 }
 
-@media (min-width: 900px) {
-  .site-wrapper { padding: 0 20px; }
-  .header-inner { padding: 18px 22px; }
-  .cards { grid-template-columns: repeat(3, 1fr); gap: 18px; }
-  .footer-columns { grid-template-columns: repeat(3, 1fr); }
-  .hero h1 { font-size: 2rem; }
-  .card img { width: 160px; height: 110px; }
-}
-
-/* large desktop */
-@media (min-width: 1200px) {
-  .site-wrapper { padding: 0; }
-  .cards { grid-template-columns: repeat(4, 1fr); gap: 20px; }
-}
-
-/* ===== Accessibility / contrast tweaks ===== */
-/* ensure focus is visible and keyboard-friendly */
-a:focus, button:focus, input:focus, select:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(11,110,79,0.12);
-}
-
-/* small screens spacing tweaks */
-@media (max-width: 420px) {
-  .header-inner { padding: 10px; gap:8px; }
-  .brand { font-size: 0.95rem; }
-  .card img { width: 100px; height: 72px; }
-  .cards { grid-template-columns: 1fr; }
-}
-
-/* --- Center & top placement for Vendor Enrollment --- */
-
-/* make sure the page container doesn't push content away;
-   reduce top margin so enrollment feels "on top" */
-.container {
-  padding-top: 8px; /* small top space */
-  padding-bottom: 28px;
-}
-
-/* center the signup card and give it a strong vertical presence */
-.signup-wrap {
-  margin: 18px auto;            /* center horizontally and give top spacing */
-  max-width: 980px;            /* overall limit on very large screens */
-  width: calc(100% - 32px);    /* full width minus page padding */
-  display: flex;
-  flex-direction: column;
-  align-items: center;         /* center child .form-grid */
-  padding: 22px;
-  border-radius: 14px;
-  box-shadow: var(--shadow);
-  background: var(--surface);
-}
-
-/* center the header text and nudge the heading up */
-.signup-header {
-  width: 100%;
-  text-align: center;
-  margin-bottom: 6px;
-}
-.signup-header h2 { margin: 0 0 6px 0; font-size: 1.4rem; }
-.signup-header .muted { margin: 0 auto 12px; max-width: 720px; }
-
-/* constrain the actual form so inputs don't stretch too far on wide screens */
-.form-grid {
-  width: 100%;
-  max-width: 820px;   /* keep the form a readable width */
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* make two-col layout sit inside the constrained width */
-.two-col { display:flex; gap:12px; }
-.two-col .form-row { flex:1; }
-
-/* center map preview area horizontally inside form */
-.map-preview {
-  width: 100%;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-/* ensure map-left grows while map-right keeps a stable width */
-.map-preview .map-left { flex: 1 1 60%; margin-right: 12px; }
-.map-preview .map-right { flex: 0 0 260px; }
-
-/* form footer layout centered on wide screens with actions to the right */
-.form-footer {
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  align-items: flex-start;
-}
-
-/* on medium+ screens: align the submit area to the right of the card */
-@media (min-width: 820px) {
-  .form-footer {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
-  .actions-row { gap: 12px; }
-}
-
-/* keep a compact two-column layout on large screens */
-@media (min-width: 900px) {
-  .two-col { gap: 18px; }
-  .signup-wrap { padding: 24px 30px; }
-  .signup-header h2 { font-size: 1.6rem; }
-}
-
-/* small screens keep stacked layout, full-width inputs */
-@media (max-width: 640px) {
-  .signup-wrap { margin: 12px 12px; padding: 16px; }
-  .form-grid { max-width: 100%; }
-  .two-col { flex-direction: column; gap: 10px; }
-  .map-preview { flex-direction: column; }
-  .map-preview .map-right { width:100%; }
-  .signup-header h2 { font-size: 1.25rem; }
-}
-
-/* Accessibility: ensure centered focus states look good */
-.form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus {
-  box-shadow: var(--focus);
-  outline: none;
-  border-radius: 8px;
-}
+.wa-btn { background:#25D366; color:#fff; border:none; padding:10px 14px; border-radius:10px; font-weight:700; }
+.wa-btn:hover { filter:brightness(.95); transform:translateY(-1px); }
 

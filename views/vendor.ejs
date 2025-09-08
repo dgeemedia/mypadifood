@@ -1,9 +1,63 @@
+<% 
+  // ensure the fallback number is digits-only international format:
+  const fallbackNumber = '2348110252143';
+  function toIntl(phone) {
+    if (!phone) return fallbackNumber;
+    let cleaned = (''+phone).replace(/\D/g, '');
+    if (cleaned.startsWith('0')) cleaned = '234' + cleaned.slice(1);
+    if (cleaned.length < 7) return fallbackNumber;
+    return cleaned;
+  }
+  const waNumber = toIntl(vendor.phone || '');
+  const waMessage = `Booking request: Vendor: ${vendor.name} | Location: ${vendor.address}`;
+%>
+
 <section class="vendor-profile">
   <h1><%= vendor.name %> <span class="badge"><%= vendor.status %></span></h1>
-  <p><%= vendor.address %> </p>
+  <p><%= vendor.address %></p>
   <p>Food: <%= vendor.food_item %> — Price: ₦<%= vendor.price_min %></p>
+
   <div class="actions">
     <button id="orderNow">Order now</button>
-    <a href="https://wa.me/?text=<%= encodeURIComponent(`Booking request: Vendor: ${vendor.name} | Location: ${vendor.address}`) %>" target="_blank">Book a plate via WhatsApp</a>
+
+    <!-- Button triggers JS to reliably open WhatsApp (app first, then web) -->
+    <button type="button" class="button-like wa-btn"
+      data-wa-number="<%= waNumber %>"
+      data-wa-message="<%= waMessage.replace(/\"/g, '&quot;') %>">
+      Book a plate offline
+    </button>
   </div>
 </section>
+
+<script>
+(function(){
+  function openWhatsApp(number, message) {
+    const text = encodeURIComponent(message);
+    const appUrl = `whatsapp://send?phone=${number}&text=${text}`;
+    const webUrl = `https://wa.me/${number}?text=${text}`; // universal fallback
+    const apiUrl = `https://api.whatsapp.com/send?phone=${number}&text=${text}`;
+
+    // Try to open the native app first (mobile). Then fallback to web.
+    // Navigating to appUrl will succeed on mobile with the app installed.
+    // If it doesn't open (desktop or app missing), the timeout fallback opens web.
+    window.location = appUrl;
+
+    setTimeout(function() {
+      try {
+        window.open(apiUrl, '_blank', 'noopener');
+      } catch (e) {
+        window.location = webUrl;
+      }
+    }, 600);
+  }
+
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest('.wa-btn');
+    if (!btn) return;
+    e.preventDefault();
+    const number = btn.dataset.waNumber;
+    const message = btn.dataset.waMessage;
+    openWhatsApp(number, message);
+  });
+})();
+</script>

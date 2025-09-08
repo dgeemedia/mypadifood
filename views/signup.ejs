@@ -1,10 +1,39 @@
-<h2>Sign up (Customer)</h2>
-<form action="/auth/signup" method="post">
-  <label>Name <input name="name" required></label>
-  <label>Email <input name="email" type="email" required></label>
-  <label>Phone <input name="phone"></label>
-  <label>Password <input name="password" type="password" required></label>
-  <!-- force customer role -->
-  <input type="hidden" name="role" value="customer" />
-  <button type="submit">Create account</button>
-</form>
+<main class="container">
+  <!-- signup-card uses the card style from public/css/styles.css -->
+  <div class="signup-card">
+    <!-- Uniform heading -->
+    <h2>Sign up (Customer)</h2>
+
+    <!-- form uses signup-form for spacing + small-screen layout -->
+    <form action="/auth/signup" method="post" class="signup-form" novalidate>
+      <label>
+        Name
+        <input name="name" required aria-label="Full name">
+      </label>
+
+      <label>
+        Email
+        <input name="email" type="email" required aria-label="Email address">
+      </label>
+
+      <label>
+        Phone
+        <input name="phone" type="tel" aria-label="Phone number">
+      </label>
+
+      <label>
+        Password
+        <input name="password" type="password" required aria-label="Password">
+      </label>
+
+      <!-- force customer role -->
+      <input type="hidden" name="role" value="customer" />
+
+      <button type="submit" class="btn">Create account</button>
+    </form>
+
+    <p class="muted" style="text-align:center;margin-top:10px;font-size:0.95rem;">
+      Already have an account? <a href="/auth/login">Login</a>
+    </p>
+  </div>
+</main>
