@@ -1,26 +1,29 @@
 // public/js/main.js
 import { getVendorsNearby, fetchVendors } from './vendors.mjs';
 import { initWhatsApp } from './wa.mjs';
+import { initVendorSignup } from './vendor-signup.mjs';
 
 /* -------------------------
-   WhatsApp phone normalizer
-   (client-side equivalent of server toIntl)
+   Utility: read page config from #padi-config (non-executing JSON)
    ------------------------- */
-const FALLBACK_WA_NUMBER = '2348110252143';
-function toIntl(phone) {
-  if (!phone) return FALLBACK_WA_NUMBER;
-  let cleaned = ('' + phone).replace(/\D/g, '');
-  if (cleaned.startsWith('0')) cleaned = '234' + cleaned.slice(1);
-  if (cleaned.length < 7) return FALLBACK_WA_NUMBER;
-  return cleaned;
+function readPageConfig() {
+  try {
+    const el = document.getElementById('padi-config');
+    if (!el) return {};
+    return JSON.parse(el.textContent || el.innerText || '{}');
+  } catch (err) {
+    console.warn('readPageConfig parse error', err);
+    return {};
+  }
 }
 
-/* ----- existing DOM refs ----- */
+/* ===========================
+   Vendor list UI (client-side)
+   =========================== */
 const vendorsList = document.getElementById('vendorsList');
 const btnFind = document.getElementById('btn-find-near');
 const filter = document.getElementById('filterStatus');
 
-/* ----- helpers you already had (kept) ----- */
 function formatPrice(n) {
   if (n == null || n === '') return '—';
   try {
@@ -41,7 +44,14 @@ function createBadge(status) {
   return s;
 }
 
-/* ----- createCard now uses data-wa-* attributes and .wa-btn ----- */
+function toIntl(phone) {
+  if (!phone) return '2348110252143';
+  let cleaned = ('' + phone).replace(/\D/g, '');
+  if (cleaned.startsWith('0')) cleaned = '234' + cleaned.slice(1);
+  if (cleaned.length < 7) return '2348110252143';
+  return cleaned;
+}
+
 function createCard(vendor) {
   const card = document.createElement('article');
   card.className = 'card';
@@ -79,11 +89,9 @@ function createCard(vendor) {
   view.href = `/vendors/${vendor.id || ''}`;
   view.textContent = 'View';
 
-  // BOOK: create as a button with wa-btn class and data attributes
   const book = document.createElement('button');
   book.type = 'button';
   book.className = 'btn secondary wa-btn';
-  // provide normalized phone and prefilled message
   const waNumber = toIntl(vendor.phone || '');
   const waText = `Booking request: Vendor: ${vendor.name || ''} | Location: ${vendor.address || ''}`;
   book.dataset.waNumber = waNumber;
@@ -102,7 +110,6 @@ function createCard(vendor) {
   return card;
 }
 
-/* ----- render helpers ----- */
 function showLoading(message = 'Loading…') {
   if (!vendorsList) return;
   clearChildren(vendorsList);
@@ -132,7 +139,6 @@ function showEmpty(message = 'No vendors found') {
   vendorsList.appendChild(el);
 }
 
-/* ----- main render ----- */
 async function render(vendors) {
   if (!vendorsList) return;
   clearChildren(vendorsList);
@@ -150,7 +156,6 @@ async function render(vendors) {
   vendorsList.appendChild(fragment);
 }
 
-/* ----- actions ----- */
 async function loadAll() {
   if (!vendorsList) return;
   showLoading();
@@ -180,9 +185,9 @@ async function findNearby(radiusKm = 5) {
   }
 }
 
-/* ----- event wiring ----- */
+/* Event wiring */
 if (btnFind) {
-  btnFind.addEventListener('click', async (e) => {
+  btnFind.addEventListener('click', async () => {
     btnFind.disabled = true;
     const prevText = btnFind.textContent;
     btnFind.textContent = 'Searching…';
@@ -210,8 +215,31 @@ if (filter) {
   });
 }
 
-/* ----- initial load & initialize wa handler ----- */
-loadAll();
+/* Delegated handler for WhatsApp "Book" buttons (using data attributes) */
+document.addEventListener('click', (ev) => {
+  const btn = ev.target.closest('.wa-btn');
+  if (!btn) return;
+  const number = btn.dataset.waNumber;
+  const text = btn.dataset.waMessage || '';
+  const url = `https://wa.me/${encodeURIComponent(number)}?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank', 'noopener');
+});
 
-// Initialize WhatsApp delegated handler (no duplicate behavior)
-initWhatsApp({ debug: false });
+/* ---------------------------
+   Page startup
+   --------------------------- */
+document.addEventListener('DOMContentLoaded', () => {
+  // initial vendor list
+  loadAll();
+
+  // init WhatsApp behavior (if module exists)
+  try { initWhatsApp({ debug: false }); } catch (err) { /* ignore */ }
+
+  // init vendor signup if the config exists
+  const cfg = readPageConfig();
+  try {
+    initVendorSignup(cfg);
+  } catch (err) {
+    console.warn('initVendorSignup failed', err);
+  }
+});

@@ -328,3 +328,109 @@ button[disabled] { opacity:0.7; pointer-events:none; }
 .wa-btn { background:#25D366; color:#fff; border:none; padding:10px 14px; border-radius:10px; font-weight:700; }
 .wa-btn:hover { filter:brightness(.95); transform:translateY(-1px); }
 
+/* -----------------------------
+   Vendor signup: make it look like signup.ejs (neat, centered)
+   Append to public/css/styles.css
+   ----------------------------- */
+
+/* Reuse the signup-card look for signup-wrap so EJS markup stays the same */
+.signup-wrap {
+  max-width: 720px;                /* match signup-card width */
+  margin: 28px auto;               /* center on page with comfortable gap */
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  display: block;
+}
+
+/* heading alignment like signup-card */
+.signup-header { text-align: center; margin-bottom: 8px; }
+.signup-header h2 { margin: 0 0 8px 0; font-size: 1.25rem; font-weight: 700; }
+.signup-header .muted { margin: 0 auto 8px; font-size: 0.95rem; color: var(--muted); max-width: 600px; }
+
+/* Constrain the form to the card width for neat alignment */
+.form-grid {
+  width: 100%;
+  display: block;
+  gap: 12px;
+}
+
+/* Make each form row compact and consistent with small signup form */
+.form-row { margin-bottom: 10px; }
+.label-text { display:block; margin-bottom:6px; font-weight:700; color:var(--text); }
+input, select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e6e9ec;
+  background: #fff;
+  font-size: 1rem;
+}
+
+/* Two-column behaviour stays, but neat spacing */
+.two-col {
+  display: flex;
+  gap: 12px;
+}
+.two-col .form-row { flex: 1; }
+
+/* Map preview smaller and tidy in this compact card */
+.map-preview {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #f2f5f7;
+}
+.map-preview .map-left { flex: 1; }
+.map-preview .map-right { flex: 0 0 220px; padding-left: 8px; }
+#previewImg { width:100%; height:auto; border-radius:8px; border:1px solid #eee; }
+
+/* Map controls and action buttons should match signup styles */
+.map-actions { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+.btn { padding: 10px 12px; border-radius: 10px; font-weight:700; }
+.btn.secondary { background: transparent; border: 1px solid #e6e8eb; color: var(--text); }
+
+/* Form footer / actions aligned like signup card */
+.form-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+}
+.actions-row { display:flex; gap: 10px; align-items:center; }
+
+/* Make primary submit button full width on small screens and centered on larger */
+#submitBtn {
+  width: 100%;
+  max-width: 280px;
+  align-self: center;
+}
+@media (min-width: 820px) {
+  #submitBtn { width: auto; }
+  .form-footer { flex-direction: row; justify-content: space-between; align-items: center; }
+}
+
+/* Disabled button style consistent with other UI */
+button[disabled] { opacity: 0.6; cursor: not-allowed; }
+
+/* small-screen adjustments to keep it neat and readable */
+@media (max-width: 640px) {
+  .signup-wrap { margin: 18px 12px; padding: 16px; }
+  .two-col { flex-direction: column; }
+  .map-preview { flex-direction: column; }
+  .map-preview .map-right { width: 100%; padding-left: 0; }
+  #submitBtn { width: 100%; }
+}
+
+/* Small helper - reduce vertical spacing in compact forms */
+.form-grid input, .form-grid select, .form-grid textarea { margin-top: 6px; margin-bottom: 6px; }
+
+/* Keep required star noticeable but subtle */
+.required { color: var(--danger); margin-left: 6px; font-weight:700; font-size:0.95rem; }
+
+/* Ensure flash sits nicely inside the card */
+.signup-wrap .flash { margin: 12px 0; width: calc(100% - 4px); }

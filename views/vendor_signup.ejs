@@ -1,8 +1,9 @@
+<!-- views/vendor_signup.ejs -->
 <main class="container">
   <div class="signup-wrap card">
     <header class="signup-header">
       <h2>Vendor Enrollment</h2>
-      <p class="muted">Fill in the form below to enroll your business. Your phone and email are private and only accessible by admin.</p>
+      <p class="muted">Fill in the form below to enroll your business.</p>
     </header>
 
     <% if (flash) { %>
@@ -76,7 +77,7 @@
 
           <label class="form-row">
             <span class="label-text">Phone</span>
-            <input name="phone" id="phone" placeholder="Optional — admin only" />
+            <input name="phone" id="phone" placeholder="080xxxxxxx" />
           </label>
         </div>
 
@@ -124,11 +125,12 @@
   </div>
 </main>
 
-<script>
-  // inject server-side data
-  window.PADI = {
-    states: <%- JSON.stringify(states) %>,
-    mapboxToken: '<%= mapboxToken %>'
-  };
+<!-- CONFIG: non-executing JSON (CSP-safe) -->
+<script id="padi-config" type="application/json" hidden>
+<%- JSON.stringify({ states: states, mapboxToken: mapboxToken }) %>
 </script>
-<script src="/js/vendor-signup.js" defer></script>
+
+<!-- main.js is loaded site-wide via layouts/layout.ejs as a module:
+     <script type="module" src="/js/main.js"></script>
+     main.js will import and initialize the vendor signup module when present.
+-->
