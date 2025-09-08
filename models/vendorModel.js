@@ -5,6 +5,7 @@ exports.create = async ({
   user_id = null,
   name,
   address,
+  country = null,
   lat = null,
   lng = null,
   food_item = null,
@@ -16,12 +17,12 @@ exports.create = async ({
 }) => {
   const sql = `
     INSERT INTO vendors
-      (user_id, name, address, lat, lng, food_item, price_min, phone, email, business_type, status)
+      (user_id, name, address, country, lat, lng, food_item, price_min, phone, email, business_type, status)
     VALUES
-      ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
     RETURNING *
   `;
-  const params = [user_id, name, address, lat, lng, food_item, price_min, phone, email, business_type, status];
+  const params = [user_id, name, address, country, lat, lng, food_item, price_min, phone, email, business_type, status];
   const r = await db.query(sql, params);
   return r.rows[0];
 };

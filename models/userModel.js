@@ -26,3 +26,15 @@ exports.updateRole = async (id, role) => {
   const r = await db.query('UPDATE users SET role=$1 WHERE id=$2 RETURNING id,name,email,role', [role, id]);
   return r.rows[0];
 };
+
+// count admins helper
+exports.countAdmins = async () => {
+  const r = await db.query("SELECT COUNT(*)::int AS cnt FROM users WHERE role='admin'");
+  return r.rows[0].cnt;
+};
+
+// delete user helper
+exports.deleteById = async (id) => {
+  const r = await db.query('DELETE FROM users WHERE id=$1 RETURNING id, email, role', [id]);
+  return r.rows[0];
+};

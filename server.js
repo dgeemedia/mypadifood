@@ -31,9 +31,9 @@ const pgSession = pgSessionFactory(session);
 const sessionStore = new pgSession({
   pool: db.pool,            // use our shared pool instance
   tableName: 'session',     // explicitly set table
-  schemaName: 'public',     // 👈 ensure correct schema
+  schemaName: 'public',     // ensure correct schema
   // pruneSessionInterval: 1000 * 60 * 60, // default (1 hour)
-  pruneSessionInterval: 0   // disable auto-pruning for now
+  pruneSessionInterval: 0   // disable auto-pruning for now (toggle if desired)
 });
 
 app.use(session({
@@ -44,9 +44,23 @@ app.use(session({
   cookie: { maxAge: 1000 * 60 * 60 * 24 } // 1 day
 }));
 
-// Make `user` available in all EJS templates
+// Flash + user binding middleware (available in all templates)
+// - res.locals.user -> current logged-in user (or null)
+// - res.locals.flash -> one-time flash message object { type, message }
+// - req.setFlash(type, message) -> set a flash from controllers
 app.use((req, res, next) => {
+  // expose current user to views
   res.locals.user = req.session && req.session.user ? req.session.user : null;
+
+  // simple session-backed flash
+  res.locals.flash = req.session.flash || null;
+  delete req.session.flash;
+
+  // helper to set flash messages from controllers
+  req.setFlash = (type, message) => {
+    req.session.flash = { type, message };
+  };
+
   next();
 });
 

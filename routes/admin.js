@@ -13,4 +13,7 @@ router.get('/users', ensureAuth, ensureAdmin, ac.listUsers);
 router.post('/users', ensureAuth, ensureAdmin, ac.createManager);
 router.post('/users/:id/role', ensureAuth, ensureAdmin, ac.assignRole);
 
+// delete user
+router.post('/users/:id/delete', ensureAuth, ensureAdmin, ac.deleteUser);
+
 module.exports = router;

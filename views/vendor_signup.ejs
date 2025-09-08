@@ -1,28 +1,138 @@
 <main class="container">
   <h2>Vendor Enrollment</h2>
+
+  <% if (flash) { %>
+    <div class="flash <%= flash.type %>"><%= flash.message %></div>
+  <% } %>
+
   <p>Fill in details to enroll. Your phone/email are private and only accessible by admin.</p>
 
-  <form method="post" action="/vendors" class="card">
+  <form id="vendorForm" method="post" action="/vendors" class="card">
     <label>Business / Stall name <input name="name" required></label>
-    <label>Address <input name="address" required></label>
 
-    <label>State
-      <select name="state" required>
-        <% Object.keys(states).forEach(s => { %>
-          <option value="<%= s %>"><%= s %></option>
-        <% }) %>
+    <label>Country
+      <select name="country" id="countrySelect" required>
+        <option value="Nigeria" selected>Nigeria</option>
       </select>
     </label>
 
-    <label>LGA
-      <input name="lga" placeholder="LGA (optional)"></input>
+    <label>State
+        <select name="state" id="stateSelect" required>
+            <option value="">Select State</option>
+            <% Object.keys(states).forEach(s => { %>
+            <option value="<%= s %>"><%= s %></option>
+            <% }) %>
+        </select>
     </label>
+
+    <label>LGA
+      <select name="lga" id="lgaSelect">
+        <option value="">Select LGA</option>
+      </select>
+    </label>
+
+    <label>Manual Address (street, building, landmark) <input name="address" id="addressInput" required></label>
 
     <label>Food item <input name="food_item" required></label>
     <label>Base price (NGN) <input name="price_min" type="number" required></label>
     <label>Email <input name="email" type="email" required></label>
     <label>Phone <input name="phone"></label>
+    <label>Business type <input name="business_type" placeholder="Stall, Restaurant, Caterer"></label>
 
-    <button type="submit">Submit for review</button>
+    <div>
+      <button type="button" id="previewBtn">Preview on map</button>
+      <button type="submit">Submit for review</button>
+    </div>
   </form>
+
+  <section id="mapPreview" style="margin-top:1rem; display:none;">
+    <h3>Map Preview</h3>
+    <p>Confirm the marker matches your location. If it's incorrect, edit the address field and preview again.</p>
+    <img id="previewImg" alt="Location preview" style="max-width:100%; border:1px solid #ccc;" />
+    <p id="coordsText" style="font-size:0.9rem; color:#333;"></p>
+  </section>
 </main>
+
+<script>
+(function () {
+  // inject states object for JS runtime
+  const states = <%- JSON.stringify(states) %>;
+
+  const stateSelect = document.getElementById('stateSelect');
+  const lgaSelect = document.getElementById('lgaSelect');
+  const addressInput = document.getElementById('addressInput');
+  const previewBtn = document.getElementById('previewBtn');
+  const previewSection = document.getElementById('mapPreview');
+  const previewImg = document.getElementById('previewImg');
+  const coordsText = document.getElementById('coordsText');
+
+function populateLgas() {
+  const s = stateSelect.value;
+  let lgas = [];
+
+  // if JSON is in key→array format
+  if (states[s]) {
+    lgas = states[s];
+  }
+
+  // if JSON is an array of objects {state, lgas}
+  if (Array.isArray(states)) {
+    const match = states.find(st => st.state === s);
+    if (match) lgas = match.lgas;
+  }
+
+  lgaSelect.innerHTML =
+    '<option value="">Select LGA</option>' +
+    lgas.map(l => `<option value="${l}">${l}</option>`).join('');
+}
+
+  stateSelect.addEventListener('change', populateLgas);
+
+  // don’t call populateLgas() immediately, only after state is chosen
+  // (unless you want to pre-populate the first state)
+
+  async function geocode(query) {
+    const mapboxToken = '<%= mapboxToken %>';
+    if (!mapboxToken) return null;
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxToken}&limit=1`;
+    try {
+      const r = await fetch(url);
+      const data = await r.json();
+      const feat = (data && data.features && data.features[0]) || null;
+      if (!feat) return null;
+      return { lng: feat.center[0], lat: feat.center[1] };
+    } catch (err) {
+      console.error('geocode error', err);
+      return null;
+    }
+  }
+
+  function staticMapUrl(lat, lng, mapboxToken) {
+    const marker = `pin-s+ff0000(${lng},${lat})`;
+    return `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${marker}/${lng},${lat},15,0/800x400?access_token=${mapboxToken}`;
+  }
+
+  previewBtn.addEventListener('click', async () => {
+    const mapboxToken = '<%= mapboxToken %>';
+    const country = document.getElementById('countrySelect').value;
+    const lga = lgaSelect.value;
+    const state = stateSelect.value;
+    const address = addressInput.value;
+    const query = address && address.trim().length > 0
+      ? `${address}, ${lga || ''}, ${state || ''}, ${country || ''}`
+      : `${lga || ''} ${state || ''} ${country || ''}`;
+    coordsText.textContent = 'Looking up...';
+    const coords = await geocode(query);
+    if (!coords) {
+      coordsText.textContent = 'Location not found — try a more specific address.';
+      previewSection.style.display = 'block';
+      previewImg.src = '';
+      return;
+    }
+    previewImg.src = staticMapUrl(coords.lat, coords.lng, mapboxToken);
+    coordsText.textContent = `Lat: ${coords.lat.toFixed(6)}  Lng: ${coords.lng.toFixed(6)}`;
+    previewSection.style.display = 'block';
+  });
+})();
+</script>
+

@@ -28,7 +28,7 @@
             <td><%= u.email %></td>
             <td><%= u.role %></td>
             <td>
-              <form method="post" action="/admin/users/<%= u.id %>/role">
+              <form method="post" action="/admin/users/<%= u.id %>/role" style="display:inline">
                 <select name="role">
                   <option value="customer" <%= u.role==='customer'?'selected':'' %>>Customer</option>
                   <option value="vendor" <%= u.role==='vendor'?'selected':'' %>>Vendor</option>
@@ -36,6 +36,10 @@
                   <option value="admin" <%= u.role==='admin'?'selected':'' %>>Admin</option>
                 </select>
                 <button type="submit">Assign</button>
+              </form>
+
+              <form method="post" action="/admin/users/<%= u.id %>/delete" style="display:inline" onsubmit="return confirm('Delete user <%= u.email %>? This cannot be undone.');">
+                <button type="submit" aria-label="Delete user">Delete</button>
               </form>
             </td>
           </tr>
