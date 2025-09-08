@@ -1,5 +1,6 @@
-export async function getWallet(userId){
-  const r = await fetch(`/wallet/${userId}`);
+// public/js/wallet.mjs
+export async function getWallet(){
+  const r = await fetch('/wallet/api');
   return r.ok ? r.json() : null;
 }
 

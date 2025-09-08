@@ -1,0 +1,46 @@
+<main class="container">
+  <h2>Manage Users</h2>
+
+  <section>
+    <h3>Create / Update Manager</h3>
+    <form method="post" action="/admin/users" class="card">
+      <label>Name <input name="name" required></label>
+      <label>Email <input name="email" type="email" required></label>
+      <label>Password <input name="password" type="password" required></label>
+      <label>Role
+        <select name="role">
+          <option value="manager">Manager</option>
+          <option value="admin">Admin</option>
+        </select>
+      </label>
+      <button type="submit">Create / Update</button>
+    </form>
+  </section>
+
+  <section>
+    <h3>Existing Users</h3>
+    <table>
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Action</th></tr></thead>
+      <tbody>
+        <% users.forEach(u => { %>
+          <tr>
+            <td><%= u.name %></td>
+            <td><%= u.email %></td>
+            <td><%= u.role %></td>
+            <td>
+              <form method="post" action="/admin/users/<%= u.id %>/role">
+                <select name="role">
+                  <option value="customer" <%= u.role==='customer'?'selected':'' %>>Customer</option>
+                  <option value="vendor" <%= u.role==='vendor'?'selected':'' %>>Vendor</option>
+                  <option value="manager" <%= u.role==='manager'?'selected':'' %>>Manager</option>
+                  <option value="admin" <%= u.role==='admin'?'selected':'' %>>Admin</option>
+                </select>
+                <button type="submit">Assign</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </section>
+</main>

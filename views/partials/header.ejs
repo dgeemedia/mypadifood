@@ -5,14 +5,18 @@
       <span class="brand">myPadiFood</span>
     </div>
     <nav class="header-nav">
-      <button id="btn-find-near">Find vendors near me</button>
-      <% if (!user) { %>
-        <a href="/auth/login" id="btn-login">Login</a>
-        <a href="/auth/signup">Sign up</a>
-      <% } else { %>
-        <span>Hi, <%= user.name %></span>
-        <a href="/auth/logout">Logout</a>
-      <% } %>
-    </nav>
+  <button id="btn-find-near">Find vendors near me</button>
+  <% if (!user) { %>
+    <a href="/auth/login" id="btn-login">Login</a>
+    <a href="/auth/signup">Sign up</a>
+  <% } else { %>
+    <span>Hi, <%= user.name %></span>
+    <% if (user.role === 'admin') { %>
+      <a href="/admin">Admin panel</a>
+      <a href="/admin/users">User mgmt</a>
+    <% } %>
+    <a href="/auth/logout">Logout</a>
+  <% } %>
+</nav>
   </div>
 </header>

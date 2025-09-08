@@ -1,7 +1,8 @@
+// controllers/walletController.js
 const Wallet = require('../models/walletModel');
 const Transactions = require('../models/transactionModel');
 
-exports.getWallet = async (req, res) => {
+exports.getWalletJson = async (req, res) => {
   try {
     const user = req.session.user;
     if (!user) return res.status(401).send('login required');
@@ -14,7 +15,7 @@ exports.getWallet = async (req, res) => {
   }
 };
 
-// mock topup
+// mock topup (keeps same)
 exports.topup = async (req, res) => {
   try {
     const user = req.session.user;
@@ -28,4 +29,10 @@ exports.topup = async (req, res) => {
     console.error(err);
     res.status(500).send('server error');
   }
+};
+
+// page render for portfolio
+exports.portfolioPage = async (req, res) => {
+  if (!req.session.user) return res.redirect('/auth/login');
+  res.render('portfolio', { title: 'Wallet' });
 };

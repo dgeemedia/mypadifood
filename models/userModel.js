@@ -1,3 +1,4 @@
+// models/userModel.js
 const db = require('./db');
 
 exports.create = async ({ name, email, phone, password_hash, role = 'customer' }) => {
@@ -13,5 +14,15 @@ exports.findByEmail = async (email) => {
 
 exports.getById = async (id) => {
   const r = await db.query('SELECT id,name,email,phone,role,created_at FROM users WHERE id=$1', [id]);
+  return r.rows[0];
+};
+
+exports.listAll = async () => {
+  const r = await db.query('SELECT id,name,email,role,created_at FROM users ORDER BY created_at DESC');
+  return r.rows;
+};
+
+exports.updateRole = async (id, role) => {
+  const r = await db.query('UPDATE users SET role=$1 WHERE id=$2 RETURNING id,name,email,role', [role, id]);
   return r.rows[0];
 };

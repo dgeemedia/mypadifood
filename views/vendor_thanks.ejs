@@ -1,0 +1,24 @@
+<main class="container">
+  <section class="card">
+    <h2>Thanks for signing up, <%= vendor.name %>!</h2>
+    <p>Your vendor enrollment has been received and is currently <strong><%= vendor.status %></strong>.</p>
+    <p>Our admin team will review your submission and perform a site visit where necessary. Once verified, your listing will appear on the homepage.</p>
+
+    <dl>
+      <dt>Vendor</dt>
+      <dd><%= vendor.name %></dd>
+
+      <dt>Address</dt>
+      <dd><%= vendor.address %></dd>
+
+      <dt>Status</dt>
+      <dd><%= vendor.status %></dd>
+    </dl>
+
+    <p>
+      If you need immediate assistance, contact support at <a href="mailto:<%= process.env.ADMIN_EMAIL %>"><%= process.env.ADMIN_EMAIL %></a>.
+    </p>
+
+    <a class="button" href="/">Return to home</a>
+  </section>
+</main>

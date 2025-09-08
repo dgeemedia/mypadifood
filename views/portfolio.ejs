@@ -1,4 +1,43 @@
-<section>
-  <h2>Wallet</h2>
-  <div id="walletArea">Loading...</div>
-</section>
+<main class="container">
+  <h2>Your Wallet</h2>
+
+  <section class="card">
+    <div id="walletSummary">
+      <p>Balance: <strong id="balance">Loading...</strong></p>
+      <form id="topupForm">
+        <label>Top up amount (NGN) <input id="topupAmount" type="number" min="50" required></label>
+        <button type="submit">Top up (Mock)</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Transactions</h3>
+    <ul id="txList">Loading...</ul>
+  </section>
+</main>
+
+<script type="module">
+import { getWallet, topup } from '/js/wallet.mjs';
+
+async function refresh() {
+  const res = await getWallet();
+  if (!res) return;
+  document.getElementById('balance').textContent = `₦${res.wallet.balance || 0}`;
+  const ul = document.getElementById('txList');
+  ul.innerHTML = res.transactions.map(t => `<li>${new Date(t.created_at).toLocaleString()} — ${t.type} — ₦${t.amount} — ${t.description || ''}</li>`).join('');
+}
+
+document.getElementById('topupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const amount = Number(document.getElementById('topupAmount').value);
+  if (!amount || amount <= 0) return alert('Enter a valid amount');
+  const ok = await topup(amount);
+  if (ok) {
+    alert('Topup successful (mock).');
+    await refresh();
+  } else alert('Topup failed.');
+});
+
+refresh();
+</script>
