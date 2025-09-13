@@ -1,22 +1,23 @@
 <header class="site-header">
-  <div class="header-inner">
-    <div class="logo">
-      <img src="/images/logo.svg" alt="PadiFood logo" height="40" />
-      <span class="brand">myPadiFood</span>
-    </div>
-    <nav class="header-nav">
-  <button id="btn-find-near">Find vendors near me</button>
-  <% if (!user) { %>
-    <a href="/auth/login" id="btn-login">Login</a>
-    <a href="/auth/signup">Sign up</a>
-  <% } else { %>
-    <span>Hi, <%= user.name %></span>
-    <% if (user.role === 'admin') { %>
-      <a href="/admin">Admin panel</a>
-      <a href="/admin/users">User mgmt</a>
+  <div class="logo"><a href="/">MyPadiFood</a></div>
+  <nav class="top-nav">
+    <a href="/">Home</a>
+    <% if (!currentUser) { %>
+      <a href="/client/login">Client Login</a>
+      <a href="/client/register">Client Signup</a>
+      <a href="/vendor/register">Vendor Register</a>
+      <a href="/admin/login">Admin Login</a>
+    <% } else { %>
+      <% if (currentUser.type === 'client') { %>
+        <a href="/client/dashboard">Dashboard</a>
+        <a href="/client/logout">Logout</a>
+      <% } else if (currentUser.type === 'admin' || currentUser.type === 'super') { %>
+        <a href="/admin/dashboard">Admin Dashboard</a>
+        <a href="/admin/logout">Logout</a>
+      <% } else { %>
+        <a href="/client/logout">Logout</a>
+      <% } %>
     <% } %>
-    <a href="/auth/logout">Logout</a>
-  <% } %>
-</nav>
-  </div>
+  </nav>
 </header>
+<!--//views/partials/header.ejs-->

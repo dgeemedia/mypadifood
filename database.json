@@ -1,6 +1,0 @@
-{
-  "dev": {
-    "connectionString": "postgresql://mypadifood_user:8ahnup715FrRQr1sOSg42fPGQfUmgTn6@dpg-d2uvif95pdvs73au0620-a.oregon-postgres.render.com/mypadifood",
-    "ssl": true
-  }
-}

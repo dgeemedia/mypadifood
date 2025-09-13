@@ -1,19 +1,19 @@
 // routes/admin.js
 const express = require('express');
 const router = express.Router();
-const ac = require('../controllers/adminController');
-const { ensureAuth, ensureAdmin } = require('../utilities/authMiddleware');
+const adminController = require('../controllers/adminController');
+const auth = require('../middleware/auth');
 
-// vendor verification list (admin)
-router.get('/', ensureAuth, ensureAdmin, ac.unverified);
-router.post('/vendors/:id/verify', ensureAuth, ensureAdmin, ac.verify);
+router.get('/login', adminController.showLogin);
+router.post('/login', adminController.login);
+router.get('/logout', adminController.logout);
 
-// manage users
-router.get('/users', ensureAuth, ensureAdmin, ac.listUsers);
-router.post('/users', ensureAuth, ensureAdmin, ac.createManager);
-router.post('/users/:id/role', ensureAuth, ensureAdmin, ac.assignRole);
+// create admin form (only accessible to super admins)
+router.get('/create', auth.requireAdmin, adminController.showCreateForm);
+router.post('/create', auth.requireAdmin, adminController.createAdmin);
 
-// delete user
-router.post('/users/:id/delete', ensureAuth, ensureAdmin, ac.deleteUser);
+router.get('/dashboard', auth.requireAdmin, adminController.dashboard);
+router.get('/vendors/pending', auth.requireAdmin, adminController.pendingVendors);
+router.post('/vendors/decision', auth.requireAdmin, adminController.vendorDecision);
 
 module.exports = router;

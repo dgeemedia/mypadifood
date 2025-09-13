@@ -1,0 +1,5 @@
+[
+  { "state": "Lagos", "lgas": ["Ikeja", "Eti-Osa", "Surulere"] },
+  { "state": "Abia", "lgas": ["Aba North", "Aba South"] },
+  { "state": "Rivers", "lgas": ["Port Harcourt", "Obio-Akpor"] }
+]

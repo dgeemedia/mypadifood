@@ -1,150 +1,119 @@
 // controllers/adminController.js
-const Vendor = require('../models/vendorModel');
-const User = require('../models/userModel');
-const sendAdminEmail = require('../utilities/smsEmail');
-const db = require('../models/db');
-const bcrypt = require('bcryptjs');
+const { pool } = require('../database/database');
+const bcrypt = require('bcryptjs'); // bcryptjs is cross-platform
 
-const allowedRoles = ['customer', 'vendor', 'admin', 'manager'];
+// render admin login
+exports.showLogin = (req, res) => res.render('login', { userType: 'admin' });
 
-exports.unverified = async (req, res) => {
+// render create admin form (super only)
+exports.showCreateForm = (req, res) => {
+  // optionally pass statesLGAs if you want to scope admin to region
+  const statesLGAs = require('../locations/Nigeria-State-Lga.json');
+  res.render('admin-create', { statesLGAs });
+};
+
+// handle admin login
+exports.login = async (req, res) => {
+  const { email, password } = req.body;
   try {
-    const list = await Vendor.getAll({ verified_only: false });
-    const unverified = list.filter(v => v.status === 'unverified');
-    res.render('admin', { title: 'Admin', vendors: unverified });
+    const { rows } = await pool.query('SELECT * FROM admins WHERE email=$1', [email]);
+    if (!rows.length) {
+      req.session.error = 'Invalid credentials';
+      return res.redirect('/admin/login');
+    }
+
+    const admin = rows[0];
+    const ok = await bcrypt.compare(password, admin.password_hash);
+    if (!ok) {
+      req.session.error = 'Invalid credentials';
+      return res.redirect('/admin/login');
+    }
+
+    req.session.user = {
+      id: admin.id,
+      type: admin.role === 'super' ? 'super' : 'admin',
+      name: admin.name,
+      email: admin.email
+    };
+
+    req.session.success = `Welcome admin ${admin.name}`;
+    return res.redirect('/admin/dashboard');
   } catch (err) {
-    console.error(err);
-    if (req.setFlash) req.setFlash('error', 'Could not load unverified vendors.');
-    res.redirect('/admin');
+    console.error('Admin login error:', err);
+    req.session.error = 'Admin login failed';
+    return res.redirect('/admin/login');
   }
 };
 
-exports.verify = async (req, res) => {
-  const admin = req.session.user;
-  if (!admin || admin.role !== 'admin') {
-    if (req.setFlash) req.setFlash('error', 'Forbidden: admin only.');
-    return res.redirect('/admin');
-  }
-  const id = req.params.id;
+// logout
+exports.logout = (req, res) => {
+  req.session.destroy(err => {
+    if (err) console.error('Admin logout error:', err);
+    res.clearCookie('connect.sid');
+    return res.redirect('/');
+  });
+};
+
+// dashboard
+exports.dashboard = async (req, res) => {
   try {
-    await Vendor.verifyVendor(id, admin.id);
-    // best-effort email
-    try {
-      await sendAdminEmail('Vendor verified', `Vendor ${id} verified by ${admin.name}`);
-    } catch (e) {
-      console.warn('Email failed', e);
-    }
-    if (req.setFlash) req.setFlash('success', 'Vendor verified successfully.');
-    res.redirect('/admin');
+    const vendorsCount = (await pool.query("SELECT count(*) FROM vendors WHERE status='pending'")).rows[0].count;
+    const ordersCount  = (await pool.query("SELECT count(*) FROM orders WHERE status='pending'")).rows[0].count;
+    return res.render('admin-dashboard', { vendorsCount, ordersCount });
   } catch (err) {
-    console.error(err);
-    if (req.setFlash) req.setFlash('error', 'Could not complete action. Try again.');
-    res.redirect('/admin');
+    console.error('Error loading admin dashboard:', err);
+    req.session.error = 'Error loading admin dashboard';
+    return res.redirect('/');
   }
 };
 
-// list users
-exports.listUsers = async (req, res) => {
+// pending vendors
+exports.pendingVendors = async (req, res) => {
   try {
-    const users = await User.listAll();
-    res.render('admin_users', { title: 'Manage Users', users });
+    const { rows } = await pool.query("SELECT * FROM vendors WHERE status='pending' ORDER BY created_at DESC");
+    return res.render('admin-vendors-pending', { vendors: rows });
   } catch (err) {
-    console.error(err);
-    if (req.setFlash) req.setFlash('error', 'Could not load users.');
-    res.redirect('/admin');
+    console.error('Error loading pending vendors:', err);
+    req.session.error = 'Error loading vendor requests';
+    return res.redirect('/admin/dashboard');
   }
 };
 
-// create or update a manager/admin
-exports.createManager = async (req, res) => {
+// approve/reject vendor
+exports.vendorDecision = async (req, res) => {
   try {
-    const { name, email, password, role = 'manager' } = req.body;
-    if (!allowedRoles.includes(role)) {
-      if (req.setFlash) req.setFlash('error', 'Invalid role');
-      return res.redirect('/admin/users');
-    }
+    const { vendorId, decision, reason } = req.body;
+    const status = decision === 'approve' ? 'approved' : 'rejected';
+    await pool.query('UPDATE vendors SET status=$1 WHERE id=$2', [status, vendorId]);
 
-    const found = await User.findByEmail(email);
-    const hashed = await bcrypt.hash(password, 10);
-
-    if (found) {
-      // update role and password
-      await User.updateRole(found.id, role);
-      await db.query('UPDATE users SET name=$1, password_hash=$2 WHERE id=$3', [name, hashed, found.id]);
-      if (req.setFlash) req.setFlash('success', 'User created/updated successfully.');
-      return res.redirect('/admin/users');
-    } else {
-      await db.query('INSERT INTO users (name,email,phone,password_hash,role) VALUES ($1,$2,$3,$4,$5)', [name, email, null, hashed, role]);
-      if (req.setFlash) req.setFlash('success', 'User created/updated successfully.');
-      return res.redirect('/admin/users');
-    }
+    // TODO: send email or SMS on rejection including reason
+    req.session.success = `Vendor ${status}`;
+    return res.redirect('/admin/vendors/pending');
   } catch (err) {
-    console.error('createManager error', err);
-    if (req.setFlash) req.setFlash('error', 'Could not complete action. Try again.');
-    res.redirect('/admin/users');
+    console.error('Error applying vendor decision:', err);
+    req.session.error = 'Error applying decision';
+    return res.redirect('/admin/vendors/pending');
   }
 };
 
-// assign role to existing user
-exports.assignRole = async (req, res) => {
+// create admin (super only)
+exports.createAdmin = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { role } = req.body;
-    if (!allowedRoles.includes(role)) {
-      if (req.setFlash) req.setFlash('error', 'Invalid role');
-      return res.redirect('/admin/users');
+    if (!req.session.user || req.session.user.type !== 'super') {
+      req.session.error = 'Only super admin can create new admins';
+      return res.redirect('/admin/dashboard');
     }
-    await User.updateRole(id, role);
-    if (req.setFlash) req.setFlash('success', 'User role updated successfully.');
-    res.redirect('/admin/users');
+    const { name, email, password, role, region_state, region_lga } = req.body;
+    const password_hash = await bcrypt.hash(password, 10);
+    await pool.query(
+      'INSERT INTO admins (name,email,password_hash,role,region_state,region_lga) VALUES ($1,$2,$3,$4,$5,$6)',
+      [name, email, password_hash, role, region_state, region_lga]
+    );
+    req.session.success = 'Admin created';
+    return res.redirect('/admin/dashboard');
   } catch (err) {
-    console.error(err);
-    if (req.setFlash) req.setFlash('error', 'Could not complete action. Try again.');
-    res.redirect('/admin/users');
-  }
-};
-
-// delete user (admin only) — prevents deleting last admin
-exports.deleteUser = async (req, res) => {
-  try {
-    const admin = req.session.user;
-    if (!admin || admin.role !== 'admin') {
-      if (req.setFlash) req.setFlash('error', 'Forbidden: admin only.');
-      return res.redirect('/admin/users');
-    }
-
-    const { id } = req.params;
-    const target = await User.getById(id);
-    if (!target) {
-      if (req.setFlash) req.setFlash('error', 'User not found.');
-      return res.redirect('/admin/users');
-    }
-
-    if (target.role === 'admin') {
-      const adminCount = await User.countAdmins();
-      if (adminCount <= 1) {
-        if (req.setFlash) req.setFlash('error', 'Cannot delete the last admin account.');
-        return res.redirect('/admin/users');
-      }
-    }
-
-    const deleted = await User.deleteById(id);
-    if (!deleted) {
-      if (req.setFlash) req.setFlash('error', 'User not found.');
-      return res.redirect('/admin/users');
-    }
-
-    try {
-      await sendAdminEmail('User deleted', `User ${deleted.email} was removed by ${admin.email}`);
-    } catch (e) {
-      console.warn('Delete email failed', e);
-    }
-
-    if (req.setFlash) req.setFlash('success', 'User deleted successfully.');
-    return res.redirect('/admin/users');
-  } catch (err) {
-    console.error('deleteUser error', err);
-    if (req.setFlash) req.setFlash('error', 'Could not complete action. Try again.');
-    res.redirect('/admin/users');
+    console.error('Error creating admin:', err);
+    req.session.error = 'Error creating admin';
+    return res.redirect('/admin/dashboard');
   }
 };

@@ -1,85 +1,83 @@
-require('dotenv').config();
-const path = require('path');
-const express = require('express');
-const expressLayouts = require('express-ejs-layouts');
-const session = require('express-session');
-const pgSessionFactory = require('connect-pg-simple'); // factory
-const helmet = require('helmet');
-const morgan = require('morgan');
-const cors = require('cors');
+// server.js - main entrypoint
+// Load env variables and set up server, sessions, static assets, layouts, and routes.
 
-const staticRoutes = require('./routes/static');
-const db = require('./models/db'); // <-- shared pool
+require('dotenv').config(); // load .env
+const express = require('express');
+const session = require('express-session');
+const PgSession = require('connect-pg-simple')(session); // store sessions in Postgres
+const path = require('path');
+const expressLayouts = require('express-ejs-layouts'); // layout middleware for EJS
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-app.use(helmet());
-app.use(morgan('dev'));
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// database pool used by connect-pg-simple and controllers
+const { pool } = require('./database/database'); // see database/database.js
 
-// Views
+// View engine: EJS + express-ejs-layouts
 app.set('view engine', 'ejs');
-app.use(expressLayouts);
-app.set('layout', 'layouts/layout');
 app.set('views', path.join(__dirname, 'views'));
 
-// Session (Postgres store) using existing pool
-const pgSession = pgSessionFactory(session);
+// Tell express-ejs-layouts where the default layout file lives
+app.use(expressLayouts);
+app.set('layout', 'layouts/layout'); // looks for views/layouts/layout.ejs
 
-const sessionStore = new pgSession({
-  pool: db.pool,            // use our shared pool instance
-  tableName: 'session',     // explicitly set table
-  schemaName: 'public',     // ensure correct schema
-  // pruneSessionInterval: 1000 * 60 * 60, // default (1 hour)
-  pruneSessionInterval: 0   // disable auto-pruning for now (toggle if desired)
-});
+// Parsers
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-app.use(session({
-  store: sessionStore,
-  secret: process.env.SESSION_SECRET || 'devsecret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 24 } // 1 day
-}));
+// Static assets
+// Serve 'public' at root so files are accessible as /js/main.js and /css/styles.css
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Flash + user binding middleware (available in all templates)
-// - res.locals.user -> current logged-in user (or null)
-// - res.locals.flash -> one-time flash message object { type, message }
-// - req.setFlash(type, message) -> set a flash from controllers
+// Sessions: using Postgres session store for persistence
+app.use(
+  session({
+    store: new PgSession({
+      pool: pool, // connection pool
+      tableName: 'session'
+    }),
+    secret: process.env.SESSION_SECRET || 'dev-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24 // 1 day
+    }
+  })
+);
+
+// Flash-like helper (simple)
 app.use((req, res, next) => {
-  // expose current user to views
-  res.locals.user = req.session && req.session.user ? req.session.user : null;
-
-  // simple session-backed flash
-  res.locals.flash = req.session.flash || null;
-  delete req.session.flash;
-
-  // helper to set flash messages from controllers
-  req.setFlash = (type, message) => {
-    req.session.flash = { type, message };
-  };
-
+  res.locals.currentUser = req.session.user || null; // expose current user to views
+  res.locals.success = req.session.success || null;
+  res.locals.error = req.session.error || null;
+  // make title safe default if not provided
+  res.locals.title = res.locals.title || 'MyPadiFood';
+  delete req.session.success;
+  delete req.session.error;
   next();
 });
 
-// static files
-app.use(staticRoutes);
-
-// routes
-app.use('/auth', require('./routes/auth'));
-app.use('/vendors', require('./routes/vendors'));
-app.use('/orders', require('./routes/orders'));
-app.use('/bookings', require('./routes/bookings'));
-app.use('/wallet', require('./routes/wallet'));
+// Routes
+app.use('/', require('./routes/index'));
+app.use('/vendor', require('./routes/vendor'));
+app.use('/client', require('./routes/client'));
 app.use('/admin', require('./routes/admin'));
+app.use('/api/paystack', require('./routes/payments')); // payment endpoints (stubs)
 
-app.get('/', async (req, res) => {
-  res.render('index', { title: 'Home' });
+// Swagger (basic)
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerSpec = swaggerJsdoc({
+  definition: {
+    openapi: '3.0.0',
+    info: { title: 'MyPadifood API', version: '1.0.0' }
+  },
+  apis: ['./routes/*.js']
 });
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-const PORT = process.env.PORT || 3000;
+// Start
 app.listen(PORT, () => {
-  console.log(`MyPadiFood listening on http://localhost:${PORT}`);
+  console.log(`MyPadifood server running on http://localhost:${PORT}`);
 });
