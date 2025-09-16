@@ -1,0 +1,83 @@
+<!--views/client-dashboard-->
+<h2>Welcome, <%= currentUser ? currentUser.name : 'Client' %></h2>
+
+<section>
+  <h3>Your Orders</h3>
+  <% if (!orders || !orders.length) { %>
+    <p>No orders yet.</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>Item</th><th>Vendor</th><th>Status</th><th>Amount</th></tr></thead>
+      <tbody>
+        <% orders.forEach(o => { %>
+         <tr>
+           <td><%= o.item %></td>
+           <td><%= o.vendor_name ? o.vendor_name : o.vendor_id %></td>
+           <td><%= o.status %></td>
+           <td>₦<%= o.total_amount %></td>
+         </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+
+<section>
+  <h3>Local Vendors</h3>
+  <% if (!vendors || !vendors.length) { %>
+    <p>No local vendors available.</p>
+  <% } else { %>
+    <% vendors.forEach(v => { %>
+      <div class="vendor">
+        <h4><%= v.name %> - ₦<%= v.base_price %></h4>
+        <p><%= v.food_item %></p>
+        <form method="post" action="/client/book">
+          <input type="hidden" name="vendorId" value="<%= v.id %>"/>
+          <input type="text" name="item" placeholder="Special request"/>
+          <select name="payment_method">
+            <option value="cod">Pay on delivery</option>
+            <option value="paystack">Pay online (Paystack)</option>
+            <option value="flutterwave">Pay online (Flutterwave)</option>
+          </select>
+          <button type="submit">Book</button>
+        </form>
+      </div>
+    <% }) %>
+  <% } %>
+</section>
+
+<!-- 'View chat' button -->
+<% orders.forEach(o => { %>
+  <tr>
+    <td><%= o.item %></td>
+    <td><%= o.vendor_name ? o.vendor_name : o.vendor_id %></td>
+    <td><%= o.status %></td>
+    <td>₦<%= o.total_amount %></td>
+    <td>
+      <button class="btn-view-chat" data-order-id="<%= o.id %>">Open Chat</button>
+    </td>
+  </tr>
+<% }) %>
+
+<!-- Modal / Chat container -->
+<div id="chatModal" style="display:none;">
+  <div id="chatMessages" style="max-height:300px; overflow:auto;"></div>
+
+  <div id="botPromptArea" style="display:none;">
+    <button id="botYes">Yes</button>
+    <button id="botNo">No</button>
+  </div>
+
+  <div id="clientModifyArea" style="display:none;">
+    <textarea id="clientModifyText" placeholder="Type your modification..."></textarea>
+    <button id="clientModifySubmit">Submit</button>
+  </div>
+
+  <div>
+    <input id="chatInput" placeholder="Type a message..." />
+    <button id="sendMsg">Send</button>
+  </div>
+  <button id="closeChat">Close</button>
+</div>
+
+<script src="/js/chat.js"></script>

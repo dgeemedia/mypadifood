@@ -1,0 +1,39 @@
+<!--views/admin-create.ejs-->
+<h2>Create New Admin</h2>
+
+<form method="post" action="/admin/create">
+  <label>Name <input name="name" required /></label>
+  <label>Email <input name="email" type="email" required /></label>
+  <label>Password <input name="password" type="password" required /></label>
+
+  <label>Role
+    <select name="role" required>
+      <option value="agent">Agent</option>
+      <option value="super">Super</option>
+    </select>
+  </label>
+
+  <label>Region - State
+    <select name="region_state" id="admin-region-state">
+      <option value="">(All)</option>
+      <% if (Array.isArray(statesLGAs)) { %>
+        <% statesLGAs.forEach(s => { %>
+          <option value="<%= s.state %>"><%= s.state %></option>
+        <% }) %>
+      <% } %>
+    </select>
+  </label>
+
+  <label>Region - LGA
+    <select name="region_lga" id="admin-region-lga">
+      <option value="">(All)</option>
+    </select>
+  </label>
+
+  <button type="submit">Create Admin</button>
+</form>
+
+<script>
+  // use the same location-picker pattern if statesLGAs was injected
+  window.statesLGAs = <%- JSON.stringify(statesLGAs || []) %>;
+</script>

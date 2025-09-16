@@ -1,0 +1,18 @@
+<!--views/admin-vendors-pending.ejs-->
+<h2>Pending Vendors</h2>
+<% if (!vendors || !vendors.length) { %>
+  <p>No pending vendors.</p>
+<% } else { %>
+  <% vendors.forEach(v => { %>
+    <div class="vendor">
+      <h3><%= v.name %></h3>
+      <p><%= v.food_item %> - ₦<%= v.base_price %></p>
+      <p><%= v.address %> (<%= v.lga %>, <%= v.state %>)</p>
+      <form method="post" action="/admin/vendors/decision">
+        <input type="hidden" name="vendorId" value="<%= v.id %>" />
+        <button name="decision" value="approve" type="submit">Approve</button>
+        <button name="decision" value="reject" type="submit">Reject</button>
+      </form>
+    </div>
+  <% }) %>
+<% } %>

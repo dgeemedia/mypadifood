@@ -1,0 +1,34 @@
+<!--views/vendor-register.ejs-->
+<h1>Register as a Vendor</h1>
+
+<form method="post" action="/vendor/register">
+  <label>Vendor / Stall name <input name="name" required /></label>
+
+  <label>State
+    <select name="state" id="vendor-state">
+      <option value="">Select state</option>
+      <% if (Array.isArray(statesLGAs)) { %>
+        <% statesLGAs.forEach(s => { %>
+          <option value="<%= s.state %>"><%= s.state %></option>
+        <% }) %>
+      <% } %>
+    </select>
+  </label>
+
+  <label>LGA
+    <select name="lga" id="vendor-lga"><option value="">Select LGA</option></select>
+  </label>
+
+  <label>Exact address <input name="address" /></label>
+  <label>Phone <input name="phone" /></label>
+  <label>Email <input name="email" type="email" /></label>
+  <label>Food items (comma separated) <textarea name="food_item"></textarea></label>
+  <label>Base price (per plate) <input name="base_price" type="number" step="0.01" /></label>
+
+  <button type="submit">Submit vendor application</button>
+</form>
+
+<script>
+  // pass server-side statesLGAs into client-side code (safe JSON serialization)
+  window.statesLGAs = <%- JSON.stringify(statesLGAs || []) %>;
+</script>

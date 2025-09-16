@@ -1,0 +1,35 @@
+<!--views/index.ejs-->
+<section class="hero">
+  <h1>Local Food Vendors in Your Area</h1>
+  <form method="get" action="/">
+    <input type="text" name="q" placeholder="Search vendor or food item" value="<%= (filters && filters.q) ? filters.q : '' %>" />
+    <input type="text" name="state" placeholder="State" value="<%= (filters && filters.state) ? filters.state : '' %>" />
+    <input type="text" name="lga" placeholder="LGA" value="<%= (filters && filters.lga) ? filters.lga : '' %>" />
+    <button type="submit">Search</button>
+  </form>
+</section>
+
+<section class="vendors">
+  <% if (!vendors || !vendors.length) { %>
+    <p>No vendors found. Try another location.</p>
+  <% } else { %>
+    <% vendors.forEach(function(v) { %>
+      <article class="vendor-card">
+        <h3><a href="/vendor/<%= v.id %>"><%= v.name %></a></h3>
+        <p><strong>Food:</strong> <%= v.food_item %></p>
+        <p><strong>Price (per plate):</strong> ₦<%= v.base_price %></p>
+        <p><strong>Address:</strong> <%= v.address %> (<%= v.lga %>, <%= v.state %>)</p>
+        <form method="post" action="/client/book">
+          <input type="hidden" name="vendorId" value="<%= v.id %>" />
+          <input type="text" name="item" placeholder="Special request (optional)" />
+          <select name="payment_method">
+            <option value="cod">Pay on delivery</option>
+            <option value="paystack">Paystack</option>
+            <option value="flutterwave">Flutterwave</option>
+          </select>
+          <button type="submit">Book / Order</button>
+        </form>
+      </article>
+    <% }); %>
+  <% } %>
+</section>

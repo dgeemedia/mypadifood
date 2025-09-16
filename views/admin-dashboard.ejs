@@ -1,0 +1,21 @@
+<!-- views/admin-dashboard.ejs -->
+<h2>Admin Dashboard</h2>
+<p>Pending vendors: <%= vendorsCount %></p>
+<p>Pending orders: <%= ordersCount %></p>
+
+<nav>
+  <a href="/admin/vendors/pending">Review Vendor Requests</a>
+  <% if (currentUser && currentUser.type === 'super') { %>
+    | <a href="/admin/create">Create Admin</a>
+  <% } %>
+  | <a href="#" id="nav-pending-orders">Pending Orders (live)</a>
+</nav>
+
+<!-- realtime pending orders panel (hidden by default) -->
+<div id="pendingOrdersPanel" style="margin-top:1rem; display:none;">
+  <h3>Pending Orders (live)</h3>
+  <div id="pendingOrders"></div>
+  <p id="pendingHint" style="font-size:0.9em;color:#666;">Click an order to open it. Blue border indicates client currently online.</p>
+</div>
+
+

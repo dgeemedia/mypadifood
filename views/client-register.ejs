@@ -1,0 +1,44 @@
+<!--views/client-register.ejs-->
+<h2>Client Signup</h2>
+<form method="post" action="/client/register" id="client-form">
+  <label>Full name <input name="full_name" required /></label>
+  <label>Email <input name="email" type="email" required /></label>
+  <label>Phone <input name="phone" required /></label>
+
+  <label>State
+    <select name="state" id="client-state" required>
+      <option value="">Select state</option>
+      <% if (Array.isArray(statesLGAs)) { %>
+        <% statesLGAs.forEach(s => { %>
+          <option value="<%= s.state %>"><%= s.state %></option>
+        <% }) %>
+      <% } %>
+    </select>
+  </label>
+
+  <label>LGA
+    <select name="lga" id="client-lga" required>
+      <option value="">Select LGA</option>
+    </select>
+  </label>
+
+  <label>Address <input name="address" required /></label>
+  <label>Password <input name="password" type="password" required /></label>
+
+  <input type="hidden" name="latitude" id="client-latitude" />
+  <input type="hidden" name="longitude" id="client-longitude" />
+  <input type="hidden" name="location_source" id="client-location-source" value="manual" />
+
+  <p>
+    <button type="button" id="client-use-location">Use my device location</button>
+    (You can also fill state/LGA manually)
+  </p>
+
+  <p>By clicking submit you accept the terms.</p>
+  <button type="submit">Create Account</button>
+</form>
+
+<script>
+  // pass server-side statesLGAs into client-side code (safe JSON serialization)
+  window.statesLGAs = <%- JSON.stringify(statesLGAs || []) %>;
+</script>

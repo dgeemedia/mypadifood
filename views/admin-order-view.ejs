@@ -1,0 +1,27 @@
+<h2>Order: <%= order.id %></h2>
+<p>Client: <%= order.client_name %> | Phone: <%= order.client_phone %> | Address: <%= order.client_address %></p>
+<p>Vendor: <%= order.vendor_name %> | Vendor address: <%= order.vendor_address %></p>
+
+<section id="messages">
+  <% messages.forEach(m => { %>
+    <div><strong><%= m.sender_type %></strong>: <%= m.message %> <em>(<%= new Date(m.created_at).toLocaleString() %>)</em></div>
+  <% }) %>
+</section>
+
+<form id="adminSend">
+  <textarea name="message" id="adminMessage" placeholder="Write to client..."></textarea>
+  <button id="adminSendBtn" type="button">Send</button>
+</form>
+
+<form method="post" action="/admin/orders/<%= order.id %>/accept">
+  <button type="submit">Accept Order (Assign to me)</button>
+</form>
+
+<script>
+  document.getElementById('adminSendBtn').addEventListener('click', async () => {
+    const text = document.getElementById('adminMessage').value.trim();
+    if(!text) return;
+    await fetch('/chat/message', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ orderId: '<%= order.id %>', message: text }) });
+    location.reload();
+  });
+</script>

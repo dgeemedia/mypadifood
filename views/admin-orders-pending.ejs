@@ -1,0 +1,24 @@
+<!-- views/admin-orders-pending.ejs -->
+<h2>Pending Orders</h2>
+
+<% if (!orders || !orders.length) { %>
+  <p>No pending orders.</p>
+<% } else { %>
+  <ul class="pending-orders-list">
+    <% orders.forEach(o => { %>
+      <li id="order-<%= o.id %>" style="border:1px solid #ddd; padding:10px; margin-bottom:8px;">
+        <strong>Order:</strong> <%= o.id %><br/>
+        <strong>Client:</strong> <%= o.client_name || o.client_id %> (<%= o.client_phone || '—' %>)<br/>
+        <strong>Vendor:</strong> <%= o.vendor_name || o.vendor_id %><br/>
+        <strong>Item:</strong> <%= o.item || '—' %> | <strong>₦<%= o.total_amount || 0 %></strong><br/>
+        <small>Created: <%= new Date(o.created_at).toLocaleString() %></small>
+        <div style="margin-top:8px;">
+          <a href="/admin/orders/<%= o.id %>">Open</a>
+          <form method="post" action="/admin/orders/<%= o.id %>/accept" style="display:inline; margin-left:8px;">
+            <button type="submit">Accept</button>
+          </form>
+        </div>
+      </li>
+    <% }) %>
+  </ul>
+<% } %>

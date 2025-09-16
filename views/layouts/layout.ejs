@@ -1,0 +1,23 @@
+<!-- views/layouts/layout.ejs -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head') %>
+  </head>
+  <body>
+    <%- include('../partials/header') %>
+
+    <main class="container">
+      <%- include('../partials/flash') %>
+      <%- body %>
+    </main>
+
+    <%- include('../partials/footer') %>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/location-picker.js"></script>
+    <script src="/js/chat.js"></script>
+    <script src="/js/admin-orders.js"></script>
+  </body>
+</html>

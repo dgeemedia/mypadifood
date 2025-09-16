@@ -1,0 +1,19 @@
+<!--views/login.ejs-->
+<h2><%= (userType === 'admin' ? 'Admin Login' : 'Client Login') %></h2>
+
+<form method="post" action="<%= userType === 'admin' ? '/admin/login' : '/client/login' %>">
+  <label>Email <input name="email" type="email" required /></label>
+  <label>Password <input name="password" type="password" required /></label>
+  <button type="submit">Sign in</button>
+</form>
+
+<hr />
+<h4>Didn't receive verification email?</h4>
+<form method="post" action="/client/resend-verification" style="max-width:400px;">
+  <label>
+    Enter your email address
+    <input type="email" name="email" required placeholder="you@example.com" />
+  </label>
+  <button type="submit">Resend verification email</button>
+</form>
+

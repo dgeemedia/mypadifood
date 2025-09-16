@@ -1,0 +1,41 @@
+{
+  "name": "mypadifood",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "swagger": "node swagger.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@sendgrid/mail": "^8.1.5",
+    "axios": "^1.4.0",
+    "bcryptjs": "^2.4.3",
+    "connect-pg-simple": "^8.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.10",
+    "express": "^4.18.2",
+    "express-ejs-layouts": "^2.5.1",
+    "express-rate-limit": "^8.1.0",
+    "express-session": "^1.17.3",
+    "flutterwave": "^2.2.8",
+    "helmet": "^6.0.1",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.2",
+    "nodemailer": "^6.9.4",
+    "paystack": "^2.0.1",
+    "pg": "^8.11.0",
+    "socket.io": "^4.8.1",
+    "swagger-autogen": "^2.23.7",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.35.0",
+    "node-pg-migrate": "^8.0.3",
+    "nodemon": "^3.0.1",
+    "prettier": "^3.6.2"
+  }
+}

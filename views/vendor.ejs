@@ -1,0 +1,24 @@
+<!--views/vendor.ejs-->
+<h1><%= vendor.name %></h1>
+<p><strong>Food:</strong> <%= vendor.food_item %></p>
+<p><strong>Price (per plate):</strong> ₦<%= vendor.base_price %></p>
+<p><strong>Address:</strong> <%= vendor.address %> (<%= vendor.lga %>, <%= vendor.state %>)</p>
+
+<form method="post" action="/client/book">
+  <input type="hidden" name="vendorId" value="<%= vendor.id %>" />
+  <label>Special request <input name="item" /></label>
+  <label>Payment method
+    <select name="payment_method">
+      <option value="cod">Pay on delivery</option>
+      <option value="paystack">Paystack</option>
+      <option value="flutterwave">Flutterwave</option>
+    </select>
+  </label>
+  <button type="submit">Book</button>
+</form>
+
+<script>
+  // construct a safe message using server-inserted values
+  const waMessage = `Booking request: Vendor: <%= (vendor.name || '').replace(/`/g,'') %> | Location: <%= (vendor.address || '').replace(/`/g,'') %>`;
+  console.log('waMessage', waMessage);
+</script>
