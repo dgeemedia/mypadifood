@@ -1,3 +1,4 @@
+-- database/migrations/20250916_chat_client_admin.sql
 -- Persist chat/messages tied to an order
 CREATE TABLE IF NOT EXISTS order_messages (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),

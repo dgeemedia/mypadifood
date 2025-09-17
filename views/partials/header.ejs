@@ -1,5 +1,11 @@
+<!--views/partials/header.ejs-->
 <header class="site-header">
-  <div class="logo"><a href="/">MyPadiFood</a></div>
+  <div class="logo">
+    <a href="/">
+    <img src="/images/logo.svg" alt="myPadiFood logo" height="40" />
+    <span class="brand">MyPadiFood</span>
+    </a>
+  </div>
   <nav class="top-nav">
     <a href="/">Home</a>
     <% if (!currentUser) { %>
@@ -20,4 +26,3 @@
     <% } %>
   </nav>
 </header>
-<!--//views/partials/header.ejs-->
