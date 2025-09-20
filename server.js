@@ -63,7 +63,7 @@ app.use('/client', require('./routes/client'));
 app.use('/admin', require('./routes/admin'));
 app.use('/chat', require('./routes/chat')); // chat route
 app.use('/admin/orders', require('./routes/adminOrders'));
-app.use('/api/paystack', require('./routes/payments')); // payment endpoints (stubs)
+app.use('/api', require('./routes/payments')); // payment endpoints (stubs)
 
 // Swagger (basic)
 const swaggerUi = require('swagger-ui-express');

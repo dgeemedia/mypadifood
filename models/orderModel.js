@@ -5,7 +5,7 @@ const { pool } = require('../database/database');
  * Create an order row.
  * Returns inserted id.
  */
-async function createOrder({ clientId, vendorId, item, payment_method, total_amount }) {
+async function createOrder({ clientId, vendorId, item = null, payment_method = 'cod', total_amount = 0 }) {
   const sql = `
     INSERT INTO orders (client_id, vendor_id, item, status, payment_method, total_amount)
     VALUES ($1,$2,$3,'pending',$4,$5)
@@ -85,11 +85,39 @@ async function getPendingOrdersForAdmin() {
   return rows;
 }
 
+/**
+ * Update payment metadata when initiating a payment (store provider + reference if known)
+ * paymentProvider is e.g. 'paystack' or 'flutterwave'
+ * providerReference is provider-specific reference/tx_ref (optional)
+ */
+async function updatePaymentInit(orderId, paymentProvider, providerReference) {
+  const sql = `
+    UPDATE orders
+    SET payment_provider = $1, payment_reference = $2, payment_method = $3
+    WHERE id = $4
+  `;
+  await pool.query(sql, [paymentProvider, providerReference || null, paymentProvider, orderId]);
+}
+
+/**
+ * Mark order paid (called after successful verification)
+ */
+async function markPaid(orderId, paymentProvider, paymentReference) {
+  const sql = `
+    UPDATE orders
+    SET status = 'paid', payment_provider = $1, payment_reference = $2, paid_at = NOW()
+    WHERE id = $3
+  `;
+  await pool.query(sql, [paymentProvider, paymentReference, orderId]);
+}
+
 module.exports = {
   createOrder,
   getOrdersByClient,
   assignAdmin,
   updateStatus,
   findById,
-  getPendingOrdersForAdmin
+  getPendingOrdersForAdmin,
+  updatePaymentInit,
+  markPaid
 };

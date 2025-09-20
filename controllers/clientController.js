@@ -319,6 +319,7 @@ exports.dashboard = async (req, res) => {
 };
 
 // Book a vendor (create order)
+// merged version: creates order, messages, emits sockets and initializes Paystack/Flutterwave if selected
 exports.bookVendor = async (req, res) => {
   try {
     if (!req.session || !req.session.user || req.session.user.type !== 'client') {
@@ -328,9 +329,23 @@ exports.bookVendor = async (req, res) => {
 
     const clientId = req.session.user.id;
     const { vendorId, item, payment_method } = req.body;
+
+    // fetch vendor & client for price and email/phone
     const vendor = await vendorModel.findById(vendorId);
+    if (!vendor) {
+      req.session.error = 'Vendor not found.';
+      return res.redirect('/client/dashboard');
+    }
     const client = await clientModel.findById(clientId);
-    const price = vendor ? vendor.base_price : 0;
+    if (!client) {
+      req.session.error = 'Client not found.';
+      return res.redirect('/client/dashboard');
+    }
+
+    // use negotiated_total if available on the request body; otherwise vendor.base_price
+    // (you mentioned negotiation — if negotiation process sets negotiated_total on order or passes it here,
+    // adapt accordingly. For now we use vendor.base_price)
+    const price = vendor.base_price || 0;
 
     // create order
     const orderId = await orderModel.createOrder({
@@ -341,7 +356,7 @@ exports.bookVendor = async (req, res) => {
       total_amount: price
     });
 
-    // create initial client summary message
+    // create initial client summary message (as before)
     const messageSummary = `Booking request: Client: ${client.full_name || ''} | Phone: ${client.phone || ''} | Address: ${client.address || ''} | Vendor: ${vendor ? vendor.name : ''} | Item: ${item || ''} | Payment: ${payment_method || 'cod'}`;
     const createdMsg = await models.message.createMessage({
       orderId,
@@ -351,7 +366,7 @@ exports.bookVendor = async (req, res) => {
       metadata: {}
     });
 
-    // bot prompt message asking yes/no
+    // bot prompt message
     const botPrompt = `Would you like to modify this request? Please select Yes or No.`;
     const botPromptMsg = await models.message.createMessage({
       orderId,
@@ -363,7 +378,6 @@ exports.bookVendor = async (req, res) => {
 
     // Emit notifications via socket.io:
     const io = require('../utils/socket').get();
-    // 1) notify admins of a new order (send concise order details)
     if (io) {
       const orderSummary = {
         id: orderId,
@@ -377,16 +391,49 @@ exports.bookVendor = async (req, res) => {
         created_at: new Date()
       };
       io.to('admins').emit('new_order', orderSummary);
-
-      // 2) notify admins of the initial message(s)
       io.to('admins').emit('order_message', { orderId, message: createdMsg });
       io.to('admins').emit('order_message', { orderId, message: botPromptMsg });
-
-      // 3) emit to order room so any joined participants see messages too
       io.to(`order_${orderId}`).emit('new_message', createdMsg);
       io.to(`order_${orderId}`).emit('new_message', botPromptMsg);
     }
 
+    // If client selected an online payment method, initialize payment and redirect the client to payment page
+    if (payment_method === 'paystack' || payment_method === 'flutterwave') {
+      const payments = require('../utils/payments');
+
+      try {
+        if (payment_method === 'paystack') {
+          // init Paystack
+          const init = await payments.initPaystack({ email: client.email, amount: price }, orderId);
+          // store provider reference on order for later verification
+          await orderModel.updatePaymentInit(orderId, 'paystack', init.reference);
+
+          // redirect client to authorization_url
+          return res.redirect(init.authorization_url);
+        }
+
+        if (payment_method === 'flutterwave') {
+          // init Flutterwave
+          const init = await payments.initFlutterwave({
+            amount: price,
+            customer: { email: client.email, phonenumber: client.phone, name: client.full_name }
+          }, orderId);
+
+          // store tx_ref (we saved it server-side inside init response)
+          await orderModel.updatePaymentInit(orderId, 'flutterwave', init.tx_ref);
+
+          // redirect to payment link
+          return res.redirect(init.payment_link);
+        }
+      } catch (payErr) {
+        console.error('Payment init error:', payErr && payErr.message ? payErr.message : payErr);
+        // fallback: leave order created but show error message
+        req.session.error = 'Could not start online payment. Please try again or choose pay on delivery.';
+        return res.redirect('/client/dashboard');
+      }
+    }
+
+    // default flow for COD (or other non-online methods)
     req.session.success = 'Booking request created. Check your dashboard for chat options to add a modification (if any).';
     return res.redirect('/client/dashboard');
   } catch (err) {
