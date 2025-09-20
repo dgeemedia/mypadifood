@@ -1,4 +1,3 @@
-<!--views/vendor.ejs-->
 <h1><%= vendor.name %></h1>
 <p><strong>Food:</strong> <%= vendor.food_item %></p>
 <p><strong>Price (per plate):</strong> ₦<%= vendor.base_price %></p>
@@ -14,11 +13,10 @@
       <option value="flutterwave">Flutterwave</option>
     </select>
   </label>
-  <button type="submit">Book</button>
+  <button type="submit" class="btn">Book</button>
 </form>
 
 <script>
-  // construct a safe message using server-inserted values
   const waMessage = `Booking request: Vendor: <%= (vendor.name || '').replace(/`/g,'') %> | Location: <%= (vendor.address || '').replace(/`/g,'') %>`;
   console.log('waMessage', waMessage);
 </script>

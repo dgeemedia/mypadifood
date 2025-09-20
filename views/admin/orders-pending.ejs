@@ -1,4 +1,3 @@
-<!-- views/admin-orders-pending.ejs -->
 <h2>Pending Orders</h2>
 
 <% if (!orders || !orders.length) { %>
@@ -15,7 +14,7 @@
         <div style="margin-top:8px;">
           <a href="/admin/orders/<%= o.id %>">Open</a>
           <form method="post" action="/admin/orders/<%= o.id %>/accept" style="display:inline; margin-left:8px;">
-            <button type="submit">Accept</button>
+            <button type="submit" class="btn">Accept</button>
           </form>
         </div>
       </li>

@@ -1,4 +1,3 @@
-<!--views/admin-create.ejs-->
 <h2>Create New Admin</h2>
 
 <form method="post" action="/admin/create">
@@ -30,10 +29,9 @@
     </select>
   </label>
 
-  <button type="submit">Create Admin</button>
+  <button type="submit" class="btn">Create Admin</button>
 </form>
 
 <script>
-  // use the same location-picker pattern if statesLGAs was injected
   window.statesLGAs = <%- JSON.stringify(statesLGAs || []) %>;
 </script>

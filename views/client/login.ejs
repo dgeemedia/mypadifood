@@ -1,10 +1,9 @@
-<!--views/login.ejs-->
 <h2><%= (userType === 'admin' ? 'Admin Login' : 'Client Login') %></h2>
 
 <form method="post" action="<%= userType === 'admin' ? '/admin/login' : '/client/login' %>">
   <label>Email <input name="email" type="email" required /></label>
   <label>Password <input name="password" type="password" required /></label>
-  <button type="submit">Sign in</button>
+  <button type="submit" class="btn">Sign in</button>
 </form>
 
 <hr />
@@ -14,6 +13,5 @@
     Enter your email address
     <input type="email" name="email" required placeholder="you@example.com" />
   </label>
-  <button type="submit">Resend verification email</button>
+  <button type="submit" class="btn">Resend verification email</button>
 </form>
-

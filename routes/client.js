@@ -9,9 +9,10 @@ const auth = require('../middleware/auth');
 router.get('/register', clientController.showRegister);
 router.post('/register', clientController.register);
 router.get('/verify', clientController.verifyEmail);
-router.get('/resend-verification', (req, res) => res.render('resend-verification')); // show a small form
-router.post('/resend-verification', clientController.resendVerification);
 
+// Show resend verification form
+router.get('/resend-verification', clientController.showResendForm);
+router.post('/resend-verification', clientController.resendVerification);
 
 // Login/logout
 router.get('/login', clientController.showLogin);

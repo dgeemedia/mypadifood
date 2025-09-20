@@ -1,7 +1,4 @@
 // controllers/clientController.js
-// Client registration, verification, login, dashboard and booking (uses models)
-// Uses sendMail from utils/mailer.js to send verification emails (best-effort)
-
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
@@ -13,12 +10,11 @@ const verificationModel = models.verification;
 const vendorModel = models.vendor;
 const orderModel = models.order;
 
-const { sendMail } = require('../utils/mailer'); // <- email helper
+const { sendMail } = require('../utils/mailer');
 
 const SALT_ROUNDS = 10;
 const VERIFICATION_TOKEN_TTL_HOURS = 48;
 
-// helper to load states/LGAs JSON for forms
 function loadStatesLGAs() {
   try {
     const file = path.join(__dirname, '..', 'locations', 'Nigeria-State-Lga.json');
@@ -32,10 +28,16 @@ function loadStatesLGAs() {
 // Show registration page
 exports.showRegister = (req, res) => {
   const statesLGAs = loadStatesLGAs();
-  return res.render('client-register', { statesLGAs });
+  return res.render('client/register', { statesLGAs });
 };
 
-// Handle registration: create client row + verification token + send email
+// Show resend verification form
+exports.showResendForm = (req, res) => {
+  // simple form rendering
+  return res.render('client/resend-verification');
+};
+
+// Handle registration
 exports.register = async (req, res) => {
   const {
     full_name, email, phone, state, lga, address, password,
@@ -58,16 +60,13 @@ exports.register = async (req, res) => {
       location_source: location_source || 'manual'
     });
 
-    // create verification token
     const token = uuidv4();
     const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_TTL_HOURS * 3600 * 1000);
     await verificationModel.createToken(token, clientId, expiresAt);
 
-    // send verification email (best effort)
     const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
     const verifyLink = `${baseUrl}/client/verify?token=${token}`;
 
-    // DEV HELP: store verification link on session so devs can click it if email delivery fails
     if (process.env.SHOW_DEV_VERIFICATION === 'true') {
       req.session.verification_link = verifyLink;
     }
@@ -92,8 +91,7 @@ exports.register = async (req, res) => {
   }
 };
 
-// Verify email: consume token, mark client verified
-// Optional auto-login via AUTO_LOGIN_ON_VERIFY env var (default off)
+// Verify email
 exports.verifyEmail = async (req, res) => {
   const { token } = req.query;
   if (!token) {
@@ -109,17 +107,14 @@ exports.verifyEmail = async (req, res) => {
     }
 
     if (row.expires_at && new Date(row.expires_at) < new Date()) {
-      // expired — delete and inform
       await verificationModel.deleteToken(token);
       req.session.error = 'Verification link expired. Please register again or contact support.';
       return res.redirect('/');
     }
 
-    // mark verified and consume token
     await clientModel.setVerified(row.client_id);
     await verificationModel.deleteToken(token);
 
-    // Auto-login option (controlled by env)
     const AUTO_LOGIN = String(process.env.AUTO_LOGIN_ON_VERIFY || '').toLowerCase() === 'true';
     if (AUTO_LOGIN) {
       try {
@@ -131,11 +126,9 @@ exports.verifyEmail = async (req, res) => {
         }
       } catch (loginErr) {
         console.error('Auto-login after verification failed:', loginErr);
-        // fall back to normal flow below
       }
     }
 
-    // default: redirect to login with success message
     req.session.success = 'Email verified successfully. You can now log in.';
     return res.redirect('/client/login');
   } catch (err) {
@@ -145,16 +138,9 @@ exports.verifyEmail = async (req, res) => {
   }
 };
 
-/**
- * Resend verification token to a client.
- * - If user is logged in as client, uses session user id.
- * - Otherwise accepts { email } in POST body to find the account.
- * - Throttles resends using getLatestTokenForClient() from verification model.
- * - Stores dev-only verification_link in session when SHOW_DEV_VERIFICATION === 'true'.
- */
+// Resend verification
 exports.resendVerification = async (req, res) => {
   try {
-    // Find client by session or by posted email
     const emailFromBody = (req.body && req.body.email) ? String(req.body.email).trim() : null;
     let client = null;
 
@@ -177,7 +163,6 @@ exports.resendVerification = async (req, res) => {
       return res.redirect('/client/login');
     }
 
-    // Throttle: require a minimum interval between resends
     const COOLDOWN_MINUTES = Number(process.env.RESEND_VERIFICATION_COOLDOWN_MINUTES || 10);
     const latest = await verificationModel.getLatestTokenForClient(client.id);
     if (latest && latest.created_at) {
@@ -190,7 +175,6 @@ exports.resendVerification = async (req, res) => {
       }
     }
 
-    // Create new token and send email
     const token = uuidv4();
     const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_TTL_HOURS * 3600 * 1000);
     await verificationModel.createToken(token, client.id, expiresAt);
@@ -198,7 +182,6 @@ exports.resendVerification = async (req, res) => {
     const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
     const verifyLink = `${baseUrl}/client/verify?token=${token}`;
 
-    // DEV HELP: store verification link on session so devs can click it if email delivery fails
     if (process.env.SHOW_DEV_VERIFICATION === 'true') {
       req.session.verification_link = verifyLink;
     }
@@ -215,7 +198,6 @@ exports.resendVerification = async (req, res) => {
       req.session.success = 'A verification link has been sent to your email address. Check your inbox (and spam folder).';
     } catch (mailErr) {
       console.error('Failed to send verification email (resend):', mailErr && mailErr.message ? mailErr.message : mailErr);
-      // Generic message — don't leak internal details to user
       req.session.success = 'We could not send the verification email. Please contact support if the problem persists.';
     }
 
@@ -229,7 +211,7 @@ exports.resendVerification = async (req, res) => {
 
 // Show login page (client)
 exports.showLogin = (req, res) => {
-  return res.render('login', { userType: 'client' });
+  return res.render('client/login', { userType: 'client' });
 };
 
 // Handle login; if unverified, resend token
@@ -249,7 +231,6 @@ exports.login = async (req, res) => {
     }
 
     if (!user.verified) {
-      // create & send verification token
       const token = uuidv4();
       const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_TTL_HOURS * 3600 * 1000);
       await verificationModel.createToken(token, user.id, expiresAt);
@@ -257,7 +238,6 @@ exports.login = async (req, res) => {
       const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
       const verifyLink = `${baseUrl}/client/verify?token=${token}`;
 
-      // DEV HELP: store verification link on session so devs can click it if email delivery fails
       if (process.env.SHOW_DEV_VERIFICATION === 'true') {
         req.session.verification_link = verifyLink;
       }
@@ -277,7 +257,6 @@ exports.login = async (req, res) => {
       return res.redirect('/client/login');
     }
 
-    // Successful login
     req.session.user = { id: user.id, type: 'client', name: user.full_name, email: user.email };
     req.session.success = `Welcome back, ${user.full_name}`;
     return res.redirect('/client/dashboard');
@@ -310,7 +289,7 @@ exports.dashboard = async (req, res) => {
     const vendors = await vendorModel.getApprovedVendors({ state: client.state, lga: client.lga });
     const orders = await orderModel.getOrdersByClient(clientId);
 
-    return res.render('client-dashboard', { vendors, orders });
+    return res.render('client/dashboard', { vendors, orders });
   } catch (err) {
     console.error('Error loading client dashboard:', err);
     req.session.error = 'Error loading dashboard';
@@ -318,9 +297,9 @@ exports.dashboard = async (req, res) => {
   }
 };
 
-// Book a vendor (create order)
-// merged version: creates order, messages, emits sockets and initializes Paystack/Flutterwave if selected
+// Book a vendor (unchanged logic) ...
 exports.bookVendor = async (req, res) => {
+  // (function body unchanged; ensure any res.render is consistent - this function uses redirects only)
   try {
     if (!req.session || !req.session.user || req.session.user.type !== 'client') {
       req.session.error = 'Please log in to place an order.';
@@ -330,7 +309,6 @@ exports.bookVendor = async (req, res) => {
     const clientId = req.session.user.id;
     const { vendorId, item, payment_method } = req.body;
 
-    // fetch vendor & client for price and email/phone
     const vendor = await vendorModel.findById(vendorId);
     if (!vendor) {
       req.session.error = 'Vendor not found.';
@@ -342,12 +320,8 @@ exports.bookVendor = async (req, res) => {
       return res.redirect('/client/dashboard');
     }
 
-    // use negotiated_total if available on the request body; otherwise vendor.base_price
-    // (you mentioned negotiation — if negotiation process sets negotiated_total on order or passes it here,
-    // adapt accordingly. For now we use vendor.base_price)
     const price = vendor.base_price || 0;
 
-    // create order
     const orderId = await orderModel.createOrder({
       clientId,
       vendorId,
@@ -356,7 +330,6 @@ exports.bookVendor = async (req, res) => {
       total_amount: price
     });
 
-    // create initial client summary message (as before)
     const messageSummary = `Booking request: Client: ${client.full_name || ''} | Phone: ${client.phone || ''} | Address: ${client.address || ''} | Vendor: ${vendor ? vendor.name : ''} | Item: ${item || ''} | Payment: ${payment_method || 'cod'}`;
     const createdMsg = await models.message.createMessage({
       orderId,
@@ -366,7 +339,6 @@ exports.bookVendor = async (req, res) => {
       metadata: {}
     });
 
-    // bot prompt message
     const botPrompt = `Would you like to modify this request? Please select Yes or No.`;
     const botPromptMsg = await models.message.createMessage({
       orderId,
@@ -376,7 +348,6 @@ exports.bookVendor = async (req, res) => {
       metadata: { vendorName: vendor ? vendor.name : null }
     });
 
-    // Emit notifications via socket.io:
     const io = require('../utils/socket').get();
     if (io) {
       const orderSummary = {
@@ -397,43 +368,31 @@ exports.bookVendor = async (req, res) => {
       io.to(`order_${orderId}`).emit('new_message', botPromptMsg);
     }
 
-    // If client selected an online payment method, initialize payment and redirect the client to payment page
     if (payment_method === 'paystack' || payment_method === 'flutterwave') {
       const payments = require('../utils/payments');
 
       try {
         if (payment_method === 'paystack') {
-          // init Paystack
           const init = await payments.initPaystack({ email: client.email, amount: price }, orderId);
-          // store provider reference on order for later verification
           await orderModel.updatePaymentInit(orderId, 'paystack', init.reference);
-
-          // redirect client to authorization_url
           return res.redirect(init.authorization_url);
         }
 
         if (payment_method === 'flutterwave') {
-          // init Flutterwave
           const init = await payments.initFlutterwave({
             amount: price,
             customer: { email: client.email, phonenumber: client.phone, name: client.full_name }
           }, orderId);
-
-          // store tx_ref (we saved it server-side inside init response)
           await orderModel.updatePaymentInit(orderId, 'flutterwave', init.tx_ref);
-
-          // redirect to payment link
           return res.redirect(init.payment_link);
         }
       } catch (payErr) {
         console.error('Payment init error:', payErr && payErr.message ? payErr.message : payErr);
-        // fallback: leave order created but show error message
         req.session.error = 'Could not start online payment. Please try again or choose pay on delivery.';
         return res.redirect('/client/dashboard');
       }
     }
 
-    // default flow for COD (or other non-online methods)
     req.session.success = 'Booking request created. Check your dashboard for chat options to add a modification (if any).';
     return res.redirect('/client/dashboard');
   } catch (err) {

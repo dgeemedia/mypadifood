@@ -1,28 +1,47 @@
 <!--views/partials/header.ejs-->
 <header class="site-header">
-  <div class="logo">
-    <a href="/">
-    <img src="/images/logo.svg" alt="myPadiFood logo" height="40" />
-    <span class="brand">MyPadiFood</span>
-    </a>
-  </div>
-  <nav class="top-nav">
-    <a href="/">Home</a>
-    <% if (!currentUser) { %>
-      <a href="/client/login">Client Login</a>
-      <a href="/client/register">Client Signup</a>
-      <a href="/vendor/register">Vendor Register</a>
-      <a href="/admin/login">Admin Login</a>
-    <% } else { %>
-      <% if (currentUser.type === 'client') { %>
-        <a href="/client/dashboard">Dashboard</a>
-        <a href="/client/logout">Logout</a>
-      <% } else if (currentUser.type === 'admin' || currentUser.type === 'super') { %>
-        <a href="/admin/dashboard">Admin Dashboard</a>
-        <a href="/admin/logout">Logout</a>
+  <div class="container header-inner">
+    <div class="brand-wrap">
+      <a class="logo-link" href="/">
+        <img src="/images/logo.svg" alt="MyPadiMan" class="logo" height="44" />
+        <span class="brand">MyPadiFood</span>
+      </a>
+    </div>
+
+    <nav class="top-nav" aria-label="Primary">
+      <a href="/">Home</a>
+      <% if (!currentUser) { %>
+        <a href="/client/login">Client Login</a>
+        <a href="/client/register">Client Signup</a>
+        <a href="/vendor/register">Vendor Register</a>
+        <a href="/admin/login">Admin Login</a>
       <% } else { %>
-        <a href="/client/logout">Logout</a>
+        <% if (currentUser.type === 'client') { %>
+          <a href="/client/dashboard">Dashboard</a>
+          <a href="/client/logout">Logout</a>
+        <% } else if (currentUser.type === 'admin' || currentUser.type === 'super' || currentUser.type === 'agent') { %>
+          <a href="/admin/dashboard">Admin Dashboard</a>
+          <a href="/admin/logout">Logout</a>
+        <% } else { %>
+          <a href="/client/logout">Logout</a>
+        <% } %>
       <% } %>
-    <% } %>
-  </nav>
+    </nav>
+
+    <button class="hamburger" id="mobile-menu-toggle" aria-expanded="false" aria-label="Open menu">
+      <i class="fa fa-bars"></i>
+    </button>
+  </div>
 </header>
+
+<script>
+  document.addEventListener('click', function (e) {
+    const btn = document.getElementById('mobile-menu-toggle');
+    if (!btn) return;
+    if (e.target.closest('#mobile-menu-toggle')) {
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!expanded));
+      document.body.classList.toggle('mobile-menu-open');
+    }
+  });
+</script>

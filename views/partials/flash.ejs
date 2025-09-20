@@ -1,20 +1,6 @@
-<!-- views/partials/flash.ejs -->
 <% if (success) { %>
-  <div class="flash success"><%= success %></div>
+  <div class="flash flash-success"><%= success %></div>
 <% } %>
 <% if (error) { %>
-  <div class="flash error"><%= error %></div>
+  <div class="flash flash-error"><%= error %></div>
 <% } %>
-
-<!--
-  DEV: Temporary dev-only verification link display (DO NOT enable in production).
-  If you ever need to see the verification link while debugging locally,
-  uncomment the block below *only* in development.
-
-<% if (typeof verification_link !== 'undefined' && verification_link) { %>
-  <div class="flash info">
-    <p>DEV VERIFICATION LINK (only visible in development):</p>
-    <p><a href="<%= verification_link %>"><%= verification_link %></a></p>
-  </div>
-<% } %>
--->

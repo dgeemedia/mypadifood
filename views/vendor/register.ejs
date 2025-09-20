@@ -1,4 +1,3 @@
-<!--views/vendor-register.ejs-->
 <h1>Register as a Vendor</h1>
 
 <form method="post" action="/vendor/register">
@@ -25,10 +24,9 @@
   <label>Food items (comma separated) <textarea name="food_item"></textarea></label>
   <label>Base price (per plate) <input name="base_price" type="number" step="0.01" /></label>
 
-  <button type="submit">Submit vendor application</button>
+  <button type="submit" class="btn">Submit vendor application</button>
 </form>
 
 <script>
-  // pass server-side statesLGAs into client-side code (safe JSON serialization)
   window.statesLGAs = <%- JSON.stringify(statesLGAs || []) %>;
 </script>

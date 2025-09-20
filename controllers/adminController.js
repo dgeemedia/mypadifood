@@ -1,7 +1,4 @@
 // controllers/adminController.js
-// Admin authentication + dashboard + vendor approval + create admin
-// Also: admin order review, accept order, and notify via sockets
-
 const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
@@ -15,7 +12,6 @@ const messageModel = models.message;
 const socketUtil = require('../utils/socket'); // for emitting socket events
 const { sendMail } = require('../utils/mailer'); // email helper
 
-// Helper to load states/LGAs JSON safely
 function loadStatesLGAs() {
   try {
     const file = path.join(__dirname, '..', 'locations', 'Nigeria-State-Lga.json');
@@ -26,19 +22,15 @@ function loadStatesLGAs() {
   return [];
 }
 
-// ----------------------------
-// Admin auth + basic pages
-// ----------------------------
-
 // Render admin login page
 exports.showLogin = (req, res) => {
-  return res.render('login', { userType: 'admin' });
+  return res.render('admin/login', { userType: 'admin' });
 };
 
 // Render create-admin form (protected by route middleware)
 exports.showCreateForm = (req, res) => {
   const statesLGAs = loadStatesLGAs();
-  return res.render('admin-create', { statesLGAs });
+  return res.render('admin/create', { statesLGAs });
 };
 
 // Handle admin login
@@ -57,7 +49,6 @@ exports.login = async (req, res) => {
       return res.redirect('/admin/login');
     }
 
-    // session user: type 'super' for super admins, otherwise 'admin'
     req.session.user = {
       id: admin.id,
       type: admin.role === 'super' ? 'super' : 'admin',
@@ -88,7 +79,7 @@ exports.dashboard = async (req, res) => {
   try {
     const vendorsCount = await adminModel.countPendingVendors();
     const ordersCount = await adminModel.countPendingOrders();
-    return res.render('admin-dashboard', { vendorsCount, ordersCount });
+    return res.render('admin/dashboard', { vendorsCount, ordersCount });
   } catch (err) {
     console.error('Error loading admin dashboard:', err);
     req.session.error = 'Error loading admin dashboard';
@@ -96,15 +87,11 @@ exports.dashboard = async (req, res) => {
   }
 };
 
-// ----------------------------
-// Vendor approval flows
-// ----------------------------
-
 // List pending vendors for review
 exports.pendingVendors = async (req, res) => {
   try {
     const vendors = await vendorModel.getPendingVendors();
-    return res.render('admin-vendors-pending', { vendors });
+    return res.render('admin/vendors-pending', { vendors });
   } catch (err) {
     console.error('Error loading pending vendors:', err);
     req.session.error = 'Error loading vendor requests';
@@ -112,16 +99,14 @@ exports.pendingVendors = async (req, res) => {
   }
 };
 
-// Approve or reject a vendor (form posts vendorId + decision + optional reason)
+// Approve or reject a vendor
 exports.vendorDecision = async (req, res) => {
   try {
     const { vendorId, decision, reason } = req.body;
     const status = decision === 'approve' ? 'approved' : 'rejected';
 
-    // Update vendor status
     await vendorModel.updateStatus(vendorId, status);
 
-    // Attempt to notify vendor by email (best-effort)
     try {
       const vendor = await vendorModel.findById(vendorId);
       if (vendor && vendor.email) {
@@ -133,8 +118,7 @@ exports.vendorDecision = async (req, res) => {
           status === 'approved'
             ? `<p>Hi ${vendor.name || 'Vendor'},</p><p>Good news — your vendor application has been <strong>approved</strong>. You can now use the MyPadiFood platform to receive orders.</p>`
             : `<p>Hi ${vendor.name || 'Vendor'},</p><p>We are sorry to inform you that your vendor application was <strong>rejected</strong>.</p><p>Reason: ${reason ? String(reason) : 'No reason provided'}.</p>`;
-        const text = html.replace(/<\/?[^>]+(>|$)/g, ''); // simple text fallback
-
+        const text = html.replace(/<\/?[^>]+(>|$)/g, '');
         await sendMail({ to: vendor.email, subject, html, text });
       }
     } catch (mailErr) {
@@ -150,14 +134,9 @@ exports.vendorDecision = async (req, res) => {
   }
 };
 
-// ----------------------------
-// Admin creation
-// ----------------------------
-
-// Create a new admin (protected route — only super/admin as per your middleware)
+// Create a new admin
 exports.createAdmin = async (req, res) => {
   try {
-    // Only allow when session user is super — middleware should already restrict but double-check
     if (!req.session.user || req.session.user.type !== 'super') {
       req.session.error = 'Only super admin can create new admins';
       return res.redirect('/admin/dashboard');
@@ -169,7 +148,6 @@ exports.createAdmin = async (req, res) => {
       return res.redirect('/admin/create');
     }
 
-    // Hash password before creating
     const password_hash = await bcrypt.hash(password, 10);
     await adminModel.createAdmin({ name, email, password_hash, role, region_state, region_lga });
 
@@ -182,15 +160,11 @@ exports.createAdmin = async (req, res) => {
   }
 };
 
-// ----------------------------
-// Orders & chat: admin views/actions
-// ----------------------------
-
 // List pending orders for admin review
 exports.pendingOrdersForAdmin = async (req, res) => {
   try {
     const rows = await orderModel.getPendingOrdersForAdmin();
-    return res.render('admin-orders-pending', { orders: rows });
+    return res.render('admin/orders-pending', { orders: rows });
   } catch (err) {
     console.error('Error loading pending orders for admin:', err);
     req.session.error = 'Error loading orders';
@@ -208,7 +182,7 @@ exports.viewOrder = async (req, res) => {
       return res.redirect('/admin/orders/pending');
     }
     const messages = await messageModel.getMessagesByOrder(orderId, 500);
-    return res.render('admin-order-view', { order, messages });
+    return res.render('admin/order-view', { order, messages });
   } catch (err) {
     console.error('Error loading order view:', err);
     req.session.error = 'Error loading order';
@@ -216,10 +190,9 @@ exports.viewOrder = async (req, res) => {
   }
 };
 
-// Admin accepts an order: assign admin, set status = accepted, create initial admin message and notify sockets
+// Admin accepts an order: assign admin, set status = accepted...
 exports.acceptOrder = async (req, res) => {
   try {
-    // ensure user is admin
     if (!req.session.user || !(req.session.user.type === 'admin' || req.session.user.type === 'super' || req.session.user.type === 'agent')) {
       req.session.error = 'Only admins may accept orders';
       return res.redirect('/admin/orders/pending');
@@ -228,14 +201,12 @@ exports.acceptOrder = async (req, res) => {
     const adminId = req.session.user.id;
     const { orderId } = req.params;
 
-    // assign admin (this function should set assigned_admin and status='accepted')
     const assigned = await orderModel.assignAdmin(orderId, adminId);
     if (!assigned) {
       req.session.error = 'Could not assign admin to order';
       return res.redirect('/admin/orders/pending');
     }
 
-    // create an admin message announcing acceptance
     const adminName = req.session.user.name || 'Agent';
     const adminMessage = `Hello, my name is ${adminName}. I will get your food request delivered to you as soon as possible. I will calculate any additional items and communicate the updated total.`;
     const createdMsg = await messageModel.createMessage({
@@ -246,7 +217,6 @@ exports.acceptOrder = async (req, res) => {
       metadata: {}
     });
 
-    // emit socket events to order room and to admins dashboard
     const io = socketUtil.get();
     if (io) {
       io.to(`order_${orderId}`).emit('new_message', createdMsg);
