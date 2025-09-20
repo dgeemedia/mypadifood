@@ -1,10 +1,10 @@
-<!--views/index.ejs-->
 <section class="hero">
+  <% const f = (typeof filters !== 'undefined' && filters) ? filters : {}; %>
   <h1>Local Food Vendors in Your Area</h1>
   <form method="get" action="/">
-    <input type="text" name="q" placeholder="Search vendor or food item" value="<%= (filters && filters.q) ? filters.q : '' %>" />
-    <input type="text" name="state" placeholder="State" value="<%= (filters && filters.state) ? filters.state : '' %>" />
-    <input type="text" name="lga" placeholder="LGA" value="<%= (filters && filters.lga) ? filters.lga : '' %>" />
+    <input type="text" name="q" placeholder="Search vendor or food item" value="<%= f.q ? f.q : '' %>" />
+    <input type="text" name="state" placeholder="State" value="<%= f.state ? f.state : '' %>" />
+    <input type="text" name="lga" placeholder="LGA" value="<%= f.lga ? f.lga : '' %>" />
     <button type="submit">Search</button>
   </form>
 </section>

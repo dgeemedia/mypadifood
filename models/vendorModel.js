@@ -3,6 +3,9 @@
 
 const { pool } = require('../database/database');
 
+// Strict UUID regex (36-character UUID with hyphens)
+const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 /**
  * Create a vendor registration (initially status = 'pending').
  */
@@ -36,8 +39,13 @@ async function getApprovedVendors({ state = null, lga = null, q = null } = {}) {
 
 /**
  * Find vendor by id (full record).
+ * Defensive: validate UUID before sending to Postgres.
  */
 async function findById(id) {
+  if (!id || typeof id !== 'string' || !uuidRegex.test(id)) {
+    // invalid id — return null rather than letting Postgres try to cast it to UUID
+    return null;
+  }
   const { rows } = await pool.query('SELECT * FROM vendors WHERE id=$1', [id]);
   return rows[0] || null;
 }
@@ -54,6 +62,9 @@ async function getPendingVendors() {
  * Update vendor status (approved/rejected)
  */
 async function updateStatus(vendorId, status) {
+  if (!vendorId || typeof vendorId !== 'string' || !uuidRegex.test(vendorId)) {
+    throw new Error('invalid vendorId');
+  }
   await pool.query('UPDATE vendors SET status=$1 WHERE id=$2', [status, vendorId]);
 }
 

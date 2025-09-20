@@ -1,46 +1,46 @@
 // routes/index.js
-// Homepage: list approved vendors (with optional filters).
-// Vendor detail page at /vendor/:id
-
 const express = require('express');
 const router = express.Router();
 
 const models = require('../models');
 const vendorModel = models.vendor;
 
-/**
- * GET /
- * Query params: state, lga, q
- * Renders views/index.ejs with { vendors, filters }
- */
+// Home — show approved vendors (basic) with optional filters
 router.get('/', async (req, res) => {
-  const { state, lga, q } = req.query;
   try {
+    // read filters from query string
+    const q = req.query.q ? String(req.query.q).trim() : null;
+    const state = req.query.state ? String(req.query.state).trim() : null;
+    const lga = req.query.lga ? String(req.query.lga).trim() : null;
+
+    // fetch vendors using vendorModel's filter support
     const vendors = await vendorModel.getApprovedVendors({ state, lga, q });
-    return res.render('index', { vendors, filters: { state, lga, q } });
+
+    // pass filters to the template so inputs can keep state
+    const filters = { q: q || '', state: state || '', lga: lga || '' };
+
+    res.render('index', { vendors, filters });
   } catch (err) {
-    console.error('Error fetching vendors:', err);
-    return res.render('index', { vendors: [], filters: {} });
+    console.error('Error rendering home:', err);
+    res.status(500).send('Server error');
   }
 });
 
-/**
- * GET /vendor/:id
- * Show vendor detail view (vendor.ejs)
- */
-router.get('/vendor/:id', async (req, res) => {
-  const id = req.params.id;
+// Only match UUIDs for vendor detail routes so literal paths like /vendor/register
+// do not get interpreted as an :id param.
+const uuidPattern = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
+
+router.get(`/vendor/:id(${uuidPattern})`, async (req, res) => {
   try {
+    const { id } = req.params;
     const vendor = await vendorModel.findById(id);
     if (!vendor) {
-      req.session.error = 'Vendor not found';
-      return res.redirect('/');
+      return res.status(404).render('404', { message: 'Vendor not found' });
     }
-    return res.render('vendor', { vendor });
+    res.render('vendor-detail', { vendor });
   } catch (err) {
-    console.error('Error loading vendor:', err);
-    req.session.error = 'Error loading vendor';
-    return res.redirect('/');
+    console.error('Error loading vendor detail:', err);
+    res.status(500).send('Server error');
   }
 });
 

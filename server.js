@@ -54,9 +54,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes (chat and adminOrders assumed to exist)
-app.use('/', require('./routes/index'));
+// Routes
+// --- MOUNT vendor router BEFORE the catch-all index router so literal paths like
+//     /vendor/register are handled by the vendor router and not mistaken for :id
 app.use('/vendor', require('./routes/vendor'));
+app.use('/', require('./routes/index'));
 app.use('/client', require('./routes/client'));
 app.use('/admin', require('./routes/admin'));
 app.use('/chat', require('./routes/chat')); // chat route
@@ -95,18 +97,15 @@ io.use((socket, next) => {
 // require models so we can check order ownership inside join handler
 const models = require('./models');
 
-// ====== CONNECTION HANDLER ======
+// ====== CONNECTION HANDLER ====== (unchanged) ...
 io.on('connection', socket => {
   try {
-    // attach session user for convenience (populated by io.use above)
     const sessUser = socket.request && socket.request.session && socket.request.session.user;
 
-    // If this connection belongs to an admin/agent/super, join 'admins' room
     if (sessUser && (sessUser.type === 'admin' || sessUser.type === 'agent' || sessUser.type === 'super')) {
       socket.join('admins');
     }
 
-    // Protected join order (only client / assigned admin / super)
     socket.on('join_order', async ({ orderId }) => {
       try {
         if (!orderId) return socket.emit('error', 'Missing orderId');
@@ -128,13 +127,9 @@ io.on('connection', socket => {
           return socket.emit('error', 'Not authorized to join this order');
         }
 
-        // join the order room
         socket.join(`order_${orderId}`);
 
-        // If the joiner is the order client, notify admins the client opened chat
         if (isClient && sess.type === 'client') {
-          // If you want extra client info, fetch it from DB or rely on session fields
-          // Here we attempt to get phone from DB (fallback to session)
           let clientPhone = sess.phone || null;
           try {
             const clientRow = await require('./models').client.findById(sess.id);
@@ -151,7 +146,6 @@ io.on('connection', socket => {
             timestamp: new Date()
           };
 
-          // emit to all admins
           io.to('admins').emit('order_opened', payload);
         }
 
@@ -162,7 +156,6 @@ io.on('connection', socket => {
       }
     });
 
-    // 'open_chat' fallback - explicitly notify admins (verifies client ownership)
     socket.on('open_chat', async ({ orderId }) => {
       try {
         if (!orderId) return;
@@ -187,7 +180,6 @@ io.on('connection', socket => {
       }
     });
 
-    // leave order (notify admins if client leaves)
     socket.on('leave_order', ({ orderId }) => {
       try {
         if (!orderId) return;
@@ -207,16 +199,14 @@ io.on('connection', socket => {
       }
     });
 
-    socket.on('disconnect', reason => {
-      // optional: console.log('Socket disconnected', socket.id, reason);
-    });
+    socket.on('disconnect', reason => {});
   } catch (outerErr) {
     console.error('socket connection error', outerErr);
   }
 });
 // ====== END CONNECTION HANDLER ======
 
-/* Start HTTP + Socket.IO server */
+// Start server
 server.listen(PORT, () => {
   console.log(`MyPadifood server running on http://localhost:${PORT}`);
 });
