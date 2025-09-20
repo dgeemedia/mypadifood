@@ -1,3 +1,4 @@
+<!--views/client/login.ejs-->
 <h2><%= (userType === 'admin' ? 'Admin Login' : 'Client Login') %></h2>
 
 <form method="post" action="<%= userType === 'admin' ? '/admin/login' : '/client/login' %>">

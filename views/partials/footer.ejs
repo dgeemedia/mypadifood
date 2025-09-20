@@ -1,3 +1,4 @@
+<!-- views/partials/footer.ejs -->
 <footer class="site-footer">
   <div class="container footer-grid">
     <div class="footer-col">
@@ -21,7 +22,6 @@
     <div class="footer-col">
       <h4>Policies</h4>
       <ul>
-        <li><a href="/faq">FAQ</a></li>
         <li><a href="/terms">Terms</a></li>
         <li><a href="/privacy">Privacy</a></li>
       </ul>
@@ -36,7 +36,8 @@
       </ul>
     </div>
   </div>
-  <div class="container footer-bottom">
+  <div class="container footer-bottom" style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
     <small>&copy; <%= new Date().getFullYear() %> MyPadiFood. All rights reserved.</small>
+    <small class="muted">Built with ♥</small>
   </div>
 </footer>
