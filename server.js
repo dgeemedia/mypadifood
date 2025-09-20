@@ -33,9 +33,17 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(expressLayouts);
 app.set('layout', 'layouts/layout'); // looks for views/layouts/layout.ejs
 
-// Parsers
+// Parsers (capture raw body for webhook signature verification)
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+
+// capture raw bytes into req.rawBody; also parse JSON into req.body
+app.use(express.json({
+  verify: (req, res, buf) => {
+    // store raw buffer for later HMAC verification (webhooks)
+    req.rawBody = buf;
+  }
+}));
+
 
 // Static assets
 app.use(express.static(path.join(__dirname, 'public')));

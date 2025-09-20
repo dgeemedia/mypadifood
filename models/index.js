@@ -5,5 +5,6 @@ module.exports = {
   admin: require('./adminModel'),
   order: require('./orderModel'),
   verification: require('./verificationModel'),
-  message: require('./messageModel')
+  message: require('./messageModel'),
+  payment: require('./paymentModel')   
 };

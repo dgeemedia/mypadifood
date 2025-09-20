@@ -1,7 +1,9 @@
 // utils/payments.js
-// Encapsulate Paystack and Flutterwave init + verify logic.
+// Encapsulate Paystack and Flutterwave init + verify logic and webhook signature verification.
 
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+
 let fetch = global.fetch;
 try {
   // node < 18 fallback
@@ -14,11 +16,20 @@ const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT ||
 const PAYSTACK_KEY = process.env.PAYSTACK_SECRET_KEY;
 const FLW_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
 
+const PAYSTACK_WEBHOOK_SECRET = process.env.PAYSTACK_WEBHOOK_SECRET || '';
+const FLUTTERWAVE_WEBHOOK_SECRET = process.env.FLUTTERWAVE_WEBHOOK_SECRET || '';
+
 if (!PAYSTACK_KEY) {
   console.warn('Warning: PAYSTACK_SECRET_KEY not set — Paystack init/verify will fail until configured.');
 }
 if (!FLW_KEY) {
   console.warn('Warning: FLUTTERWAVE_SECRET_KEY not set — Flutterwave init/verify will fail until configured.');
+}
+if (!PAYSTACK_WEBHOOK_SECRET) {
+  console.warn('Warning: PAYSTACK_WEBHOOK_SECRET not set — Paystack webhook verification will be disabled.');
+}
+if (!FLUTTERWAVE_WEBHOOK_SECRET) {
+  console.warn('Warning: FLUTTERWAVE_WEBHOOK_SECRET not set — Flutterwave webhook verification will be disabled.');
 }
 
 /**
@@ -67,7 +78,7 @@ async function initPaystack({ email, amount }, orderId = null) {
 /**
  * Verify a Paystack transaction by reference
  * @param {string} reference
- * @returns {Promise<{success:boolean, data:object}>}
+ * @returns {Promise<{success:boolean, data:object, raw:object}>}
  */
 async function verifyPaystack(reference) {
   if (!PAYSTACK_KEY) throw new Error('Paystack not configured');
@@ -85,7 +96,7 @@ async function verifyPaystack(reference) {
     throw err;
   }
   // json.data contains payment data
-  return { success: json.data.status === 'success', data: json.data, raw: json };
+  return { success: json.data.status === 'success' || json.data.status === 'successful', data: json.data, raw: json };
 }
 
 /**
@@ -136,7 +147,7 @@ async function initFlutterwave({ amount, currency = 'NGN', customer = {} }, orde
 /**
  * Verify Flutterwave transaction by transaction id
  * @param {string} transaction_id
- * @returns {Promise<{success:boolean,data:object}>}
+ * @returns {Promise<{success:boolean,data:object,raw:object}>}
  */
 async function verifyFlutterwave(transaction_id) {
   if (!FLW_KEY) throw new Error('Flutterwave not configured');
@@ -152,12 +163,51 @@ async function verifyFlutterwave(transaction_id) {
     throw err;
   }
   // json.data contains transaction info
-  return { success: json.data && (json.data.status === 'successful' || json.data.status === 'successful' /* double-check */), data: json.data, raw: json };
+  const success = json.data && (json.data.status === 'successful' || json.data.status === 'success');
+  return { success, data: json.data, raw: json };
+}
+
+/**
+ * Verify Paystack webhook signature.
+ * Paystack sends header "x-paystack-signature" which is HMAC-SHA512 of the raw body using your secret.
+ * req.rawBody must be available (see server.js change).
+ */
+function verifyPaystackWebhook(req) {
+  const header = String(req.headers['x-paystack-signature'] || '');
+  if (!PAYSTACK_WEBHOOK_SECRET || !header) return false;
+
+  // Ensure req.rawBody exists
+  const raw = req.rawBody || (req.body ? Buffer.from(JSON.stringify(req.body)) : Buffer.from(''));
+  const hmac = crypto.createHmac('sha512', PAYSTACK_WEBHOOK_SECRET);
+  const digest = hmac.update(raw).digest('hex');
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(header));
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Verify Flutterwave webhook signature.
+ * Flutterwave uses header "verif-hash" (older) or 'verif_hash' - the value is your webhook secret.
+ * Implementation: compare header to your configured secret via timingSafeEqual.
+ */
+function verifyFlutterwaveWebhook(req) {
+  const header = String(req.headers['verif-hash'] || req.headers['verif_hash'] || '');
+  if (!FLUTTERWAVE_WEBHOOK_SECRET || !header) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(header), Buffer.from(FLUTTERWAVE_WEBHOOK_SECRET));
+  } catch (e) {
+    return false;
+  }
 }
 
 module.exports = {
   initPaystack,
   verifyPaystack,
   initFlutterwave,
-  verifyFlutterwave
+  verifyFlutterwave,
+  verifyPaystackWebhook,
+  verifyFlutterwaveWebhook
 };
