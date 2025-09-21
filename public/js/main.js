@@ -1,8 +1,7 @@
 // public/js/main.js
 // Combined mobile drawer + focus-first-input + device-location helpers
-// - Drawer is injected once and is accessible/keyboard-friendly
-// - fillLocation(context) supports 'client' and 'vendor' forms (ids like client-latitude, vendor-latitude, etc.)
-// - Reverse geocoding is attempted (best-effort) using Nominatim (no custom User-Agent header to avoid CORS issues)
+// - Assumes a server-rendered #mobile-drawer element (recommended).
+// - If #mobile-drawer is not present, drawer-related actions will safely no-op.
 
 document.addEventListener('DOMContentLoaded', () => {
   // Focus the first interactive field (not hidden)
@@ -11,29 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
     try { firstInput.focus(); } catch (e) { /* ignore */ }
   }
 
-  // MOBILE DRAWER
+  // MOBILE DRAWER (server-rendered)
   const toggleBtn = document.getElementById('mobile-menu-toggle');
-  const existingDrawer = document.getElementById('mobile-drawer');
-  const drawerHtml = `
-    <div class="mobile-drawer" id="mobile-drawer" aria-hidden="true" role="dialog" aria-label="Mobile menu">
-      <div class="close-btn" style="display:flex; justify-content:flex-end;"><button id="mobile-drawer-close" aria-label="Close" class="btn">Close</button></div>
-      <nav>
-        <a href="/">Home</a>
-        <a href="/client/login">Client Login</a>
-        <a href="/client/register">Client Signup</a>
-        <a href="/vendor/register">Vendor Register</a>
-        <a href="/admin/login">Admin Login</a>
-        <a href="/about">About</a>
-        <a href="/contact">Contact</a>
-      </nav>
-    </div>
-  `;
+  const drawer = document.getElementById('mobile-drawer'); // expected to be server-rendered
+  const closeBtn = drawer ? drawer.querySelector('#mobile-drawer-close') : null;
 
-  if (!existingDrawer) {
-    document.body.insertAdjacentHTML('beforeend', drawerHtml);
-  }
-  const drawer = document.getElementById('mobile-drawer');
-  const closeBtn = document.getElementById('mobile-drawer-close');
+  // ensure sensible defaults for accessibility if elements exist
+  if (drawer && !drawer.hasAttribute('aria-hidden')) drawer.setAttribute('aria-hidden', 'true');
+  if (toggleBtn && !toggleBtn.hasAttribute('aria-expanded')) toggleBtn.setAttribute('aria-expanded', 'false');
 
   function openDrawer() {
     if (!drawer) return;
@@ -42,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.style.overflow = 'hidden';
     if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
     // move focus into the drawer for accessibility
-    const firstLink = drawer.querySelector('a');
+    const firstLink = drawer.querySelector('a, button, [tabindex]:not([tabindex="-1"])');
     if (firstLink) firstLink.focus();
   }
 
@@ -59,16 +43,20 @@ document.addEventListener('DOMContentLoaded', () => {
   if (toggleBtn) {
     toggleBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const isOpen = drawer && drawer.classList.contains('open');
+      // Guard: if drawer isn't present, do nothing (or you can implement a fallback)
+      if (!drawer) return;
+      const isOpen = drawer.classList.contains('open');
       if (isOpen) closeDrawer();
       else openDrawer();
     });
   }
 
-  if (closeBtn) closeBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    closeDrawer();
-  });
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeDrawer();
+    });
+  }
 
   // Close when clicking outside drawer
   document.addEventListener('click', (e) => {
@@ -91,8 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const a = e.target.closest('a');
       if (!a) return;
       // Close drawer first, then allow the navigation to proceed
+      // (navigation will continue naturally; for SPA navigation you'd intercept here)
       closeDrawer();
-      // For single-page behaviors you might want to intercept; here we allow full navigation.
     });
   }
 
@@ -202,14 +190,10 @@ async function fillLocation(event, context) {
       }
     } catch (revErr) {
       // Non-fatal: we tried reverse geocoding — user can still fill manually
-      // Avoid spamming the user; show a single gentle alert
       console.warn('Reverse geocode failed:', revErr);
       // Only notify if explicit button used (btn present)
-      if (btn) {
-        // small non-blocking message via alert is acceptable here; you could replace with in-page UI later
-        // but do not throw.
-        // alert('Could not translate coordinates to state/LGA automatically. Please fill them manually.');
-      }
+      // (commented out alert to avoid spam; you can enable if desired)
+      // if (btn) alert('Could not translate coordinates to state/LGA automatically. Please fill them manually.');
     }
   } catch (err) {
     console.error('Geolocation error', err);
