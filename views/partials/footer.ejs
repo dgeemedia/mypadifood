@@ -1,4 +1,3 @@
-<!-- views/partials/footer.ejs -->
 <footer class="site-footer">
   <div class="container footer-grid">
     <div class="footer-col">
@@ -30,12 +29,38 @@
     <div class="footer-col">
       <h4>Follow</h4>
       <ul class="social-links">
-        <li><a href="#" aria-label="Facebook"><i class="fa fa-facebook"></i> Facebook</a></li>
-        <li><a href="#" aria-label="X"><i class="fa fa-x-twitter"></i> X</a></li>
-        <li><a href="#" aria-label="Instagram"><i class="fa fa-instagram"></i> Instagram</a></li>
+        <li>
+          <a href="#" aria-label="Facebook">
+            <i class="fa-brands fa-facebook-f" aria-hidden="true"></i>
+            <span class="social-label">Facebook</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="#" aria-label="X">
+            <i class="fa-brands fa-x" aria-hidden="true"></i>
+            <span class="social-label">X</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="#" aria-label="Instagram">
+            <i class="fa-brands fa-instagram" aria-hidden="true"></i>
+            <span class="social-label">Instagram</span>
+          </a>
+        </li>
+
+        <!-- LinkedIn added here -->
+        <li>
+          <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+            <i class="fa-brands fa-linkedin-in" aria-hidden="true"></i>
+            <span class="social-label">LinkedIn</span>
+          </a>
+        </li>
       </ul>
     </div>
   </div>
+
   <div class="container footer-bottom" style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
     <small>&copy; <%= new Date().getFullYear() %> MyPadiFood. All rights reserved.</small>
     <small class="muted">Built with ♥</small>

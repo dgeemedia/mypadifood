@@ -185,16 +185,51 @@ textarea { min-height:100px; resize:vertical; }
 .flash-success { background: rgba(16,185,129,0.12); color:var(--success); border:1px solid rgba(16,185,129,0.12); }
 .flash-error { background: rgba(239,68,68,0.08); color:var(--danger); border:1px solid rgba(239,68,68,0.06); }
 
-/* Footer */
+/* Footer & social icons */
 .site-footer {
-  margin-top:40px;
-  background: linear-gradient(90deg,#0f172a08,#fff);
-  padding:26px 0;
-  color:#0f172a;
+  margin-top: 40px;
+  background: linear-gradient(90deg, rgba(15,23,42,0.02), #fff);
+  padding: 28px 0;
+  color: #0f172a;
+  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
-.footer-grid { display:grid; grid-template-columns: 1fr 160px 160px 160px; gap:18px; align-items:start; }
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr 160px 160px 180px;
+  gap: 18px;
+  align-items: start;
+}
+
 .brand-footer { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; font-weight:700; }
-.muted{ color:var(--muted); font-size:0.95rem; }
+.brand-footer img { display:inline-block; vertical-align:middle; }
+.footer-col h4 { margin:0 0 8px 0; font-size:1rem; }
+.footer-col ul { list-style:none; padding:0; margin:0; }
+.footer-col ul li { margin-bottom:8px; }
+.footer-col a { color:inherit; text-decoration:none; opacity:.92; }
+.footer-col a:hover { text-decoration:underline; color:var(--brand); }
+
+/* social links */
+.social-links { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+.social-links li { display:flex; align-items:center; }
+.social-links a { display:inline-flex; align-items:center; gap:10px; text-decoration:none; color:inherit; padding:6px 6px; border-radius:6px; transition:background .15s, transform .06s; }
+.social-links a:hover { background: rgba(15,23,42,0.03); transform:translateY(-2px); }
+
+/* Font Awesome icon size */
+.social-links i { font-size:18px; width:20px; text-align:center; }
+
+/* Inline SVG fallback styling — hidden when font icon is present */
+.icon-fallback { width:18px; height:18px; display:inline-block; fill:currentColor; vertical-align:middle; }
+
+.footer-bottom { margin-top:18px; border-top:1px solid rgba(15,23,42,0.04); padding-top:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+
+/* Responsive */
+@media (max-width: 860px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .footer-col { margin-bottom:10px; }
+  .footer-bottom { flex-direction:column; align-items:flex-start; gap:8px; }
+}
+
 
 /* Dashboards & tables */
 table{ width:100%; border-collapse:collapse; margin-top:8px; }
