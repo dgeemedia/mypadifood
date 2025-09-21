@@ -85,7 +85,7 @@ async function getPendingOrdersForAdmin() {
     FROM orders o
     LEFT JOIN clients c ON o.client_id = c.id
     LEFT JOIN vendors v ON o.vendor_id = v.id
-    WHERE o.status = 'pending'
+    WHERE o.status IN ('pending','accepted')     -- include active (pending + accepted)
     ORDER BY o.created_at DESC
   `;
   const { rows } = await pool.query(sql);

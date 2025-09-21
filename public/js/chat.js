@@ -67,6 +67,83 @@
       console.warn('socket error', err);
     });
 
+    // NEW: live admin dashboard updates
+    socket.on('order_updated', payload => {
+      // update the order entry UI if present
+      try {
+        const id = payload.orderId || payload.order_id;
+        if (!id) return;
+        const el = document.getElementById(`order-${id}`);
+        if (el) {
+          // update status label if present (first small element near id)
+          const small = el.querySelector('small');
+          if (small) small.textContent = `(${payload.status || 'updated'})`;
+
+          // optionally add assigned admin display
+          if (payload.assigned_admin_name || payload.assigned_admin) {
+            let assignedDiv = el.querySelector('.assigned-admin-display');
+            if (!assignedDiv) {
+              assignedDiv = document.createElement('div');
+              assignedDiv.className = 'assigned-admin-display';
+              assignedDiv.style.marginTop = '6px';
+              assignedDiv.style.fontSize = '0.9em';
+              assignedDiv.style.color = '#444';
+              el.appendChild(assignedDiv);
+            }
+            assignedDiv.textContent = `Assigned: ${payload.assigned_admin_name || payload.assigned_admin}`;
+          }
+
+          // If status is accepted, expose a "Mark Done" button if desired (best-effort UI)
+          if (payload.status === 'accepted') {
+            // remove existing accept button if present, add "Mark Done"
+            const acceptForm = el.querySelector(`form[action="/admin/orders/${id}/accept"]`);
+            if (acceptForm) acceptForm.style.display = 'none';
+
+            let doneForm = el.querySelector(`form[action="/admin/orders/${id}/done"]`);
+            if (!doneForm) {
+              doneForm = document.createElement('form');
+              doneForm.method = 'post';
+              doneForm.action = `/admin/orders/${id}/done`;
+              doneForm.style.display = 'inline';
+              doneForm.style.marginLeft = '8px';
+              const btn = document.createElement('button');
+              btn.type = 'submit';
+              btn.className = 'btn';
+              btn.textContent = 'Mark Done';
+              doneForm.appendChild(btn);
+              const actionsDiv = el.querySelector('div') || el;
+              actionsDiv.appendChild(doneForm);
+            } else {
+              doneForm.style.display = 'inline';
+            }
+          }
+        }
+      } catch (e) { console.warn('order_updated handler', e); }
+    });
+
+    socket.on('order_completed', payload => {
+      try {
+        const id = payload.orderId || payload.order_id;
+        if (!id) return;
+        const el = document.getElementById(`order-${id}`);
+        if (el) {
+          el.style.background = '#f3f3f3';
+          // hide buttons inside the element (forms/buttons)
+          Array.from(el.querySelectorAll('button, form')).forEach(n => n.style.display = 'none');
+          // mark completed label
+          let badge = el.querySelector('.completed-badge');
+          if(!badge) {
+            badge = document.createElement('span');
+            badge.className = 'completed-badge';
+            badge.style.marginLeft = '8px';
+            badge.style.color = '#666';
+            badge.textContent = 'Completed';
+            el.appendChild(badge);
+          }
+        }
+      } catch (e) { console.warn('order_completed handler', e); }
+    });
+
     return socket;
   }
 

@@ -13,4 +13,6 @@ router.get('/:orderId', auth.requireAdmin, adminController.viewOrder);
 // admin accept POST
 router.post('/:orderId/accept', auth.requireAdmin, adminController.acceptOrder);
 
+// mark order as completed (done)
+router.post('/:orderId/done', auth.requireAdmin, adminController.completeOrder);
 module.exports = router;

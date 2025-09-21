@@ -295,3 +295,7 @@ table tbody td{ padding:10px; border-top:1px solid rgba(15,23,42,0.04); }
   .vendors { grid-template-columns: 1fr; }
   .hero input { width:100%; }
 }
+
+.pending-order-item { border-radius: 6px; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,0.02); }
+.pending-order-item .order-status { color: #0b74ff; font-weight:600; }
+.pending-order-item .completed-badge { background:#eee; padding:4px 8px; border-radius:12px; font-size:0.85em; }

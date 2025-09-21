@@ -1,7 +1,17 @@
 <!--views/admin/order-view.ejs-->
 <h2>Order: <%= order.id %></h2>
-<p>Client: <%= order.client_name %> | Phone: <%= order.client_phone %> | Address: <%= order.client_address %></p>
-<p>Vendor: <%= order.vendor_name %> | Vendor address: <%= order.vendor_address %></p>
+<p>
+  Client: <%= order.client_name %> | Phone: <%= order.client_phone %> | Address: <%= order.client_address %>
+</p>
+<p>
+  Vendor: <%= order.vendor_name %> | Vendor address: <%= order.vendor_address %>
+</p>
+
+<p>Status: <strong><%= order.status %></strong>
+  <% if (order.assigned_admin) { %>
+    &nbsp;| Assigned to: <%= order.assigned_admin %>
+  <% } %>
+</p>
 
 <section id="messages">
   <% messages.forEach(m => { %>
@@ -14,9 +24,17 @@
   <button id="adminSendBtn" type="button" class="btn">Send</button>
 </form>
 
-<form method="post" action="/admin/orders/<%= order.id %>/accept">
-  <button type="submit" class="btn">Accept Order (Assign to me)</button>
-</form>
+<% if (order.status !== 'accepted' && order.status !== 'completed') { %>
+  <form method="post" action="/admin/orders/<%= order.id %>/accept">
+    <button type="submit" class="btn">Accept Order (Assign to me)</button>
+  </form>
+<% } else if (order.status === 'accepted') { %>
+  <form method="post" action="/admin/orders/<%= order.id %>/done">
+    <button type="submit" class="btn">Mark as done (Delivered & Paid)</button>
+  </form>
+<% } else { %>
+  <div style="margin-top:8px; color:#666;">This order is completed.</div>
+<% } %>
 
 <script>
   document.getElementById('adminSendBtn').addEventListener('click', async () => {

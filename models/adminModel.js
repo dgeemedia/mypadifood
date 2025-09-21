@@ -37,7 +37,7 @@ async function countPendingVendors() {
   return rows[0].count;
 }
 async function countPendingOrders() {
-  const { rows } = await pool.query("SELECT count(*)::int AS count FROM orders WHERE status='pending'");
+  const { rows } = await pool.query("SELECT count(*)::int AS count FROM orders WHERE status IN ('pending','accepted')");
   return rows[0].count;
 }
 

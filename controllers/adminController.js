@@ -164,6 +164,13 @@ exports.createAdmin = async (req, res) => {
 exports.pendingOrdersForAdmin = async (req, res) => {
   try {
     const rows = await orderModel.getPendingOrdersForAdmin();
+
+    // If client requested JSON (AJAX), return data for client-side rendering
+    if (req.query.format === 'json' || req.xhr || req.headers.accept?.includes('application/json')) {
+      return res.json({ ok: true, orders: rows });
+    }
+
+    // Otherwise render the HTML page (existing behavior)
     return res.render('admin/orders-pending', { orders: rows });
   } catch (err) {
     console.error('Error loading pending orders for admin:', err);
@@ -190,7 +197,7 @@ exports.viewOrder = async (req, res) => {
   }
 };
 
-// Admin accepts an order: assign admin, set status = accepted...
+// Admin accepts an order: assign admin, set status = accepted
 exports.acceptOrder = async (req, res) => {
   try {
     if (!req.session.user || !(req.session.user.type === 'admin' || req.session.user.type === 'super' || req.session.user.type === 'agent')) {
@@ -199,6 +206,7 @@ exports.acceptOrder = async (req, res) => {
     }
 
     const adminId = req.session.user.id;
+    const adminName = req.session.user.name || 'Agent';
     const { orderId } = req.params;
 
     const assigned = await orderModel.assignAdmin(orderId, adminId);
@@ -207,8 +215,8 @@ exports.acceptOrder = async (req, res) => {
       return res.redirect('/admin/orders/pending');
     }
 
-    const adminName = req.session.user.name || 'Agent';
-    const adminMessage = `Hello, my name is ${adminName}. I will get your food request delivered to you as soon as possible. I will calculate any additional items and communicate the updated total.`;
+    // Add a short admin message
+    const adminMessage = `Hello, my name is ${adminName}. I will handle your request and notify you of updates.`;
     const createdMsg = await messageModel.createMessage({
       orderId,
       senderType: 'admin',
@@ -217,10 +225,20 @@ exports.acceptOrder = async (req, res) => {
       metadata: {}
     });
 
+    // Emit updates via sockets
     const io = socketUtil.get();
     if (io) {
+      // notify clients in the order room and all admins
       io.to(`order_${orderId}`).emit('new_message', createdMsg);
       io.to('admins').emit('order_message', { orderId, message: createdMsg });
+
+      // notify admin dashboards to update the order list entry
+      io.to('admins').emit('order_updated', {
+        orderId,
+        status: 'accepted',
+        assigned_admin: adminId,
+        assigned_admin_name: adminName
+      });
     }
 
     req.session.success = 'You accepted the order and notified the client';
@@ -228,6 +246,68 @@ exports.acceptOrder = async (req, res) => {
   } catch (err) {
     console.error('acceptOrder error', err);
     req.session.error = 'Could not accept order';
+    return res.redirect('/admin/orders/pending');
+  }
+};
+
+// completeOrder (mark done/completed) ---
+exports.completeOrder = async (req, res) => {
+  try {
+    if (!req.session.user || !(req.session.user.type === 'admin' || req.session.user.type === 'super' || req.session.user.type === 'agent')) {
+      req.session.error = 'Only admins may complete orders';
+      return res.redirect('/admin/orders/pending');
+    }
+
+    const adminId = req.session.user.id;
+    const { orderId } = req.params;
+
+    // Optionally check assignment: allow if assigned_admin === adminId OR super admin
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      req.session.error = 'Order not found';
+      return res.redirect('/admin/orders/pending');
+    }
+
+    const isAssigned = order.assigned_admin && String(order.assigned_admin) === String(adminId);
+    const isSuper = req.session.user.type === 'super';
+    if (!isAssigned && !isSuper) {
+      req.session.error = 'You are not assigned to this order';
+      return res.redirect(`/admin/orders/${orderId}`);
+    }
+
+    // mark as completed
+    const updated = await orderModel.updateStatus(orderId, 'completed');
+    if (!updated) {
+      req.session.error = 'Could not mark order completed';
+      return res.redirect(`/admin/orders/${orderId}`);
+    }
+
+    // create an admin system message indicating completion
+    const adminName = req.session.user.name || 'Agent';
+    const completionMsg = `${adminName} marked this order as completed / delivered. Payment settled.`;
+    const createdMsg = await messageModel.createMessage({
+      orderId,
+      senderType: 'admin',
+      senderId: adminId,
+      message: completionMsg,
+      metadata: { action: 'completed' }
+    });
+
+    const io = socketUtil.get();
+    if (io) {
+      // notify order participants and admins
+      io.to(`order_${orderId}`).emit('new_message', createdMsg);
+      io.to('admins').emit('order_message', { orderId, message: createdMsg });
+
+      // instruct admin dashboards to mark this order completed (grey-out)
+      io.to('admins').emit('order_completed', { orderId });
+    }
+
+    req.session.success = 'Order marked completed';
+    return res.redirect(`/admin/orders/${orderId}`);
+  } catch (err) {
+    console.error('completeOrder error', err);
+    req.session.error = 'Could not mark order as completed';
     return res.redirect('/admin/orders/pending');
   }
 };
