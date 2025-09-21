@@ -1,0 +1,24 @@
+<!-- Simple chat modal used by client & admin pages -->
+<div id="chatModal" style="display:none; position:fixed; right:1rem; bottom:1rem; width:360px; max-width:92vw; background:#fff; border:1px solid #ddd; padding:12px; box-shadow:0 8px 30px rgba(0,0,0,0.12); z-index:200;">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <strong>Chat</strong>
+    <button id="closeChat" aria-label="Close chat" class="btn">✕</button>
+  </div>
+
+  <div id="chatMessages" style="height:260px; overflow:auto; margin-top:8px; padding:8px; border:1px solid #f0f0f0; background:#fafafa;"></div>
+
+  <div id="botPromptArea" style="margin-top:8px; display:none;">
+    <div>Would you like to modify the request?</div>
+    <button id="botYes" class="btn">Yes</button>
+    <button id="botNo" class="btn">No</button>
+    <div id="clientModifyArea" style="display:none; margin-top:8px;">
+      <textarea id="clientModifyText" rows="3" style="width:100%"></textarea>
+      <button id="clientModifySubmit" class="btn">Send modification</button>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:6px; margin-top:8px;">
+    <input id="chatInput" placeholder="Type a message..." style="flex:1; padding:8px;" />
+    <button id="sendMsg" class="btn">Send</button>
+  </div>
+</div>

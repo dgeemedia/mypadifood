@@ -17,10 +17,32 @@
 
   function ensureSocket() {
     if (socket) return socket;
-    socket = io();
+    // include credentials so cookies (session) are sent during handshake
+    socket = io({ withCredentials: true });
 
     socket.on('connect', () => {
       // console.log('socket connected', socket.id);
+    });
+
+    // Admin-level events (real-time order notifications)
+    socket.on('new_order', (orderSummary) => {
+      // admin clients will receive this if they've joined 'admins'
+      try {
+        handleIncomingOrder(orderSummary);
+      } catch (e) { console.warn('new_order handler', e); }
+    });
+
+    socket.on('order_message', (payload) => {
+      // payload: { orderId, message }
+      try {
+        // If admin page showing pending orders, update entry / flash
+        showOrderMessageNotification(payload);
+        // Also append to chat modal if it's open for that order
+        const msgOrderId = payload && (payload.orderId || payload.order_id || (payload.message && payload.message.order_id));
+        if (msgOrderId && String(msgOrderId) === String(currentOrderId)) {
+          appendMessage(payload.message);
+        }
+      } catch (e) { console.warn('order_message handler', e); }
     });
 
     socket.on('new_message', msg => {
@@ -31,17 +53,71 @@
       }
     });
 
+    socket.on('joined_order', (payload) => {
+      // optional debug or UI reaction
+      // console.debug('joined_order', payload);
+    });
+
+    socket.on('order_opened', payload => {
+      // admin pages may react to client presence (we handle it in handleIncomingOrder or similar)
+      // console.debug('order_opened', payload);
+    });
+
     socket.on('error', err => {
       console.warn('socket error', err);
     });
 
-    // other optional events
-    socket.on('order_opened', payload => {
-      // for admin pages; no-op here
-      // console.debug('order_opened', payload);
-    });
-
     return socket;
+  }
+
+  // --- Admin handlers / helpers ---
+  function handleIncomingOrder(order) {
+    // Only run on admin pages (element exists)
+    const panel = document.getElementById('pendingOrders');
+    if (!panel) return;
+    // build a small card with details (client & vendor)
+    const item = document.createElement('div');
+    item.className = 'pending-order-item';
+    item.style.border = '1px solid #dfe6ef';
+    item.style.padding = '10px';
+    item.style.marginBottom = '8px';
+    // guard the field names (some emitters use camelCase or snake_case)
+    const id = order.id || order.orderId || order.order_id || '—';
+    const clientName = order.client_name || order.clientName || order.client || '—';
+    const clientPhone = order.client_phone || order.clientPhone || '—';
+    const clientAddress = order.client_address || order.clientAddress || order.client_address || '—';
+    const vendorName = order.vendor_name || order.vendorName || '—';
+    const vendorPhone = order.vendor_phone || order.vendorPhone || '—';
+    const vendorAddress = order.vendor_address || order.vendorAddress || '—';
+    const itemText = order.item || order.description || '—';
+    const total = order.total_amount || order.total || 0;
+
+    item.innerHTML = `
+      <strong>Order:</strong> ${id} <br/>
+      <strong>Client:</strong> ${clientName} (${clientPhone}) <br/>
+      <strong>Client address:</strong> ${clientAddress} <br/>
+      <strong>Vendor:</strong> ${vendorName} (${vendorPhone}) <br/>
+      <strong>Vendor address:</strong> ${vendorAddress} <br/>
+      <strong>Item:</strong> ${itemText} | ₦${total} <br/>
+      <div style="margin-top:6px;">
+        <a href="/admin/orders/${id}">Open</a>
+        <button class="btn btn-assign" data-order-id="${id}" style="margin-left:8px;">Accept</button>
+      </div>
+    `;
+    // prepend so newest are first
+    panel.insertBefore(item, panel.firstChild);
+
+    // ensure the panel wrapper is visible
+    const panelWrap = document.getElementById('pendingOrdersPanel');
+    if (panelWrap && panelWrap.style.display === 'none') panelWrap.style.display = 'block';
+  }
+
+  function showOrderMessageNotification(payload) {
+    // simple console/info notification; replace with toast if desired
+    console.info('Order message', payload);
+    // if admin pending panel hidden, make it visible
+    const panelWrap = document.getElementById('pendingOrdersPanel');
+    if (panelWrap && panelWrap.style.display === 'none') panelWrap.style.display = 'block';
   }
 
   // If server injected ORDER_ID, auto-open that order (server-rendered page case)
@@ -49,6 +125,10 @@
     (async () => {
       const orderId = window.ORDER_ID;
       currentOrderId = orderId;
+      // expose to window helpers
+      window._mypadifood_chat = window._mypadifood_chat || {};
+      window._mypadifood_chat.currentOrderId = currentOrderId;
+
       ensureSocket();
       // immediately join the order room on socket side
       try {
@@ -87,6 +167,9 @@
   // public openChat used by modal flow
   async function openChat(orderId) {
     currentOrderId = orderId;
+    window._mypadifood_chat = window._mypadifood_chat || {};
+    window._mypadifood_chat.currentOrderId = currentOrderId;
+
     const modal = document.getElementById('chatModal');
     if (modal) modal.style.display = 'block';
 
@@ -138,7 +221,9 @@
     const el = document.createElement('div');
     const who = m.sender_type || m.senderType || 'unknown';
     const ts = m.created_at ? ` (${new Date(m.created_at).toLocaleTimeString()})` : '';
-    el.innerText = `[${who}] ${m.message}${ts}`;
+    // message text may be in m.message or m.msg depending on backend; guard it
+    const text = m.message || m.msg || JSON.stringify(m);
+    el.innerText = `[${who}] ${text}${ts}`;
     container.appendChild(el);
     container.scrollTop = container.scrollHeight;
   }
@@ -165,8 +250,7 @@
 
   // client modify / yes/no buttons (same behavior as before)
   document.addEventListener('click', async e => {
-    if (!currentOrderId) return;
-
+    // allow actions when currentOrderId exists or when they are UI-level (no order context)
     if (e.target && e.target.id === 'botYes') {
       const area = document.getElementById('clientModifyArea');
       if (area) area.style.display = 'block';
@@ -175,7 +259,7 @@
     if (e.target && e.target.id === 'clientModifySubmit') {
       const txtEl = document.getElementById('clientModifyText');
       const txt = txtEl ? txtEl.value.trim() : '';
-      if (!txt) return;
+      if (!txt || !currentOrderId) return;
       try {
         await fetch('/chat/message', {
           method: 'POST',
@@ -193,6 +277,7 @@
     }
 
     if (e.target && e.target.id === 'botNo') {
+      if (!currentOrderId) return;
       try {
         await fetch('/chat/message', {
           method: 'POST',
@@ -211,13 +296,40 @@
       const modal = document.getElementById('chatModal');
       if (modal) modal.style.display = 'none';
       currentOrderId = null;
+      if (window._mypadifood_chat) window._mypadifood_chat.currentOrderId = null;
+    }
+
+    // admin accept button (client side fallback) — redirect to admin order page to accept
+    if (e.target && e.target.matches('.btn-assign')) {
+      const id = e.target.getAttribute('data-order-id');
+      if (!id) return;
+      window.location.href = `/admin/orders/${id}`;
     }
   });
 
-  // expose helpers for testing
-  window._mypadifood_chat = {
-    openChat,
-    loadMessagesFor,
-    getSocket: ensureSocket
-  };
+  // expose helpers for testing & usage
+  window._mypadifood_chat = window._mypadifood_chat || {};
+  window._mypadifood_chat.openChat = openChat;
+  window._mypadifood_chat.loadMessagesFor = loadMessagesFor;
+  window._mypadifood_chat.getSocket = ensureSocket;
+  window._mypadifood_chat.currentOrderId = currentOrderId;
+
+  // On admin pages auto-join admins room and wire UI handlers
+  document.addEventListener('DOMContentLoaded', () => {
+    const panel = document.getElementById('pendingOrdersPanel');
+    if (panel) {
+      ensureSocket();
+      try { socket.emit('admin_join'); } catch (e) { console.warn('admin_join emit failed', e); }
+    }
+
+    // Attach click handlers for .btn-view-chat if not already covered
+    document.addEventListener('click', (e) => {
+      if (e.target && e.target.matches('.btn-view-chat')) {
+        const id = e.target.getAttribute('data-order-id') || e.target.dataset.orderId;
+        if (id) {
+          window._mypadifood_chat.openChat(id);
+        }
+      }
+    });
+  });
 })();

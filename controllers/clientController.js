@@ -289,7 +289,11 @@ exports.dashboard = async (req, res) => {
     const vendors = await vendorModel.getApprovedVendors({ state: client.state, lga: client.lga });
     const orders = await orderModel.getOrdersByClient(clientId);
 
-    return res.render('client/dashboard', { vendors, orders });
+    // Pull recent order id from session (set at booking time) — then remove it so it only triggers once
+    const recentOrderId = req.session.recent_order_id || null;
+    if (req.session.recent_order_id) delete req.session.recent_order_id;
+
+    return res.render('client/dashboard', { vendors, orders, recentOrderId });
   } catch (err) {
     console.error('Error loading client dashboard:', err);
     req.session.error = 'Error loading dashboard';
@@ -329,6 +333,10 @@ exports.bookVendor = async (req, res) => {
       payment_method: payment_method || 'cod',
       total_amount: price
     });
+
+    // Persist the recent order id in session so client dashboard can auto-open the chat
+    // (this survives external payment redirects as well)
+    req.session.recent_order_id = orderId;
 
     const messageSummary = `Booking request: Client: ${client.full_name || ''} | Phone: ${client.phone || ''} | Address: ${client.address || ''} | Vendor: ${vendor ? vendor.name : ''} | Item: ${item || ''} | Payment: ${payment_method || 'cod'}`;
     const createdMsg = await models.message.createMessage({

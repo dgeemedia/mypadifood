@@ -90,29 +90,44 @@ const http = require('http');
 const server = http.createServer(app);
 
 const { Server } = require('socket.io');
-const io = new Server(server);
+// Ensure socket clients use credentials (cookies) so express-session can load the session.
+// Use process.env.BASE_URL (or set SOCKET_ORIGIN) instead of '*' when possible for security.
+const io = new Server(server, {
+  cors: {
+    origin: process.env.BASE_URL || `http://localhost:${PORT}`,
+    credentials: true
+  }
+});
 
 // initialize socket util for controllers to emit events
 const socketUtil = require('./utils/socket');
 socketUtil.init(io);
 
 // IMPORTANT: make the same session middleware available to socket.request
+// Note: pass an empty object as res (some session implementations expect a res but socket doesn't provide one).
 io.use((socket, next) => {
-  // express-session expects (req, res, next) - we pass socket.request as req
-  sessionMiddleware(socket.request, socket.request.res || {}, next);
+  sessionMiddleware(socket.request, {}, next);
 });
 
 // require models so we can check order ownership inside join handler
 const models = require('./models');
 
-// ====== CONNECTION HANDLER ====== (unchanged) ...
+// ====== CONNECTION HANDLER ======
 io.on('connection', socket => {
   try {
-    const sessUser = socket.request && socket.request.session && socket.request.session.user;
+    console.log('Socket connected:', socket.id);
 
+    // If the HTTP session already marks this socket user as admin, auto-join the 'admins' room
+    const sessUser = socket.request && socket.request.session && socket.request.session.user;
     if (sessUser && (sessUser.type === 'admin' || sessUser.type === 'agent' || sessUser.type === 'super')) {
       socket.join('admins');
     }
+
+    // Allow clients to explicitly join the admins room as a fallback (client-side can emit 'admin_join')
+    socket.on('admin_join', () => {
+      // you may want to guard this event with session checks in future
+      socket.join('admins');
+    });
 
     socket.on('join_order', async ({ orderId }) => {
       try {
@@ -137,23 +152,15 @@ io.on('connection', socket => {
 
         socket.join(`order_${orderId}`);
 
-        if (isClient && sess.type === 'client') {
-          let clientPhone = sess.phone || null;
-          try {
-            const clientRow = await require('./models').client.findById(sess.id);
-            if (clientRow && clientRow.phone) clientPhone = clientRow.phone;
-          } catch (e) {
-            // ignore phone fetch error; it's optional
-          }
-
+        // If a client joined their order room, tell admins that this order was opened by client presence
+        if (isClient) {
           const payload = {
             orderId,
             clientId: sess.id,
             clientName: sess.name || (order.client_name || null),
-            clientPhone: clientPhone || (order.client_phone || null),
+            clientPhone: sess.phone || (order.client_phone || null),
             timestamp: new Date()
           };
-
           io.to('admins').emit('order_opened', payload);
         }
 
@@ -207,7 +214,9 @@ io.on('connection', socket => {
       }
     });
 
-    socket.on('disconnect', reason => {});
+    socket.on('disconnect', reason => {
+      // optional: emit presence changes to admins if you like
+    });
   } catch (outerErr) {
     console.error('socket connection error', outerErr);
   }

@@ -58,7 +58,8 @@ async function findById(id) {
            c.phone as client_phone,
            c.address as client_address,
            v.name as vendor_name,
-           v.address as vendor_address
+           v.address as vendor_address,
+           v.phone as vendor_phone
     FROM orders o
     LEFT JOIN clients c ON o.client_id = c.id
     LEFT JOIN vendors v ON o.vendor_id = v.id
@@ -74,7 +75,13 @@ async function findById(id) {
  */
 async function getPendingOrdersForAdmin() {
   const sql = `
-    SELECT o.*, c.full_name as client_name, c.phone as client_phone, v.name as vendor_name
+    SELECT o.*,
+           c.full_name as client_name,
+           c.phone as client_phone,
+           c.address as client_address,
+           v.name as vendor_name,
+           v.phone as vendor_phone,
+           v.address as vendor_address
     FROM orders o
     LEFT JOIN clients c ON o.client_id = c.id
     LEFT JOIN vendors v ON o.vendor_id = v.id

@@ -7,7 +7,7 @@
     <p>No orders yet.</p>
   <% } else { %>
     <table>
-      <thead><tr><th>Item</th><th>Vendor</th><th>Status</th><th>Amount</th></tr></thead>
+      <thead><tr><th>Item</th><th>Vendor</th><th>Status</th><th>Amount</th><th>Chat</th></tr></thead>
       <tbody>
         <% orders.forEach(o => { %>
          <tr>
@@ -15,12 +15,18 @@
            <td><%= o.vendor_name ? o.vendor_name : o.vendor_id %></td>
            <td><%= o.status %></td>
            <td>₦<%= o.total_amount %></td>
+           <td>
+             <button class="btn btn-view-chat" data-order-id="<%= o.id %>">View Chat</button>
+           </td>
          </tr>
         <% }) %>
       </tbody>
     </table>
   <% } %>
 </section>
+
+<%- include('../partials/chat-modal') %>
+
 
 <section>
   <h3>Local Vendors</h3>
@@ -46,4 +52,10 @@
   <% } %>
 </section>
 
-<script src="/js/chat.js"></script>
+<script>
+  <% if (typeof recentOrderId !== 'undefined' && recentOrderId) { %>
+    window.ORDER_ID = "<%= recentOrderId %>";
+    // open chat automatically after DOM ready (chat.js supports window.ORDER_ID)
+  <% } %>
+</script>
+
