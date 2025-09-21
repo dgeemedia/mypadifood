@@ -1,5 +1,15 @@
 [
-  { "state": "Lagos", "lgas": ["Ikeja", "Eti-Osa", "Surulere"] },
-  { "state": "Abia", "lgas": ["Aba North", "Aba South"] },
-  { "state": "Rivers", "lgas": ["Port Harcourt", "Obio-Akpor"] }
+  { "state": "Lagos", "lgas": [
+        "Agege", "Ajeromi-Ifelodun", "Alimosho", "Amuwo-Odofin", "Apapa", "Badagry", "Epe", "Eti-Osa", 
+        "Ibeju-Lekki", "Ifako-Ijaiye", "Ikeja", "Ikorodu", "Kosofe", "Lagos Island", "Lagos Mainland", 
+        "Mushin", "Ojo", "Oshodi-Isolo", "Shomolu", "Surulere"
+    ] },
+  { "state": "Abuja (FCT)", "lgas": [
+    "Abaji", "Bwari", "Gwagwalada", "Kuje", "Kwali", "Municipal Area Council"
+  ] },
+  { "state": "Rivers", "lgas": [
+        "Abua/Odual", "Ahoada East", "Ahoada West", "Akuku-Toru", "Andoni", "Asari-Toru", "Bonny", 
+        "Degema", "Eleme", "Emuoha", "Etche", "Gokana", "Ikwerre", "Khana", "Obio/Akpor", "Ogba/Egbema/Ndoni", 
+        "Ogu/Bolo", "Okrika", "Omuma", "Opobo/Nkoro", "Oyigbo", "Port Harcourt", "Tai"
+    ] }
 ]
