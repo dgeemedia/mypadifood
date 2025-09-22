@@ -23,4 +23,6 @@ router.get('/logout', clientController.logout);
 router.get('/dashboard', auth.requireClient, clientController.dashboard);
 router.post('/book', auth.requireClient, clientController.bookVendor);
 
+router.post('/order/:orderId/menu', auth.requireClient, clientController.postOrderMenu);
+
 module.exports = router;

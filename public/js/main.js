@@ -84,6 +84,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // public/js/client-orders.js (or add into main.js)
+document.addEventListener('click', async (ev) => {
+  const btn = ev.target;
+  if (btn.classList.contains('btn-add-menu')) {
+    const orderId = btn.dataset.orderId;
+    const menu = prompt('Enter your menu / order details:');
+    if (!menu) return;
+
+    try {
+      const resp = await fetch(`/client/order/${orderId}/menu`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ menu_text: menu })
+      });
+      if (resp.redirected) {
+        window.location = resp.url;
+      } else {
+        alert('Update sent.');
+      }
+    } catch (e) {
+      console.error('Failed to send menu update', e);
+      alert('Failed to send update');
+    }
+  }
+});
+
   // Location helper wiring for forms
   const vendorBtn = document.getElementById('vendor-use-location');
   if (vendorBtn) vendorBtn.addEventListener('click', (e) => fillLocation(e, 'vendor'));

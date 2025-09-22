@@ -301,9 +301,81 @@ exports.dashboard = async (req, res) => {
   }
 };
 
-// Book a vendor (unchanged logic) ...
+// Client posts menu/update to an existing order (so admin sees it)
+exports.postOrderMenu = async (req, res) => {
+  try {
+    if (!req.session || !req.session.user || req.session.user.type !== 'client') {
+      req.session.error = 'Please log in to update your order.';
+      return res.redirect('/client/login');
+    }
+
+    const clientId = req.session.user.id;
+    const { orderId } = req.params;
+    const { menu_text } = req.body; // free text menu / instructions
+
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      req.session.error = 'Order not found';
+      return res.redirect('/client/dashboard');
+    }
+    if (String(order.client_id) !== String(clientId)) {
+      req.session.error = 'Not authorized';
+      return res.redirect('/client/dashboard');
+    }
+
+    // update the order item field (optional)
+    if (menu_text) {
+      // make sure this function exists in models/orderModel.js (see next code block)
+      await orderModel.updateOrderItem(orderId, menu_text);
+    }
+
+    // create a message record
+    const createdMsg = await models.message.createMessage({
+      orderId,
+      senderType: 'client',
+      senderId: clientId,
+      message: menu_text || 'Client updated order',
+      metadata: {}
+    });
+
+    // create persistent notification for admins (if notification model exists)
+    let notification = null;
+    if (models.notification && typeof models.notification.createNotification === 'function') {
+      try {
+        notification = await models.notification.createNotification({
+          order_id: orderId,
+          type: 'menu_update',
+          payload: {
+            client_id: clientId,
+            client_name: req.session.user.name || order.client_name,
+            client_phone: req.session.user.phone || order.client_phone,
+            order_summary: menu_text
+          }
+        });
+      } catch (notifErr) {
+        console.error('Failed to create notification (non-fatal):', notifErr);
+      }
+    }
+
+    // emit via socket.io
+    const io = require('../utils/socket').get();
+    if (io) {
+      if (notification) io.to('admins').emit('new_notification', notification);
+      io.to('admins').emit('order_message', { orderId, message: createdMsg });
+      io.to(`order_${orderId}`).emit('new_message', createdMsg);
+    }
+
+    req.session.success = 'Your order updates were sent to our team.';
+    return res.redirect('/client/dashboard');
+  } catch (err) {
+    console.error('postOrderMenu error', err);
+    req.session.error = 'Could not add update to order';
+    return res.redirect('/client/dashboard');
+  }
+};
+
+// Book a vendor (updated: creates persistent admin notification + emits it)
 exports.bookVendor = async (req, res) => {
-  // (function body unchanged; ensure any res.render is consistent - this function uses redirects only)
   try {
     if (!req.session || !req.session.user || req.session.user.type !== 'client') {
       req.session.error = 'Please log in to place an order.';
@@ -356,6 +428,31 @@ exports.bookVendor = async (req, res) => {
       metadata: { vendorName: vendor ? vendor.name : null }
     });
 
+    // persistent notification for admins (guarded; non-fatal)
+    let notification = null;
+    if (models.notification && typeof models.notification.createNotification === 'function') {
+      try {
+        notification = await models.notification.createNotification({
+          order_id: orderId,
+          type: 'order',
+          payload: {
+            client_id: clientId,
+            client_name: client.full_name,
+            client_phone: client.phone,
+            client_address: client.address,
+            vendor_id: vendorId,
+            vendor_name: vendor ? vendor.name : null,
+            item: item || null,
+            total_amount: price,
+            created_at: new Date()
+          }
+        });
+      } catch (notifErr) {
+        console.error('Failed to create notification (non-fatal):', notifErr);
+        notification = null;
+      }
+    }
+
     const io = require('../utils/socket').get();
     if (io) {
       const orderSummary = {
@@ -369,11 +466,18 @@ exports.bookVendor = async (req, res) => {
         total_amount: price,
         created_at: new Date()
       };
+
+      // Emit the order summary and messages to admins & order room
       io.to('admins').emit('new_order', orderSummary);
       io.to('admins').emit('order_message', { orderId, message: createdMsg });
       io.to('admins').emit('order_message', { orderId, message: botPromptMsg });
       io.to(`order_${orderId}`).emit('new_message', createdMsg);
       io.to(`order_${orderId}`).emit('new_message', botPromptMsg);
+
+      // Emit the persistent notification if it was created
+      if (notification) {
+        io.to('admins').emit('new_notification', notification);
+      }
     }
 
     if (payment_method === 'paystack' || payment_method === 'flutterwave') {

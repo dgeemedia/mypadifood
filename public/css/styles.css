@@ -296,6 +296,194 @@ table tbody td{ padding:10px; border-top:1px solid rgba(15,23,42,0.04); }
   .hero input { width:100%; }
 }
 
+/* Pending order */
 .pending-order-item { border-radius: 6px; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,0.02); }
 .pending-order-item .order-status { color: #0b74ff; font-weight:600; }
 .pending-order-item .completed-badge { background:#eee; padding:4px 8px; border-radius:12px; font-size:0.85em; }
+
+/* -----------------------
+   Admin dashboard widgets
+   ----------------------- */
+.admin-stats {
+  display:flex;
+  gap:12px;
+  align-items:center;
+  margin:8px 0 14px 0;
+  flex-wrap:wrap;
+}
+
+.admin-stat {
+  background: linear-gradient(180deg, var(--card), #fbfdff);
+  border-radius: var(--radius-sm);
+  padding:10px 14px;
+  box-shadow: var(--shadow);
+  display:flex;
+  gap:10px;
+  align-items:center;
+  min-width:160px;
+  border: 1px solid rgba(15,23,42,0.04);
+}
+.admin-stat .stat-value {
+  font-weight:800;
+  font-size:1.1rem;
+  color:var(--brand-2);
+}
+.admin-stat .stat-label {
+  color:var(--muted);
+  font-size:0.9rem;
+}
+
+/* Admin nav (inline) */
+.admin-actions-nav {
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin:10px 0;
+  flex-wrap:wrap;
+}
+.admin-actions-nav a {
+  color: #0f172a;
+  text-decoration:none;
+  padding:8px 10px;
+  border-radius:8px;
+  font-weight:600;
+  background: transparent;
+}
+.admin-actions-nav a:hover { background: rgba(15,23,42,0.04); color:var(--brand); }
+
+/* Notifications badge */
+#notifBadge {
+  display:inline-block;
+  min-width:22px;
+  text-align:center;
+  padding:4px 8px;
+  border-radius:999px;
+  background:var(--danger);
+  color:#fff;
+  font-size:0.85rem;
+  font-weight:700;
+  vertical-align:middle;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+}
+
+/* Notifications panel */
+#notificationsPanel {
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  padding:12px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(15,23,42,0.04);
+}
+#notificationsPanel h3 { margin-top:0; margin-bottom:8px; font-size:1.05rem; color:var(--brand); }
+
+/* Notification item */
+.admin-notif {
+  background: linear-gradient(180deg,#fff,#fbfdff);
+  border-radius:8px;
+  padding:10px;
+  margin-bottom:8px;
+  border:1px solid rgba(15,23,42,0.04);
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.admin-notif:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(6,12,34,0.06); }
+.admin-notif strong { color:var(--brand); }
+.admin-notif .payload { color:var(--muted); font-size:0.92rem; }
+
+/* Mark read button (small) */
+.admin-notif .mark-read {
+  background: transparent;
+  border:1px solid rgba(15,23,42,0.06);
+  padding:6px 8px;
+  border-radius:8px;
+  font-weight:700;
+  cursor:pointer;
+  color:var(--brand);
+  align-self:flex-end;
+}
+.admin-notif .mark-read:hover { background: rgba(11,116,255,0.06); }
+
+/* Pending orders panel */
+#pendingOrdersPanel {
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  padding:12px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(15,23,42,0.04);
+}
+#pendingOrders { display:flex; flex-direction:column; gap:8px; max-height:380px; overflow:auto; padding-right:6px; }
+
+/* Single order card */
+.order-card {
+  background: linear-gradient(180deg,#fff,#fcfeff);
+  border-radius:8px;
+  padding:10px;
+  border:1px solid rgba(15,23,42,0.04);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.order-card .order-meta { font-weight:700; color:var(--brand-2); display:flex; align-items:center; gap:10px; }
+.order-card .order-vendor, .order-card .order-item { color:var(--muted); font-size:0.94rem; }
+.order-card .order-actions { display:flex; gap:8px; align-items:center; }
+
+/* Open button */
+.order-card .open-order {
+  padding:8px 10px;
+  border-radius:8px;
+  border:0;
+  background:var(--brand);
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+}
+.order-card .open-order:hover { opacity:0.95; transform:translateY(-1px); }
+
+/* Online indicator */
+.online-indicator {
+  font-size:0.78rem;
+  font-weight:700;
+  padding:4px 8px;
+  border-radius:999px;
+  color:#fff;
+  background:var(--success);
+  white-space:nowrap;
+}
+
+/* Message snippet appended to card */
+.order-msg-snippet {
+  font-size:0.9rem;
+  color:#1f2937;
+  background: linear-gradient(180deg,#f7fbff,#fff);
+  border-radius:6px;
+  padding:6px 8px;
+  border:1px solid rgba(15,23,42,0.03);
+}
+
+/* small controls */
+#notificationsPanelControls { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+#markAllRead { background:transparent; border:1px solid rgba(15,23,42,0.06); padding:8px 10px; border-radius:8px; color:var(--brand); cursor:pointer; }
+
+/* Responsive tweaks */
+@media (max-width:900px) {
+  #pendingOrders { max-height:240px; }
+  .admin-actions-nav { gap:8px; }
+}
+
+
+/* GPT4All floating widget */
+#gpt4all-widget { position: fixed; right: 20px; bottom: 20px; z-index: 1200; font-family: Arial, sans-serif; }
+#gpt-toggle { width: 56px; height: 56px; border-radius: 50%; background: var(--accent,#0077ff); color:#fff; border:none; font-size:20px; cursor:pointer; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+#gpt-panel { width: 360px; height: 460px; background:#fff; border-radius:10px; box-shadow:0 12px 36px rgba(0,0,0,.35); overflow:hidden; display:flex; flex-direction:column; margin-top:8px; }
+#gpt-panel.hidden { display:none; }
+#gpt-panel header { padding:10px; background:#f7f7f7; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
+#gpt-messages { flex:1; padding:12px; overflow-y:auto; background:linear-gradient(180deg,#fff,#fafafa); }
+.msg { margin:6px 0; padding:8px 10px; border-radius:8px; max-width:86%; line-height:1.3; }
+.msg.user { background:#007bff; color:#fff; margin-left:auto; }
+.msg.bot { background:#f1f1f1; color:#111; }
+.msg.bot.loading { opacity:.7; }
+#gpt-form { display:flex; gap:8px; padding:10px; border-top:1px solid #eee; }
+#gpt-form input { flex:1; padding:8px 10px; border-radius:6px; border:1px solid #ddd; }
+#gpt-form button { padding:8px 12px; border-radius:6px; background:#222; color:#fff; border:none; cursor:pointer; }

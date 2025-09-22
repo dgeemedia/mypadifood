@@ -6,5 +6,6 @@ module.exports = {
   order: require('./orderModel'),
   verification: require('./verificationModel'),
   message: require('./messageModel'),
-  payment: require('./paymentModel')   
+  payment: require('./paymentModel'),
+  notification: require('./notificationModel')   
 };

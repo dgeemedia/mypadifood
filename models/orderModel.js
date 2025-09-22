@@ -118,6 +118,16 @@ async function markPaid(orderId, paymentProvider, paymentReference) {
   await pool.query(sql, [paymentProvider, paymentReference, orderId]);
 }
 
+/**
+ * Update the 'item' field (menu / order details) for an order.
+ * orderId is likely a UUID string — pg will accept it as text.
+ */
+async function updateOrderItem(orderId, item) {
+  const sql = `UPDATE orders SET item = $1 WHERE id = $2 RETURNING *`;
+  const { rows } = await pool.query(sql, [item, orderId]);
+  return rows[0] || null;
+}
+
 module.exports = {
   createOrder,
   getOrdersByClient,
@@ -126,5 +136,6 @@ module.exports = {
   findById,
   getPendingOrdersForAdmin,
   updatePaymentInit,
-  markPaid
+  markPaid,
+  updateOrderItem
 };

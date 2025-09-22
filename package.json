@@ -5,12 +5,14 @@
   "scripts": {
     "start": "node server.js",
     "swagger": "node swagger.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "gpt4all-server": "node gpt4all-server.js"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.5",
     "axios": "^1.4.0",
     "bcryptjs": "^2.4.3",
+    "body-parser": "^2.2.0",
     "connect-pg-simple": "^8.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

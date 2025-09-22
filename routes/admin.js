@@ -19,4 +19,15 @@ router.post('/vendors/decision', auth.requireAdmin, adminController.vendorDecisi
 router.get('/create', auth.requireAdmin, adminController.showCreateForm);
 router.post('/create', auth.requireAdmin, adminController.createAdmin);
 
+router.post('/notifications/:id/read', auth.requireAdmin, async (req, res) => {
+  try {
+    const id = req.params.id;
+    await require('../models').notification.markNotificationRead(id);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('mark notif read error', e);
+    res.status(500).json({ ok: false });
+  }
+});
+
 module.exports = router;

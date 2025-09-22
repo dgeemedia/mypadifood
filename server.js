@@ -72,6 +72,7 @@ app.use('/admin', require('./routes/admin'));
 app.use('/chat', require('./routes/chat')); // chat route
 app.use('/admin/orders', require('./routes/adminOrders'));
 app.use('/api', require('./routes/payments')); // payment endpoints (stubs)
+app.use('/api/gpt4all', require('./routes/api/gpt4all')); // gpt4all support chat
 
 // Swagger (basic)
 const swaggerUi = require('swagger-ui-express');
@@ -117,18 +118,51 @@ io.on('connection', socket => {
   try {
     console.log('Socket connected:', socket.id);
 
+    // helper: fetch pending orders + unread notifications and send to a newly-joined admin socket
+    async function sendInitialAdminState(sock) {
+      try {
+        // fetch pending orders for admin
+        const pending = await models.order.getPendingOrdersForAdmin();
+
+        // fetch unread notifications if the model exists (guarded)
+        let notifications = [];
+        if (models.notification && typeof models.notification.getUnreadNotifications === 'function') {
+          try {
+            notifications = await models.notification.getUnreadNotifications();
+          } catch (notifErr) {
+            console.error('Failed to load notifications (non-fatal):', notifErr);
+            notifications = [];
+          }
+        }
+
+        sock.emit('initial_admin_state', {
+          orders: pending || [],
+          notifications: notifications || []
+        });
+      } catch (e) {
+        console.error('sendInitialAdminState error', e);
+      }
+    }
+
     // If the HTTP session already marks this socket user as admin, auto-join the 'admins' room
     const sessUser = socket.request && socket.request.session && socket.request.session.user;
     if (sessUser && (sessUser.type === 'admin' || sessUser.type === 'agent' || sessUser.type === 'super')) {
       socket.join('admins');
+      // send initial admin data immediately for this socket
+      sendInitialAdminState(socket).catch(err => console.error('initial state send failed', err));
     }
 
     // Allow clients to explicitly join the admins room as a fallback (client-side can emit 'admin_join')
-    socket.on('admin_join', () => {
-      // you may want to guard this event with session checks in future
-      socket.join('admins');
+    socket.on('admin_join', async () => {
+      try {
+        socket.join('admins');
+        await sendInitialAdminState(socket);
+      } catch (e) {
+        console.error('admin_join error', e);
+      }
     });
 
+    // ... rest of your existing socket handlers unchanged ...
     socket.on('join_order', async ({ orderId }) => {
       try {
         if (!orderId) return socket.emit('error', 'Missing orderId');
@@ -221,7 +255,6 @@ io.on('connection', socket => {
     console.error('socket connection error', outerErr);
   }
 });
-// ====== END CONNECTION HANDLER ======
 
 // Start server
 server.listen(PORT, () => {
