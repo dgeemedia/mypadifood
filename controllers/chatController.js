@@ -73,11 +73,33 @@ exports.postMessage = async (req, res) => {
       metadata: {}
     });
 
+    // --- attach display_name to the created message before emitting ---
+    // prefer session / order values for client; lookup admin name for admin; 'Support' for bot
+    let displayName = '';
+    if (senderType === 'client') {
+      displayName = (req.session && req.session.user && req.session.user.name) ? req.session.user.name :
+                    (order && order.client_name) ? order.client_name : 'Client';
+    } else if (senderType === 'admin') {
+      try {
+        const adminModel = require('../models').admin;
+        const adminRow = senderId ? await adminModel.findById(senderId) : null;
+        displayName = adminRow ? adminRow.name : (senderId ? `Admin ${senderId}` : 'Admin');
+      } catch (e) {
+        displayName = senderId ? `Admin ${senderId}` : 'Admin';
+      }
+    } else if (senderType === 'bot') {
+      displayName = 'Support';
+    } else {
+      displayName = senderType || 'Unknown';
+    }
+
+    const createdWithName = Object.assign({}, created, { display_name: displayName });
+
     // Emit created message: to order room AND to admin dashboards (admins room)
     const io = socketUtil.get();
     if (io) {
-      io.to(`order_${orderId}`).emit('new_message', created);
-      io.to('admins').emit('order_message', { orderId, message: created });
+      io.to(`order_${orderId}`).emit('new_message', createdWithName);
+      io.to('admins').emit('order_message', { orderId, message: createdWithName });
     }
 
     // If client replied and previous message was a bot prompt -> intelligent bot reply/ack
@@ -109,6 +131,9 @@ exports.postMessage = async (req, res) => {
             metadata: { vendorName: vendorName || null }
           });
 
+          // attach display_name and emit
+          const botCreatedWithName = Object.assign({}, botCreated, { display_name: 'Support' });
+
           // Create a notification for admins so they are aware client said "no"
           if (models.notification && typeof models.notification.createNotification === 'function') {
             try {
@@ -130,8 +155,8 @@ exports.postMessage = async (req, res) => {
           }
 
           if (io) {
-            io.to(`order_${orderId}`).emit('new_message', botCreated);
-            io.to('admins').emit('order_message', { orderId, message: botCreated });
+            io.to(`order_${orderId}`).emit('new_message', botCreatedWithName);
+            io.to('admins').emit('order_message', { orderId, message: botCreatedWithName });
           }
         } else {
           // Any other reply (including 'yes') means user wants modification -> notify admins
@@ -143,6 +168,8 @@ exports.postMessage = async (req, res) => {
             message: ackText,
             metadata: { vendorName: vendorName || null }
           });
+
+          const botCreatedWithName = Object.assign({}, botCreated, { display_name: 'Support' });
 
           if (models.notification && typeof models.notification.createNotification === 'function') {
             try {
@@ -163,8 +190,8 @@ exports.postMessage = async (req, res) => {
           }
 
           if (io) {
-            io.to(`order_${orderId}`).emit('new_message', botCreated);
-            io.to('admins').emit('order_message', { orderId, message: botCreated });
+            io.to(`order_${orderId}`).emit('new_message', botCreatedWithName);
+            io.to('admins').emit('order_message', { orderId, message: botCreatedWithName });
           }
         }
       } else {
@@ -178,14 +205,17 @@ exports.postMessage = async (req, res) => {
           metadata: { vendorName: vendorName || null }
         });
 
+        const botCreatedWithName = Object.assign({}, botCreated, { display_name: 'Support' });
+
         if (io) {
-          io.to(`order_${orderId}`).emit('new_message', botCreated);
-          io.to('admins').emit('order_message', { orderId, message: botCreated });
+          io.to(`order_${orderId}`).emit('new_message', botCreatedWithName);
+          io.to('admins').emit('order_message', { orderId, message: botCreatedWithName });
         }
       }
     }
 
-    return res.json({ ok: true, message: created });
+    // return created message to the HTTP caller (also includes display_name)
+    return res.json({ ok: true, message: createdWithName });
   } catch (err) {
     console.error('postMessage error', err);
     const status = err.status || 500;
