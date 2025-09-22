@@ -60,12 +60,11 @@ exports.postMessage = async (req, res) => {
     }
 
     // get last message to decide auto bot reply
-    // We ask for 1 message and then pick the last element (safe if function returns ascending)
     const previous = await messageModel.getMessagesByOrder(orderId, 1);
     let lastMsg = null;
     if (Array.isArray(previous) && previous.length > 0) lastMsg = previous[previous.length - 1];
 
-    // create the message
+    // create the message (the real incoming message)
     const created = await messageModel.createMessage({
       orderId,
       senderType,
@@ -81,9 +80,9 @@ exports.postMessage = async (req, res) => {
       io.to('admins').emit('order_message', { orderId, message: created });
     }
 
-    // If client replied and previous message was a bot prompt -> auto bot reply
+    // If client replied and previous message was a bot prompt -> intelligent bot reply/ack
     if (senderType === 'client' && lastMsg && lastMsg.sender_type === 'bot') {
-      // include vendor name if available (order.vendor_id)
+      // vendor name lookup (if available)
       let vendorName = null;
       try {
         if (order.vendor_id) {
@@ -94,18 +93,95 @@ exports.postMessage = async (req, res) => {
         console.error('Vendor lookup failed', e);
       }
 
-      const botText = `Kindly be patient as your request is being processed by an agent${vendorName ? ' of ' + vendorName : ''}.`;
-      const botCreated = await messageModel.createMessage({
-        orderId,
-        senderType: 'bot',
-        senderId: null,
-        message: botText,
-        metadata: { vendorName: vendorName || null }
-      });
+      const botPromptText = (lastMsg && lastMsg.message) ? String(lastMsg.message).toLowerCase() : '';
+      const replyText = (typeof message === 'string' ? message.trim() : '').toLowerCase();
 
-      if (io) {
-        io.to(`order_${orderId}`).emit('new_message', botCreated);
-        io.to('admins').emit('order_message', { orderId, message: botCreated });
+      // Heuristic: did bot ask a yes/no or modify question?
+      if (botPromptText.includes('would you like') || botPromptText.includes('select yes or no') || botPromptText.includes('modify this request') || botPromptText.includes('would you like to modify')) {
+        // Treat "no" specially: acknowledge and notify admins
+        if (/^no\b/.test(replyText) || replyText === 'n' || replyText === 'nope') {
+          const ackText = `Thanks — we've noted your response. An agent will contact you if needed.`;
+          const botCreated = await messageModel.createMessage({
+            orderId,
+            senderType: 'bot',
+            senderId: null,
+            message: ackText,
+            metadata: { vendorName: vendorName || null }
+          });
+
+          // Create a notification for admins so they are aware client said "no"
+          if (models.notification && typeof models.notification.createNotification === 'function') {
+            try {
+              const notif = await models.notification.createNotification({
+                order_id: orderId,
+                type: 'bot_response',
+                payload: {
+                  client_id: req.session.user.id,
+                  client_name: req.session.user.name || order.client_name,
+                  client_phone: req.session.user.phone || order.client_phone,
+                  response: 'no',
+                  order_summary: message
+                }
+              });
+              if (io) io.to('admins').emit('new_notification', notif);
+            } catch (e) {
+              console.error('Failed to create bot-response notification (non-fatal)', e);
+            }
+          }
+
+          if (io) {
+            io.to(`order_${orderId}`).emit('new_message', botCreated);
+            io.to('admins').emit('order_message', { orderId, message: botCreated });
+          }
+        } else {
+          // Any other reply (including 'yes') means user wants modification -> notify admins
+          const ackText = `Thanks — an agent will handle your modification request shortly.`;
+          const botCreated = await messageModel.createMessage({
+            orderId,
+            senderType: 'bot',
+            senderId: null,
+            message: ackText,
+            metadata: { vendorName: vendorName || null }
+          });
+
+          if (models.notification && typeof models.notification.createNotification === 'function') {
+            try {
+              const notif = await models.notification.createNotification({
+                order_id: orderId,
+                type: 'menu_update',
+                payload: {
+                  client_id: req.session.user.id,
+                  client_name: req.session.user.name || order.client_name,
+                  client_phone: req.session.user.phone || order.client_phone,
+                  order_summary: message
+                }
+              });
+              if (io) io.to('admins').emit('new_notification', notif);
+            } catch (e) {
+              console.error('Failed to create menu_update notification (non-fatal)', e);
+            }
+          }
+
+          if (io) {
+            io.to(`order_${orderId}`).emit('new_message', botCreated);
+            io.to('admins').emit('order_message', { orderId, message: botCreated });
+          }
+        }
+      } else {
+        // Fallback: polite generic acknowledgement (no hanging prompts)
+        const botText = `Kindly be patient as your request is being processed by an agent${vendorName ? ' of ' + vendorName : ''}.`;
+        const botCreated = await messageModel.createMessage({
+          orderId,
+          senderType: 'bot',
+          senderId: null,
+          message: botText,
+          metadata: { vendorName: vendorName || null }
+        });
+
+        if (io) {
+          io.to(`order_${orderId}`).emit('new_message', botCreated);
+          io.to('admins').emit('order_message', { orderId, message: botCreated });
+        }
       }
     }
 

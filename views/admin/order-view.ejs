@@ -13,23 +13,30 @@
   <% } %>
 </p>
 
-<section id="messages">
+<!-- Messages styled with chat UI -->
+<div class="messages">
   <% messages.forEach(m => { %>
-    <div><strong><%= m.sender_type %></strong>: <%= m.message %> <em>(<%= new Date(m.created_at).toLocaleString() %>)</em></div>
+    <div class="msg <%= m.sender_type %>">
+      <div class="msg-header">
+        <span class="msg-sender"><%= m.display_name %></span>
+        <span class="msg-time"><%= new Date(m.created_at).toLocaleString() %></span>
+      </div>
+      <div class="msg-body"><%= m.message %></div>
+    </div>
   <% }) %>
-</section>
+</div>
 
-<form id="adminSend">
-  <textarea name="message" id="adminMessage" placeholder="Write to client..."></textarea>
+<form id="adminSend" style="margin-top:12px;">
+  <textarea name="message" id="adminMessage" placeholder="Write to client..." class="chat-input"></textarea>
   <button id="adminSendBtn" type="button" class="btn">Send</button>
 </form>
 
 <% if (order.status !== 'accepted' && order.status !== 'completed') { %>
-  <form method="post" action="/admin/orders/<%= order.id %>/accept">
+  <form method="post" action="/admin/orders/<%= order.id %>/accept" style="margin-top:12px;">
     <button type="submit" class="btn">Accept Order (Assign to me)</button>
   </form>
 <% } else if (order.status === 'accepted') { %>
-  <form method="post" action="/admin/orders/<%= order.id %>/done">
+  <form method="post" action="/admin/orders/<%= order.id %>/done" style="margin-top:12px;">
     <button type="submit" class="btn">Mark as done (Delivered & Paid)</button>
   </form>
 <% } else { %>
@@ -40,7 +47,11 @@
   document.getElementById('adminSendBtn').addEventListener('click', async () => {
     const text = document.getElementById('adminMessage').value.trim();
     if(!text) return;
-    await fetch('/chat/message', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ orderId: '<%= order.id %>', message: text }) });
+    await fetch('/chat/message', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ orderId: '<%= order.id %>', message: text })
+    });
     location.reload();
   });
 </script>

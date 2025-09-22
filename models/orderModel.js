@@ -92,6 +92,26 @@ async function getPendingOrdersForAdmin() {
   return rows;
 }
 
+// models/orderModel.js (append)
+async function getCompletedOrdersForAdmin() {
+  const sql = `
+    SELECT o.*,
+           c.full_name as client_name,
+           c.phone as client_phone,
+           c.address as client_address,
+           v.name as vendor_name,
+           v.phone as vendor_phone,
+           v.address as vendor_address
+    FROM orders o
+    LEFT JOIN clients c ON o.client_id = c.id
+    LEFT JOIN vendors v ON o.vendor_id = v.id
+    WHERE o.status = 'completed'
+    ORDER BY o.updated_at DESC NULLS LAST, o.created_at DESC
+  `;
+  const { rows } = await pool.query(sql);
+  return rows;
+}
+
 /**
  * Update payment metadata when initiating a payment (store provider + reference if known)
  * paymentProvider is e.g. 'paystack' or 'flutterwave'
@@ -135,7 +155,9 @@ module.exports = {
   updateStatus,
   findById,
   getPendingOrdersForAdmin,
+  getCompletedOrdersForAdmin, 
   updatePaymentInit,
   markPaid,
   updateOrderItem
 };
+

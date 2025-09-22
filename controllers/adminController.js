@@ -179,7 +179,25 @@ exports.pendingOrdersForAdmin = async (req, res) => {
   }
 };
 
-// View single order (admin view) - includes messages
+// controllers/adminController.js (add these exports)
+exports.completedOrdersForAdmin = async (req, res) => {
+  try {
+    const rows = await orderModel.getCompletedOrdersForAdmin();
+
+    // JSON support for AJAX requests
+    if (req.query.format === 'json' || req.xhr || req.headers.accept?.includes('application/json')) {
+      return res.json({ ok: true, orders: rows });
+    }
+
+    return res.render('admin/orders-completed', { orders: rows });
+  } catch (err) {
+    console.error('Error loading completed orders for admin:', err);
+    req.session.error = 'Error loading completed orders';
+    return res.redirect('/admin/dashboard');
+  }
+};
+
+// Update viewOrder to map message display names
 exports.viewOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -188,7 +206,44 @@ exports.viewOrder = async (req, res) => {
       req.session.error = 'Order not found';
       return res.redirect('/admin/orders/pending');
     }
-    const messages = await messageModel.getMessagesByOrder(orderId, 500);
+
+    let messages = await messageModel.getMessagesByOrder(orderId, 500);
+
+    // Map display names for messages
+    // collect unique admin ids to batch fetch names
+    const adminIds = new Set();
+    messages.forEach(m => {
+      if (m.sender_type === 'admin' && m.sender_id) adminIds.add(String(m.sender_id));
+    });
+
+    const adminNames = {};
+    if (adminIds.size > 0) {
+      const adminModel = require('../models').admin;
+      await Promise.all([...adminIds].map(async id => {
+        try {
+          const a = await adminModel.findById(id);
+          adminNames[id] = a ? a.name : `Admin ${id}`;
+        } catch (e) {
+          adminNames[id] = `Admin ${id}`;
+        }
+      }));
+    }
+
+    // attach display_name to each message
+    messages = messages.map(m => {
+      const copy = Object.assign({}, m);
+      if (m.sender_type === 'client') {
+        copy.display_name = order.client_name || (req.session.user && req.session.user.name) || 'Client';
+      } else if (m.sender_type === 'bot') {
+        copy.display_name = 'Support';
+      } else if (m.sender_type === 'admin') {
+        copy.display_name = (m.sender_id && adminNames[String(m.sender_id)]) ? adminNames[String(m.sender_id)] : (req.session.user && req.session.user.name) || 'Admin';
+      } else {
+        copy.display_name = m.sender_type || 'Unknown';
+      }
+      return copy;
+    });
+
     return res.render('admin/order-view', { order, messages });
   } catch (err) {
     console.error('Error loading order view:', err);

@@ -11,6 +11,11 @@ async function findByEmail(email) {
   return rows[0] || null;
 }
 
+async function findById(id) {
+  const { rows } = await pool.query('SELECT id,name,email,role FROM admins WHERE id=$1', [id]);
+  return rows[0] || null;
+}
+
 /**
  * Create admin record (used by createAdmin and createSuperAdmin script).
  */
@@ -43,6 +48,7 @@ async function countPendingOrders() {
 
 module.exports = {
   findByEmail,
+  findById,
   createAdmin,
   countPendingVendors,
   countPendingOrders

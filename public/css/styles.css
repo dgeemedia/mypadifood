@@ -472,6 +472,87 @@ table tbody td{ padding:10px; border-top:1px solid rgba(15,23,42,0.04); }
   .admin-actions-nav { gap:8px; }
 }
 
+/* Chat-style messages for order view */
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.msg {
+  padding: 10px 12px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  max-width: 80%;
+}
+
+.msg-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.msg-sender {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.msg-body {
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+}
+
+.msg.admin {
+  background: #fff;
+  align-self: flex-start;
+  border: 1px solid rgba(15,23,42,0.06);
+}
+
+.msg.client {
+  background: #dcf8c6;
+  align-self: flex-end;
+}
+
+.msg.bot {
+  background: #f1f5f9;
+  align-self: center;
+  font-style: italic;
+}
+
+.chat-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(15,23,42,0.08);
+  margin-bottom: 8px;
+}
+
+/* Completed orders visual style */
+.order-card.completed {
+  opacity: 0.88;
+  background: linear-gradient(180deg,#fbfbfc,#f6f7fa);
+  border: 1px solid rgba(6,12,34,0.04);
+  box-shadow: 0 4px 12px rgba(6,12,34,0.04);
+}
+.completed-badge {
+  display:inline-block;
+  background:#eef2ff;
+  color:#1f6feb;
+  padding:4px 8px;
+  border-radius:12px;
+  font-weight:700;
+  margin-left:8px;
+}
+#completedOrdersPanel { background: #fff; padding:12px; border-radius:10px; box-shadow:var(--shadow); border:1px solid rgba(15,23,42,0.04); }
+
 
 /* GPT4All floating widget */
 #gpt4all-widget { position: fixed; right: 20px; bottom: 20px; z-index: 1200; font-family: Arial, sans-serif; }
