@@ -12,3 +12,5 @@ CREATE TABLE IF NOT EXISTS admin_notifications (
 
 CREATE INDEX IF NOT EXISTS idx_admin_notifications_order_id ON admin_notifications(order_id);
 CREATE INDEX IF NOT EXISTS idx_admin_notifications_read ON admin_notifications(read);
+
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP WITH TIME ZONE NULL;
