@@ -277,33 +277,80 @@
   }
 
   async function loadMessagesFor(orderId) {
-    if (!orderId) return;
-    currentOrderId = orderId;
-    try {
-      const res = await fetch(`/chat/order/${orderId}`);
-      const json = await res.json();
-      const container = document.getElementById('chatMessages');
-      if (!container) return;
-      container.innerHTML = '';
-      (json.messages || []).forEach(m => appendMessage(m));
-      container.scrollTop = container.scrollHeight;
-    } catch (e) {
-      console.error('loadMessages error', e);
-    }
-  }
-
-  function appendMessage(m) {
+  if (!orderId) return;
+  currentOrderId = orderId;
+  try {
+    const res = await fetch(`/chat/order/${orderId}`);
+    const json = await res.json();
     const container = document.getElementById('chatMessages');
     if (!container) return;
-    const el = document.createElement('div');
-    const who = m.sender_type || m.senderType || 'unknown';
-    const ts = m.created_at ? ` (${new Date(m.created_at).toLocaleTimeString()})` : '';
-    // message text may be in m.message or m.msg depending on backend; guard it
-    const text = m.message || m.msg || JSON.stringify(m);
-    el.innerText = `[${who}] ${text}${ts}`;
-    container.appendChild(el);
+    container.innerHTML = '';
+
+    // ensure messages come in chronological order
+    (json.messages || []).forEach(m => appendMessage(m));
     container.scrollTop = container.scrollHeight;
+
+    // set modal title / order id display
+    const titleEl = document.getElementById('chatTitle');
+    const orderEl = document.getElementById('chatOrderId');
+    if (titleEl) titleEl.textContent = 'Chat';
+    if (orderEl) orderEl.textContent = `Order #${orderId}`;
+
+    // show bot prompt area if there is a bot message in history
+    const botArea = document.getElementById('botPromptArea');
+    const hasBot = (json.messages || []).some(x => ((x.sender_type || x.senderType) || '').toLowerCase() === 'bot');
+    if (botArea) botArea.style.display = hasBot ? 'block' : 'none';
+  } catch (e) {
+    console.error('loadMessages error', e);
   }
+}
+
+function appendMessage(m) {
+  const container = document.getElementById('chatMessages');
+  if (!container || !m) return;
+
+  // Defensive normalisation
+  const senderType = ((m.sender_type || m.senderType || '') + '').toLowerCase() || 'bot';
+  const displayName =
+    m.display_name ||
+    m.displayName ||
+    (senderType === 'client' ? (m.client_name || 'You') : null) ||
+    (senderType === 'admin' ? (m.admin_name || 'Admin') : null) ||
+    (senderType === 'bot' ? 'Support' : (m.sender_type || 'User'));
+
+  const text = (m.message || m.msg || '') + '';
+  const ts = m.created_at ? new Date(m.created_at) : (m.createdAt ? new Date(m.createdAt) : null);
+
+  // build elements
+  const wrapper = document.createElement('div');
+  wrapper.className = 'msg ' + (senderType === 'client' ? 'client' : (senderType === 'admin' ? 'admin' : 'bot'));
+
+  const header = document.createElement('div');
+  header.className = 'msg-header';
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'msg-sender';
+  nameEl.textContent = displayName;
+
+  const timeEl = document.createElement('div');
+  timeEl.className = 'msg-time';
+  timeEl.textContent = ts ? ts.toLocaleString() : '';
+
+  header.appendChild(nameEl);
+  header.appendChild(timeEl);
+
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  // preserve newlines but keep it safe from HTML injection
+  body.textContent = text;
+
+  wrapper.appendChild(header);
+  wrapper.appendChild(body);
+
+  // append and scroll
+  container.appendChild(wrapper);
+  container.scrollTop = container.scrollHeight;
+}
 
   // send message via existing REST endpoint (server persists and emits)
   document.addEventListener('click', async e => {
@@ -408,5 +455,158 @@
         }
       }
     });
+  });
+})();
+
+/* Draggable chat: pointer-based dragging + persistence
+   Paste this at the bottom of public/js/chat.js (or merge into your init code).
+*/
+
+(function enableChatDrag() {
+  const modal = document.getElementById('chatModal');
+  const handle = document.getElementById('chatDragHandle');
+  if (!modal || !handle) return;
+
+  // localStorage key
+  const POS_KEY = 'mypadifood_chat_modal_pos_v1';
+
+  // apply saved position if present
+  try {
+    const raw = localStorage.getItem(POS_KEY);
+    if (raw) {
+      const pos = JSON.parse(raw);
+      if (pos && typeof pos.left === 'number' && typeof pos.top === 'number') {
+        // apply left/top and remove right/bottom to avoid CSS conflicts
+        modal.style.left = Math.max(8, Math.min(window.innerWidth - (modal.offsetWidth + 8), pos.left)) + 'px';
+        modal.style.top = Math.max(8, Math.min(window.innerHeight - (modal.offsetHeight + 8), pos.top)) + 'px';
+        modal.style.right = 'auto';
+        modal.style.bottom = 'auto';
+      }
+    }
+  } catch (e) {
+    console.warn('Could not restore chat position', e);
+  }
+
+  // helper to clamp coordinates inside viewport with small margin
+  function clamp(x, min, max) { return Math.min(max, Math.max(min, x)); }
+
+  let dragging = false;
+  let pointerId = null;
+  let startX = 0, startY = 0;
+  let startLeft = 0, startTop = 0;
+
+  handle.style.touchAction = 'none'; // prevent gestures interfering on the handle
+
+  function onPointerDown(ev) {
+    // only start drag for primary pointer
+    if (dragging) return;
+    // if target is a button inside the header, bail out
+    if (ev.target.closest('button') || ev.target.nodeName === 'BUTTON' || ev.target.getAttribute('role') === 'button') {
+      return;
+    }
+
+    pointerId = ev.pointerId;
+    dragging = true;
+    modal.classList.add('dragging');
+
+    // ensure modal has left/top anchored
+    const rect = modal.getBoundingClientRect();
+    // if currently using right/bottom, compute left/top from rect
+    if (!modal.style.left) {
+      modal.style.left = rect.left + 'px';
+    }
+    if (!modal.style.top) {
+      modal.style.top = rect.top + 'px';
+    }
+    // lock right/bottom so left/top take effect
+    modal.style.right = 'auto';
+    modal.style.bottom = 'auto';
+
+    // store start offsets
+    startX = ev.clientX;
+    startY = ev.clientY;
+    startLeft = parseFloat(modal.style.left || rect.left);
+    startTop = parseFloat(modal.style.top || rect.top);
+
+    // capture pointer so we get pointermove outside the handle too
+    try { handle.setPointerCapture(pointerId); } catch (e) {}
+
+    // attach listeners
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointercancel', onPointerUp);
+
+    ev.preventDefault();
+  }
+
+  function onPointerMove(ev) {
+    if (!dragging || ev.pointerId !== pointerId) return;
+    const dx = ev.clientX - startX;
+    const dy = ev.clientY - startY;
+    let newLeft = startLeft + dx;
+    let newTop = startTop + dy;
+
+    // clamp within viewport with 8px margin
+    const margin = 8;
+    const maxLeft = window.innerWidth - modal.offsetWidth - margin;
+    const maxTop = window.innerHeight - modal.offsetHeight - margin;
+    newLeft = clamp(newLeft, margin, Math.max(margin, maxLeft));
+    newTop = clamp(newTop, margin, Math.max(margin, maxTop));
+
+    modal.style.left = Math.round(newLeft) + 'px';
+    modal.style.top = Math.round(newTop) + 'px';
+    ev.preventDefault();
+  }
+
+  function onPointerUp(ev) {
+    if (!dragging || ev.pointerId !== pointerId) return;
+    dragging = false;
+    modal.classList.remove('dragging');
+    try { handle.releasePointerCapture(pointerId); } catch (e) {}
+
+    // save position
+    try {
+      const left = parseFloat(modal.style.left || modal.getBoundingClientRect().left);
+      const top = parseFloat(modal.style.top || modal.getBoundingClientRect().top);
+      localStorage.setItem(POS_KEY, JSON.stringify({ left, top }));
+    } catch (e) {
+      console.warn('Could not save chat position', e);
+    }
+
+    // remove listeners
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
+    document.removeEventListener('pointercancel', onPointerUp);
+
+    ev.preventDefault();
+  }
+
+  // double-click handle to reset position to bottom-right
+  handle.addEventListener('dblclick', (ev) => {
+    ev.preventDefault();
+    modal.style.left = 'auto';
+    modal.style.top = 'auto';
+    modal.style.right = '1rem';
+    modal.style.bottom = '1rem';
+    try { localStorage.removeItem(POS_KEY); } catch (e) {}
+  });
+
+  // pointerdown to begin drag
+  handle.addEventListener('pointerdown', onPointerDown);
+
+  // When window resizes, keep chat inside viewport (adjust if necessary)
+  window.addEventListener('resize', () => {
+    try {
+      const rect = modal.getBoundingClientRect();
+      const margin = 8;
+      let left = rect.left;
+      let top = rect.top;
+      const maxLeft = window.innerWidth - modal.offsetWidth - margin;
+      const maxTop = window.innerHeight - modal.offsetHeight - margin;
+      left = clamp(left, margin, Math.max(margin, maxLeft));
+      top = clamp(top, margin, Math.max(margin, maxTop));
+      modal.style.left = left + 'px';
+      modal.style.top = top + 'px';
+    } catch (e) {}
   });
 })();

@@ -1,24 +1,38 @@
-<!--views/partials/chat-modal.ejs Simple chat modal used by client & admin pages -->
-<div id="chatModal" style="display:none; position:fixed; right:1rem; bottom:1rem; width:360px; max-width:92vw; background:#fff; border:1px solid #ddd; padding:12px; box-shadow:0 8px 30px rgba(0,0,0,0.12); z-index:200;">
-  <div style="display:flex; justify-content:space-between; align-items:center;">
-    <strong>Chat</strong>
-    <button id="closeChat" aria-label="Close chat" class="btn">✕</button>
+<!-- views/partials/chat-modal.ejs -->
+<div id="chatModal" class="card chat-modal" style="display:none; position:fixed; right:1rem; bottom:1rem; width:360px; max-width:92vw; z-index:200;">
+  <!-- header: left side is the drag handle, right side holds buttons -->
+  <div class="chat-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:8px; border-bottom:1px solid rgba(15,23,42,0.04);">
+    <!-- Drag handle: grabbing this area moves the modal. Buttons on the right remain clickable. -->
+    <div id="chatDragHandle" class="drag-handle" style="display:flex;flex-direction:column;cursor:grab;align-items:flex-start;user-select:none;">
+      <div id="chatTitle" style="font-weight:700; font-size:1rem; line-height:1;">Chat</div>
+      <div id="chatOrderId" style="font-size:0.85rem;color:var(--muted);">Order #—</div>
+    </div>
+
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button id="botYes" class="btn" style="display:none;">Yes</button>
+      <button id="botNo" class="btn" style="display:none;">No</button>
+      <button id="closeChat" aria-label="Close chat" class="btn">✕</button>
+    </div>
   </div>
 
-  <div id="chatMessages" style="height:260px; overflow:auto; margin-top:8px; padding:8px; border:1px solid #f0f0f0; background:#fafafa;"></div>
+  <div id="chatMessages" class="messages" aria-live="polite" style="height:260px; margin-top:8px;"></div>
 
   <div id="botPromptArea" style="margin-top:8px; display:none;">
-    <div>Would you like to modify the request?</div>
-    <button id="botYes" class="btn">Yes</button>
-    <button id="botNo" class="btn">No</button>
+    <div style="font-weight:600; margin-bottom:6px;">Would you like to modify the request?</div>
+    <div style="display:flex; gap:8px;">
+      <button id="botYesInline" class="btn" data-action="bot-yes">Yes</button>
+      <button id="botNoInline" class="btn" data-action="bot-no">No</button>
+    </div>
     <div id="clientModifyArea" style="display:none; margin-top:8px;">
-      <textarea id="clientModifyText" rows="3" style="width:100%"></textarea>
-      <button id="clientModifySubmit" class="btn">Send modification</button>
+      <textarea id="clientModifyText" rows="3" style="width:100%; border-radius:8px; padding:8px;"></textarea>
+      <div style="text-align:right; margin-top:6px;">
+        <button id="clientModifySubmit" class="btn">Send modification</button>
+      </div>
     </div>
   </div>
 
   <div style="display:flex; gap:6px; margin-top:8px;">
-    <input id="chatInput" placeholder="Type a message..." style="flex:1; padding:8px;" />
+    <input id="chatInput" class="chat-input" placeholder="Type a message..." aria-label="Message input" />
     <button id="sendMsg" class="btn">Send</button>
   </div>
 </div>

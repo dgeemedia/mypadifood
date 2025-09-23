@@ -490,6 +490,7 @@ table tbody td{ padding:10px; border-top:1px solid rgba(15,23,42,0.04); }
   font-size: 0.95rem;
   line-height: 1.4;
   max-width: 80%;
+  word-break: break-word;
 }
 
 .msg-header {
@@ -505,26 +506,57 @@ table tbody td{ padding:10px; border-top:1px solid rgba(15,23,42,0.04); }
   color: #0f172a;
 }
 
+.msg-time {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
 .msg-body {
   font-size: 0.95rem;
   white-space: pre-wrap;
 }
 
+/* bubble alignment + visual styles */
 .msg.admin {
   background: #fff;
   align-self: flex-start;
   border: 1px solid rgba(15,23,42,0.06);
+  box-shadow: 0 6px 18px rgba(15,23,42,0.04);
 }
 
 .msg.client {
-  background: #dcf8c6;
+  background: linear-gradient(180deg,#dcf8c6,#d2f4b6);
   align-self: flex-end;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.04);
 }
 
 .msg.bot {
-  background: #f1f5f9;
+  background: linear-gradient(180deg,#f1f5f9,#eef2f7);
   align-self: center;
   font-style: italic;
+  box-shadow: none;
+}
+
+/* chat modal wrapper and input */
+.chat-modal,
+#chatModal {
+  width: 360px;
+  max-width: 92vw;
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(6,12,34,0.12);
+  background: var(--card);
+}
+
+.chat-header {
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(15,23,42,0.04);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .chat-input {
@@ -533,7 +565,9 @@ table tbody td{ padding:10px; border-top:1px solid rgba(15,23,42,0.04); }
   border-radius: 10px;
   border: 1px solid rgba(15,23,42,0.08);
   margin-bottom: 8px;
+  box-sizing: border-box;
 }
+
 
 /* Completed orders visual style */
 .order-card.completed {
