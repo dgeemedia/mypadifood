@@ -276,81 +276,96 @@
     }
   }
 
+  // ===== REPLACED loadMessagesFor (improved bot prompt detection) =====
   async function loadMessagesFor(orderId) {
-  if (!orderId) return;
-  currentOrderId = orderId;
-  try {
-    const res = await fetch(`/chat/order/${orderId}`);
-    const json = await res.json();
-    const container = document.getElementById('chatMessages');
-    if (!container) return;
-    container.innerHTML = '';
+    if (!orderId) return;
+    currentOrderId = orderId;
+    try {
+      const res = await fetch(`/chat/order/${orderId}`);
+      const json = await res.json();
+      const container = document.getElementById('chatMessages');
+      if (!container) return;
+      container.innerHTML = '';
 
-    // ensure messages come in chronological order
-    (json.messages || []).forEach(m => appendMessage(m));
-    container.scrollTop = container.scrollHeight;
+      // ensure messages come in chronological order
+      (json.messages || []).forEach(m => appendMessage(m));
+      container.scrollTop = container.scrollHeight;
 
-    // set modal title / order id display
-    const titleEl = document.getElementById('chatTitle');
-    const orderEl = document.getElementById('chatOrderId');
-    if (titleEl) titleEl.textContent = 'Chat';
-    if (orderEl) orderEl.textContent = `Order #${orderId}`;
+      // set modal title / order id display
+      const titleEl = document.getElementById('chatTitle');
+      const orderEl = document.getElementById('chatOrderId');
+      if (titleEl) titleEl.textContent = 'Chat';
+      if (orderEl) orderEl.textContent = `Order #${orderId}`;
 
-    // show bot prompt area if there is a bot message in history
-    const botArea = document.getElementById('botPromptArea');
-    const hasBot = (json.messages || []).some(x => ((x.sender_type || x.senderType) || '').toLowerCase() === 'bot');
-    if (botArea) botArea.style.display = hasBot ? 'block' : 'none';
-  } catch (e) {
-    console.error('loadMessages error', e);
+      // show bot prompt area only if there is an *active bot prompt* (heuristic)
+      // We look for bot messages that look like a yes/no prompt (contains "would you like", "select yes or no", "modify this request", etc.)
+      const botArea = document.getElementById('botPromptArea');
+      const isBotPrompt = (json.messages || []).some(x => {
+        if (!x) return false;
+        const t = (x.message || '').toString().toLowerCase();
+        return (x.sender_type === 'bot' || (x.senderType || '').toLowerCase() === 'bot') &&
+               (t.includes('would you like') || t.includes('select yes or no') || t.includes('modify this request') || t.includes('would you like to modify'));
+      });
+
+      if (botArea) botArea.style.display = isBotPrompt ? 'block' : 'none';
+
+      // ensure header Yes/No (if present) follow same visibility (hide them for clarity)
+      const headerYes = document.getElementById('botYes');
+      const headerNo = document.getElementById('botNo');
+      if (headerYes) headerYes.style.display = isBotPrompt ? 'inline-block' : 'none';
+      if (headerNo) headerNo.style.display = isBotPrompt ? 'inline-block' : 'none';
+    } catch (e) {
+      console.error('loadMessages error', e);
+    }
   }
-}
 
-function appendMessage(m) {
-  const container = document.getElementById('chatMessages');
-  if (!container || !m) return;
+  // ===== REPLACED appendMessage (chat-style rendering) =====
+  function appendMessage(m) {
+    const container = document.getElementById('chatMessages');
+    if (!container || !m) return;
 
-  // Defensive normalisation
-  const senderType = ((m.sender_type || m.senderType || '') + '').toLowerCase() || 'bot';
-  const displayName =
-    m.display_name ||
-    m.displayName ||
-    (senderType === 'client' ? (m.client_name || 'You') : null) ||
-    (senderType === 'admin' ? (m.admin_name || 'Admin') : null) ||
-    (senderType === 'bot' ? 'Support' : (m.sender_type || 'User'));
+    // Defensive normalisation
+    const senderType = ((m.sender_type || m.senderType || '') + '').toLowerCase() || 'bot';
+    const displayName =
+      m.display_name ||
+      m.displayName ||
+      (senderType === 'client' ? (m.client_name || 'You') : null) ||
+      (senderType === 'admin' ? (m.admin_name || 'Admin') : null) ||
+      (senderType === 'bot' ? 'Support' : (m.sender_type || 'User'));
 
-  const text = (m.message || m.msg || '') + '';
-  const ts = m.created_at ? new Date(m.created_at) : (m.createdAt ? new Date(m.createdAt) : null);
+    const text = (m.message || m.msg || '') + '';
+    const ts = m.created_at ? new Date(m.created_at) : (m.createdAt ? new Date(m.createdAt) : null);
 
-  // build elements
-  const wrapper = document.createElement('div');
-  wrapper.className = 'msg ' + (senderType === 'client' ? 'client' : (senderType === 'admin' ? 'admin' : 'bot'));
+    // build elements
+    const wrapper = document.createElement('div');
+    wrapper.className = 'msg ' + (senderType === 'client' ? 'client' : (senderType === 'admin' ? 'admin' : 'bot'));
 
-  const header = document.createElement('div');
-  header.className = 'msg-header';
+    const header = document.createElement('div');
+    header.className = 'msg-header';
 
-  const nameEl = document.createElement('div');
-  nameEl.className = 'msg-sender';
-  nameEl.textContent = displayName;
+    const nameEl = document.createElement('div');
+    nameEl.className = 'msg-sender';
+    nameEl.textContent = displayName;
 
-  const timeEl = document.createElement('div');
-  timeEl.className = 'msg-time';
-  timeEl.textContent = ts ? ts.toLocaleString() : '';
+    const timeEl = document.createElement('div');
+    timeEl.className = 'msg-time';
+    timeEl.textContent = ts ? ts.toLocaleString() : '';
 
-  header.appendChild(nameEl);
-  header.appendChild(timeEl);
+    header.appendChild(nameEl);
+    header.appendChild(timeEl);
 
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-  // preserve newlines but keep it safe from HTML injection
-  body.textContent = text;
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    // preserve newlines but keep it safe from HTML injection
+    body.textContent = text;
 
-  wrapper.appendChild(header);
-  wrapper.appendChild(body);
+    wrapper.appendChild(header);
+    wrapper.appendChild(body);
 
-  // append and scroll
-  container.appendChild(wrapper);
-  container.scrollTop = container.scrollHeight;
-}
+    // append and scroll
+    container.appendChild(wrapper);
+    container.scrollTop = container.scrollHeight;
+  }
 
   // send message via existing REST endpoint (server persists and emits)
   document.addEventListener('click', async e => {
@@ -372,47 +387,101 @@ function appendMessage(m) {
     }
   });
 
-  // client modify / yes/no buttons (same behavior as before)
+  // ===== REPLACED bot Yes/No/Modify click handlers =====
   document.addEventListener('click', async e => {
-    // allow actions when currentOrderId exists or when they are UI-level (no order context)
-    if (e.target && e.target.id === 'botYes') {
+    // YES: reveal modification textarea
+    if (e.target && (e.target.id === 'botYes' || e.target.dataset.action === 'bot-yes')) {
       const area = document.getElementById('clientModifyArea');
       if (area) area.style.display = 'block';
+      const ta = document.getElementById('clientModifyText');
+      if (ta) ta.focus();
+      return;
     }
 
+    // SUBMIT modification: send message, hide bot prompt and textarea
     if (e.target && e.target.id === 'clientModifySubmit') {
       const txtEl = document.getElementById('clientModifyText');
       const txt = txtEl ? txtEl.value.trim() : '';
       if (!txt || !currentOrderId) return;
       try {
+        e.target.disabled = true;
+        e.target.textContent = 'Sending…';
         await fetch('/chat/message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId: currentOrderId, message: txt })
         });
+        // hide and reset UI
         if (txtEl) txtEl.value = '';
         const area = document.getElementById('clientModifyArea');
         if (area) area.style.display = 'none';
         const botArea = document.getElementById('botPromptArea');
         if (botArea) botArea.style.display = 'none';
+        const headerYes = document.getElementById('botYes');
+        const headerNo = document.getElementById('botNo');
+        if (headerYes) headerYes.style.display = 'none';
+        if (headerNo) headerNo.style.display = 'none';
       } catch (err) {
         console.error('client modify submit error', err);
+        alert('Failed to send modification. Please try again.');
+      } finally {
+        e.target.disabled = false;
+        e.target.textContent = 'Send modification';
       }
+      return;
     }
 
-    if (e.target && e.target.id === 'botNo') {
+    // NO: send short 'no' response and hide prompt immediately
+    if (e.target && (e.target.id === 'botNo' || e.target.dataset.action === 'bot-no')) {
       if (!currentOrderId) return;
       try {
+        const headerYes = document.getElementById('botYes');
+        const headerNo = document.getElementById('botNo');
+
+        [headerYes, headerNo].forEach(el => {
+          if (el) { el.disabled = true; el.textContent = 'Sending…'; }
+        });
+
         await fetch('/chat/message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId: currentOrderId, message: 'No modification needed.' })
         });
+
+        // hide the bot prompt UI so it doesn't "stick out"
+        const botArea = document.getElementById('botPromptArea');
+        if (botArea) botArea.style.display = 'none';
+
+        // also hide header inline buttons
+        if (headerYes) headerYes.style.display = 'none';
+        if (headerNo) headerNo.style.display = 'none';
+
+        // Optional: show a tiny ephemeral confirmation in chat (client-side only)
+        const container = document.getElementById('chatMessages');
+        if (container) {
+          const temp = document.createElement('div');
+          temp.className = 'msg bot';
+          temp.style.opacity = '0.9';
+          temp.style.fontStyle = 'italic';
+          temp.textContent = 'Thanks — your response was recorded. An agent will contact you if needed.';
+          container.appendChild(temp);
+          container.scrollTop = container.scrollHeight;
+          // remove temp after a short while (server will likely emit a real bot message too)
+          setTimeout(() => { try { temp.remove(); } catch (e) {} }, 5000);
+        }
       } catch (err) {
         console.error('botNo error', err);
+        alert('Could not send your response. Please try again.');
+      } finally {
+        // re-enable buttons text if any remained
+        [document.getElementById('botYes'), document.getElementById('botNo')].forEach(el => {
+          if (el) { el.disabled = false; el.textContent = (el.id === 'botYes') ? 'Yes' : 'No'; }
+        });
       }
+      return;
     }
 
+    // close chat
     if (e.target && e.target.id === 'closeChat') {
       if (socket && currentOrderId) {
         try { socket.emit('leave_order', { orderId: currentOrderId }); } catch (e) {}
@@ -421,6 +490,7 @@ function appendMessage(m) {
       if (modal) modal.style.display = 'none';
       currentOrderId = null;
       if (window._mypadifood_chat) window._mypadifood_chat.currentOrderId = null;
+      return;
     }
 
     // admin accept button (client side fallback) — redirect to admin order page to accept
@@ -459,9 +529,8 @@ function appendMessage(m) {
 })();
 
 /* Draggable chat: pointer-based dragging + persistence
-   Paste this at the bottom of public/js/chat.js (or merge into your init code).
+   This runs in a separate IIFE so it can be pasted at the bottom of the file.
 */
-
 (function enableChatDrag() {
   const modal = document.getElementById('chatModal');
   const handle = document.getElementById('chatDragHandle');
@@ -496,6 +565,7 @@ function appendMessage(m) {
   let startLeft = 0, startTop = 0;
 
   handle.style.touchAction = 'none'; // prevent gestures interfering on the handle
+  handle.style.cursor = 'grab';
 
   function onPointerDown(ev) {
     // only start drag for primary pointer
@@ -508,6 +578,7 @@ function appendMessage(m) {
     pointerId = ev.pointerId;
     dragging = true;
     modal.classList.add('dragging');
+    handle.style.cursor = 'grabbing';
 
     // ensure modal has left/top anchored
     const rect = modal.getBoundingClientRect();
@@ -562,6 +633,7 @@ function appendMessage(m) {
     if (!dragging || ev.pointerId !== pointerId) return;
     dragging = false;
     modal.classList.remove('dragging');
+    handle.style.cursor = 'grab';
     try { handle.releasePointerCapture(pointerId); } catch (e) {}
 
     // save position
