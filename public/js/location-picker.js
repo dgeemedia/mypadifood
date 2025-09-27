@@ -1,7 +1,19 @@
 // public/js/location-picker.js
 (function () {
-  if (!('document' in window)) return;
-  const data = window.statesLGAs || [];
+  if (typeof document === 'undefined') return;
+
+  // Try to read server-provided states data from the hidden element
+  let data = [];
+  const el = document.getElementById('states-data');
+  if (el) {
+    const raw = el.getAttribute('data-states');
+    try {
+      data = raw ? JSON.parse(raw) : [];
+    } catch (err) {
+      console.error('Failed to parse states-data JSON', err);
+      data = [];
+    }
+  }
 
   // Expect data shape: [{ state: "Lagos", lgas: ["Ikeja", "Eti-Osa"] }, ...]
   if (!Array.isArray(data) || data.length === 0) return;
@@ -26,13 +38,9 @@
     const stateName = stateSelect.value;
     const lgaSelect = findLgaSelect(stateSelect);
     if (!lgaSelect) return;
-    // preserve any currently selected LGA value (if editing/resubmitting)
     const previous = lgaSelect.value;
     lgaSelect.innerHTML = '<option value="">Select LGA</option>';
-    if (!stateName) {
-      // done — empty list
-      return;
-    }
+    if (!stateName) return;
     const entry = data.find(s => s.state === stateName);
     if (!entry || !Array.isArray(entry.lgas)) return;
     entry.lgas.forEach(l => {
@@ -41,7 +49,6 @@
       opt.textContent = l;
       lgaSelect.appendChild(opt);
     });
-    // attempt to restore previous selection if it still exists
     if (previous) {
       const found = Array.from(lgaSelect.options).some(o => o.value === previous);
       if (found) lgaSelect.value = previous;

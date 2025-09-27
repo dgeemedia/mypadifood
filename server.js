@@ -51,16 +51,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Use the shared session middleware with Express
 app.use(sessionMiddleware);
 
-// Flash-like helper (simple)
-app.use((req, res, next) => {
-  res.locals.currentUser = req.session.user || null;
-  res.locals.success = req.session.success || null;
-  res.locals.error = req.session.error || null;
-  res.locals.title = res.locals.title || 'MyPadiFood';
-  delete req.session.success;
-  delete req.session.error;
-  next();
-});
+// use flash/messages middleware
+app.use(require('./middleware/flash'));
 
 // Routes
 // --- MOUNT vendor router BEFORE the catch-all index router so literal paths like

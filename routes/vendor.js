@@ -3,9 +3,18 @@ const express = require('express');
 const router = express.Router();
 
 const vendorController = require('../controllers/vendorController');
+const vendorValidation = require('../utils/vendor-validation');
 
-// Vendor registration (no login for vendors in this simple flow)
+// Vendor registration
 router.get('/register', vendorController.showRegisterForm);
-router.post('/register', vendorController.register);
+router.post(
+  '/register',
+  vendorValidation.registrationRules(),
+  vendorValidation.checkRegData,
+  vendorController.register
+);
+
+// Protected thanks page (one-time session token)
+router.get('/thanks', vendorController.thanksPage);
 
 module.exports = router;

@@ -25,10 +25,19 @@ function loadStatesLGAs() {
   return [];
 }
 
-// Show registration page
+// Show registration page (preserve any previous form data/errors)
 exports.showRegister = (req, res) => {
   const statesLGAs = loadStatesLGAs();
-  return res.render('client/register', { statesLGAs });
+
+  // read preserved form data and errors set by validation middleware (if any)
+  const locals = req.session.form_data || {};
+  const errors = req.session.form_errors || null;
+
+  // clear them so they don't persist (one-time)
+  if (req.session.form_data) delete req.session.form_data;
+  if (req.session.form_errors) delete req.session.form_errors;
+
+  return res.render('client/register', { statesLGAs, locals, errors });
 };
 
 // Show resend verification form
@@ -211,7 +220,10 @@ exports.resendVerification = async (req, res) => {
 
 // Show login page (client)
 exports.showLogin = (req, res) => {
-  return res.render('client/login', { userType: 'client' });
+  // If a dev verification link was placed in session, grab it and remove it immediately
+  const verification_link = req.session.verification_link || null;
+  if (req.session.verification_link) delete req.session.verification_link;
+  return res.render('client/login', { userType: 'client', verification_link });
 };
 
 // Handle login; if unverified, resend token

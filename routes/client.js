@@ -3,11 +3,20 @@ const express = require('express');
 const router = express.Router();
 
 const clientController = require('../controllers/clientController');
+const clientValidation = require('../utils/client-validation');
 const auth = require('../middleware/auth');
 
 // Registration & verification
 router.get('/register', clientController.showRegister);
-router.post('/register', clientController.register);
+
+// Apply validation middleware before the controller handler for POST /register
+router.post(
+  '/register',
+  clientValidation.registrationRules(),
+  clientValidation.checkRegData,
+  clientController.register
+);
+
 router.get('/verify', clientController.verifyEmail);
 
 // Show resend verification form
