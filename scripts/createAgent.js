@@ -1,8 +1,8 @@
-// scripts/createSuperAdmin.js
+// scripts/createAgent.js
 // Usage:
-//   node scripts/createSuperAdmin.js <email> <password> [full name]
+//   node scripts/createAgent.js <email> <password> [full name] [state] [lga]
 // Example:
-//   node scripts/createSuperAdmin.js super@admin.local 'Ellaberry1@' 'Super Admin'
+//   node scripts/createAgent.js agent@example.com 'AgentP@ss1' 'Agent Name' 'Lagos' 'Ikeja'
 
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
@@ -10,7 +10,6 @@ const { Pool } = require('pg');
 
 function makePool() {
   const connectionString = process.env.DATABASE_URL || null;
-
   const wantsSSL =
     (process.env.PGSSLMODE && process.env.PGSSLMODE.toLowerCase() === 'require') ||
     (process.env.FORCE_SSL && process.env.FORCE_SSL.toLowerCase() === 'true');
@@ -27,10 +26,7 @@ function makePool() {
   const database = process.env.PGDATABASE;
   const port = process.env.PGPORT ? Number(process.env.PGPORT) : undefined;
 
-  if (!host || !user || typeof password === 'undefined' || !database) {
-    return null;
-  }
-
+  if (!host || !user || typeof password === 'undefined' || !database) return null;
   const poolOpts = { host, user, password: String(password), database, port };
   if (wantsSSL) poolOpts.ssl = { rejectUnauthorized: false };
   return new Pool(poolOpts);
@@ -38,25 +34,26 @@ function makePool() {
 
 async function main() {
   const argv = process.argv.slice(2);
-  const email = argv[0] || process.env.SUPER_ADMIN_EMAIL || 'super@admin.local';
-  const password = argv[1] || process.env.SUPER_ADMIN_PASSWORD;
-  const name = argv[2] || 'Super Admin';
+  const email = argv[0];
+  const password = argv[1];
+  const name = argv[2] || 'Agent';
+  const region_state = argv[3] || null;
+  const region_lga = argv[4] || null;
 
-  if (!password) {
-    console.error('ERROR: No password provided. Pass as CLI arg or set SUPER_ADMIN_PASSWORD env var.');
+  if (!email || !password) {
+    console.error('Usage: node createAgent.js <email> <password> [full name] [state] [lga]');
     process.exit(2);
   }
 
   const pool = makePool();
   if (!pool) {
-    console.error('No Postgres connection configuration found. Ensure DATABASE_URL or PGHOST/PGUSER/PGPASSWORD/PGDATABASE are set.');
+    console.error('No Postgres connection configuration found. Ensure DATABASE_URL or PG env vars are set.');
     process.exit(3);
   }
 
   try {
     await pool.query('SELECT 1');
 
-    // enforce same password policy used in app
     const pwPattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,}$/;
     if (!pwPattern.test(password)) {
       console.error('Password does not meet complexity requirements. Use at least 8 chars, one uppercase, one number and one special char.');
@@ -67,34 +64,38 @@ async function main() {
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
     const sql = `
-      INSERT INTO admins (name, email, password_hash, role, active, created_at)
-      VALUES ($1,$2,$3,'super', TRUE, NOW())
+      INSERT INTO admins (name, email, password_hash, role, region_state, region_lga, active, created_at)
+      VALUES ($1,$2,$3,'agent',$4,$5, TRUE, NOW())
       ON CONFLICT (email) DO UPDATE SET
         name = EXCLUDED.name,
         password_hash = EXCLUDED.password_hash,
         role = EXCLUDED.role,
+        region_state = EXCLUDED.region_state,
+        region_lga = EXCLUDED.region_lga,
         active = TRUE
-      RETURNING id, email, role, created_at;
+      RETURNING id, email, role, region_state, region_lga, created_at;
     `;
-    const { rows } = await pool.query(sql, [name, email, passwordHash]);
+    const params = [name, email, passwordHash, region_state, region_lga];
+    const { rows } = await pool.query(sql, params);
 
     if (rows && rows.length) {
-      console.log('Super admin created/updated:');
-      console.log({ id: rows[0].id, email: rows[0].email, role: rows[0].role, created_at: rows[0].created_at });
+      console.log('Agent created/updated:');
+      console.log({
+        id: rows[0].id,
+        email: rows[0].email,
+        role: rows[0].role,
+        region_state: rows[0].region_state,
+        region_lga: rows[0].region_lga,
+        created_at: rows[0].created_at,
+      });
     } else {
-      console.log('Super admin upsert completed (no rows returned).');
+      console.log('Agent upsert completed (no rows returned).');
     }
 
     await pool.end();
     process.exit(0);
   } catch (err) {
-    console.error('Failed to create/update super admin:', err && err.message ? err.message : err);
-    if (err && /password/i.test(err.message || '')) {
-      console.error('Hint: check DATABASE_URL / PGPASSWORD in your .env and ensure password is correct.');
-    }
-    if (err && /SSL/i.test(err.message || '')) {
-      console.error('Hint: if your DB requires SSL, set PGSSLMODE=require in .env.');
-    }
+    console.error('Failed to create/update agent:', err && err.message ? err.message : err);
     try { await pool.end(); } catch (_) {}
     process.exit(1);
   }
@@ -103,5 +104,5 @@ async function main() {
 main();
 
 /*
-node scripts/createSuperAdmin.js super@admin.local 'Ellaberry1@' 'Super Admin'
+node scripts/createAgent.js agent@example.com 'AgentP@ss1' 'Agent Name' 'Lagos' 'Ikeja'
 */

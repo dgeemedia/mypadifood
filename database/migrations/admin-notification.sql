@@ -25,3 +25,12 @@ CREATE TABLE admin_reset_tokens (
 );
 
 CREATE INDEX admin_reset_tokens_admin_id_idx ON admin_reset_tokens (admin_id);
+
+
+CREATE TABLE agent_lgas (
+  id SERIAL PRIMARY KEY,
+  admin_id UUID NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+  state TEXT NOT NULL,
+  lga TEXT NOT NULL,
+  UNIQUE (admin_id, state, lga)
+);
