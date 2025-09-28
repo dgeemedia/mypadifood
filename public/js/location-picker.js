@@ -1,39 +1,29 @@
-// public/js/location-picker.js
 (function () {
-  if (typeof document === 'undefined') return;
-
-  // Try to read server-provided states data from the hidden element
-  let data = [];
-  const el = document.getElementById('states-data');
-  if (el) {
-    const raw = el.getAttribute('data-states');
-    try {
-      data = raw ? JSON.parse(raw) : [];
-    } catch (err) {
-      console.error('Failed to parse states-data JSON', err);
-      data = [];
-    }
-  }
-
-  // Expect data shape: [{ state: "Lagos", lgas: ["Ikeja", "Eti-Osa"] }, ...]
   if (!Array.isArray(data) || data.length === 0) return;
 
   function findLgaSelect(stateSelect) {
     const form = stateSelect.closest('form');
     if (form) {
       const lgaByName = form.querySelector(
-        'select[name="lga"], input[name="lga"]'
+        'select[name="region_lga"], select[name="lga"], input[name="lga"]'
       );
       if (lgaByName) return lgaByName;
     }
+
     const idMap = {
       'client-state': 'client-lga',
       'vendor-state': 'vendor-lga',
+      'admin-region-state': 'admin-region-lga',
     };
+
     if (stateSelect.id && idMap[stateSelect.id]) {
       return document.getElementById(idMap[stateSelect.id]);
     }
-    return document.querySelector('select[name="lga"]');
+
+    // fallback: the first select[name="region_lga"] or select[name="lga"] on page
+    return document.querySelector(
+      'select[name="region_lga"], select[name="lga"]'
+    );
   }
 
   function populateLgas(stateSelect) {
@@ -60,10 +50,15 @@
   }
 
   // Attach listeners to all state selects on the page
+  const selectorList = [
+    'select[name="state"]',
+    'select#client-state',
+    'select#vendor-state',
+    'select#admin-region-state',
+  ];
+
   const stateSelectors = Array.from(
-    document.querySelectorAll(
-      'select[name="state"], select#client-state, select#vendor-state'
-    )
+    document.querySelectorAll(selectorList.join(','))
   );
   stateSelectors.forEach((sel) => {
     sel.addEventListener('change', () => populateLgas(sel));

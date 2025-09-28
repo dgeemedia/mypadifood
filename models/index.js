@@ -8,5 +8,5 @@ module.exports = {
   message: require('./messageModel'),
   payment: require('./paymentModel'),
   notification: require('./notificationModel'),
-  adminReset: require('./adminResetModel')
+  adminReset: require('./adminResetModel'),
 };

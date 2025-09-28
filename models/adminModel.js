@@ -83,5 +83,5 @@ module.exports = {
   createAdmin,
   countPendingVendors,
   countPendingOrders,
-  updatePassword
+  updatePassword,
 };

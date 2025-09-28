@@ -12,7 +12,10 @@ async function createToken(token, adminId, expiresAt = null, meta = {}) {
 }
 
 async function findToken(token) {
-  const { rows } = await pool.query('SELECT * FROM admin_reset_tokens WHERE token=$1', [token]);
+  const { rows } = await pool.query(
+    'SELECT * FROM admin_reset_tokens WHERE token=$1',
+    [token]
+  );
   return rows[0] || null;
 }
 
@@ -22,7 +25,9 @@ async function deleteToken(token) {
 }
 
 async function deleteTokensForAdmin(adminId) {
-  await pool.query('DELETE FROM admin_reset_tokens WHERE admin_id=$1', [adminId]);
+  await pool.query('DELETE FROM admin_reset_tokens WHERE admin_id=$1', [
+    adminId,
+  ]);
   return true;
 }
 
@@ -30,5 +35,5 @@ module.exports = {
   createToken,
   findToken,
   deleteToken,
-  deleteTokensForAdmin
+  deleteTokensForAdmin,
 };

@@ -4,12 +4,24 @@
 
   <div class="flash-messages"><%- messages() %></div>
 
-  <form id="resetForm" method="post" action="/admin/reset" class="account-form" novalidate>
+  <form
+    id="resetForm"
+    method="post"
+    action="/admin/reset"
+    class="account-form"
+    novalidate
+  >
     <input type="hidden" name="token" value="<%= token %>" />
 
-    <div class="form-row" style="position:relative;">
-      <label for="reset-password">New password <span class="required" aria-hidden="true">*</span></label>
-      <input id="reset-password" name="password" type="password" required
+    <div class="form-row" style="position: relative">
+      <label for="reset-password"
+        >New password <span class="required" aria-hidden="true">*</span></label
+      >
+      <input
+        id="reset-password"
+        name="password"
+        type="password"
+        required
         pattern="^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\\s).{8,}$"
         aria-describedby="pw-requirements-reset"
       />
@@ -31,7 +43,7 @@
     </div>
   </form>
 
-  <p style="margin-top:12px">
+  <p style="margin-top: 12px">
     <a href="/admin/login">Back to login</a>
   </p>
 </div>

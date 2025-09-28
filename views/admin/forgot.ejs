@@ -4,10 +4,23 @@
 
   <div class="flash-messages"><%- messages() %></div>
 
-  <form id="forgotForm" method="post" action="/admin/forgot" class="account-form">
+  <form
+    id="forgotForm"
+    method="post"
+    action="/admin/forgot"
+    class="account-form"
+  >
     <div class="form-row">
-      <label for="forgot-email">Email <span class="required" aria-hidden="true">*</span></label>
-      <input id="forgot-email" name="email" type="email" required placeholder="admin@example.com" />
+      <label for="forgot-email"
+        >Email <span class="required" aria-hidden="true">*</span></label
+      >
+      <input
+        id="forgot-email"
+        name="email"
+        type="email"
+        required
+        placeholder="admin@example.com"
+      />
     </div>
 
     <div class="form-row">
@@ -15,7 +28,7 @@
     </div>
   </form>
 
-  <p style="margin-top:12px">
+  <p style="margin-top: 12px">
     <a href="/admin/login">Back to login</a>
   </p>
 </div>

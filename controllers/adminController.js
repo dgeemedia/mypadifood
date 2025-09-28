@@ -90,11 +90,14 @@ exports.showForgot = (req, res) => {
 // Handle forgot-password POST: create a token and email reset link (non-enumerating)
 exports.forgot = async (req, res) => {
   try {
-    const email = (req.body && req.body.email) ? String(req.body.email).trim() : null;
-    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+    const email =
+      req.body && req.body.email ? String(req.body.email).trim() : null;
+    const baseUrl =
+      process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
 
     // Always show the same response to avoid revealing whether account exists
-    const genericMsg = 'If an account exists for that email, a password reset link was sent. Check your inbox.';
+    const genericMsg =
+      'If an account exists for that email, a password reset link was sent. Check your inbox.';
 
     if (!email) {
       req.session.success = genericMsg;
@@ -109,13 +112,19 @@ exports.forgot = async (req, res) => {
     }
 
     // Remove any old tokens for this admin (optional cleanup)
-    try { await adminResetModel.deleteTokensForAdmin(admin.id); } catch(e) { /* non-fatal */ }
+    try {
+      await adminResetModel.deleteTokensForAdmin(admin.id);
+    } catch (e) {
+      /* non-fatal */
+    }
 
     const token = uuidv4();
     const ttlHours = Number(process.env.ADMIN_RESET_TTL_HOURS || 2); // 2 hours default
     const expiresAt = new Date(Date.now() + ttlHours * 3600 * 1000);
 
-    await adminResetModel.createToken(token, admin.id, expiresAt, { ip: req.ip || null });
+    await adminResetModel.createToken(token, admin.id, expiresAt, {
+      ip: req.ip || null,
+    });
 
     const resetLink = `${baseUrl}/admin/reset?token=${encodeURIComponent(token)}`;
 
@@ -158,7 +167,11 @@ exports.showReset = async (req, res) => {
 
     if (row.expires_at && new Date(row.expires_at) < new Date()) {
       // remove it
-      try { await adminResetModel.deleteToken(token); } catch(e) { /* ignore */ }
+      try {
+        await adminResetModel.deleteToken(token);
+      } catch (e) {
+        /* ignore */
+      }
       req.session.error = 'Reset link has expired.';
       return res.redirect('/admin/login');
     }
@@ -175,8 +188,9 @@ exports.showReset = async (req, res) => {
 // POST /admin/reset (token + password)
 exports.reset = async (req, res) => {
   try {
-    const token = (req.body && req.body.token) ? String(req.body.token) : null;
-    const password = (req.body && req.body.password) ? String(req.body.password) : null;
+    const token = req.body && req.body.token ? String(req.body.token) : null;
+    const password =
+      req.body && req.body.password ? String(req.body.password) : null;
 
     if (!token || !password) {
       req.session.error = 'Missing token or password.';
@@ -184,7 +198,8 @@ exports.reset = async (req, res) => {
     }
 
     // Password policy check (same as clients)
-    const pwPattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,}$/;
+    const pwPattern =
+      /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,}$/;
     if (!pwPattern.test(password)) {
       req.session.error = 'Password does not meet complexity requirements.';
       return res.redirect(`/admin/reset?token=${encodeURIComponent(token)}`);
@@ -196,7 +211,11 @@ exports.reset = async (req, res) => {
       return res.redirect('/admin/login');
     }
     if (row.expires_at && new Date(row.expires_at) < new Date()) {
-      try { await adminResetModel.deleteToken(token); } catch(e) { /* ignore */ }
+      try {
+        await adminResetModel.deleteToken(token);
+      } catch (e) {
+        /* ignore */
+      }
       req.session.error = 'Reset link has expired.';
       return res.redirect('/admin/login');
     }
@@ -210,7 +229,11 @@ exports.reset = async (req, res) => {
     await adminModel.updatePassword(adminId, hash);
 
     // consume tokens for this admin (including the used one)
-    try { await adminResetModel.deleteTokensForAdmin(adminId); } catch(e) { /* ignore */ }
+    try {
+      await adminResetModel.deleteTokensForAdmin(adminId);
+    } catch (e) {
+      /* ignore */
+    }
 
     req.session.success = 'Password updated. You can now sign in.';
     return res.redirect('/admin/login');
