@@ -3,20 +3,21 @@
 // Set MAIL_SEND_METHOD=sendgrid to force SendGrid, or MAIL_SEND_METHOD=smtp to force SMTP.
 // If neither configured, falls back to console logging.
 
-const nodemailer = require("nodemailer");
+const nodemailer = require('nodemailer');
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || null;
-const MAIL_SEND_METHOD = (process.env.MAIL_SEND_METHOD || "").toLowerCase(); // 'sendgrid' | 'smtp'
+const MAIL_SEND_METHOD = (process.env.MAIL_SEND_METHOD || '').toLowerCase(); // 'sendgrid' | 'smtp'
 const mailFrom =
-  process.env.MAIL_FROM || `no-reply@${process.env.APP_DOMAIN || "mypadifood.local"}`;
+  process.env.MAIL_FROM ||
+  `no-reply@${process.env.APP_DOMAIN || 'mypadifood.local'}`;
 
-let sendGridClient = null;
+const sendGridClient = null;
 let smtpTransporter = null;
 let smtpVerified = false;
 
 // Lazy require for SendGrid so project doesn't fail if lib missing
 async function sendViaSendGrid({ to, subject, text, html }) {
-  const sg = require("@sendgrid/mail");
+  const sg = require('@sendgrid/mail');
   sg.setApiKey(SENDGRID_API_KEY);
   const msg = { to, from: mailFrom, subject, text, html };
   try {
@@ -25,7 +26,10 @@ async function sendViaSendGrid({ to, subject, text, html }) {
   } catch (err) {
     // Log full SendGrid response body (very helpful)
     if (err && err.response && err.response.body) {
-      console.error("SendGrid response body:", JSON.stringify(err.response.body, null, 2));
+      console.error(
+        'SendGrid response body:',
+        JSON.stringify(err.response.body, null, 2)
+      );
     }
     throw err;
   }
@@ -54,11 +58,14 @@ function createSmtpTransporterFromEnv() {
     .verify()
     .then(() => {
       smtpVerified = true;
-      console.log("SMTP transporter verified.");
+      console.log('SMTP transporter verified.');
     })
     .catch((err) => {
       smtpVerified = false;
-      console.error("SMTP verify failed:", err && err.message ? err.message : err);
+      console.error(
+        'SMTP verify failed:',
+        err && err.message ? err.message : err
+      );
     });
 
   return transporter;
@@ -76,16 +83,22 @@ function getSmtpTransporter() {
  * 2) SMTP (nodemailer)
  * 3) Console fallback
  */
-async function sendMail({ to, subject, text = "", html = "" }) {
-  if (!to || !subject) throw new Error("sendMail requires `to` and `subject`");
+async function sendMail({ to, subject, text = '', html = '' }) {
+  if (!to || !subject) throw new Error('sendMail requires `to` and `subject`');
 
   // Prefer explicit method
-  if ((MAIL_SEND_METHOD === "sendgrid" || !MAIL_SEND_METHOD) && SENDGRID_API_KEY) {
+  if (
+    (MAIL_SEND_METHOD === 'sendgrid' || !MAIL_SEND_METHOD) &&
+    SENDGRID_API_KEY
+  ) {
     try {
       // dynamic require to avoid startup error when package missing
       return await sendViaSendGrid({ to, subject, text, html });
     } catch (sgErr) {
-      console.error("SendGrid send failed:", sgErr && sgErr.message ? sgErr.message : sgErr);
+      console.error(
+        'SendGrid send failed:',
+        sgErr && sgErr.message ? sgErr.message : sgErr
+      );
       // fall through to SMTP or console fallback
     }
   }
@@ -101,23 +114,29 @@ async function sendMail({ to, subject, text = "", html = "" }) {
         text,
         html,
       });
-      if (info && info.messageId) console.log("Email sent via SMTP:", info.messageId);
+      if (info && info.messageId)
+        console.log('Email sent via SMTP:', info.messageId);
       return info;
     } catch (smtpErr) {
-      console.error("SMTP send failed:", smtpErr && smtpErr.message ? smtpErr.message : smtpErr);
+      console.error(
+        'SMTP send failed:',
+        smtpErr && smtpErr.message ? smtpErr.message : smtpErr
+      );
       // fallthrough to console fallback
     }
   }
 
   // Final fallback: console log
-  console.warn("No working mail transport available — logging email to console (fallback).");
-  console.log("=== EMAIL (fallback) ===");
-  console.log("From:", mailFrom);
-  console.log("To:", to);
-  console.log("Subject:", subject);
-  if (text) console.log("Text:", text);
-  if (html) console.log("HTML:", html);
-  console.log("=== END EMAIL ===");
+  console.warn(
+    'No working mail transport available — logging email to console (fallback).'
+  );
+  console.log('=== EMAIL (fallback) ===');
+  console.log('From:', mailFrom);
+  console.log('To:', to);
+  console.log('Subject:', subject);
+  if (text) console.log('Text:', text);
+  if (html) console.log('HTML:', html);
+  console.log('=== END EMAIL ===');
 
   return { fallback: true };
 }

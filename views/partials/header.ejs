@@ -12,24 +12,29 @@
     <nav class="top-nav" aria-label="Primary">
       <a href="/">Home</a>
       <% if (!currentUser) { %>
-        <a href="/client/login">Client Login</a>
-        <a href="/client/register">Client Signup</a>
-        <a href="/vendor/register">Vendor Register</a>
-        <a href="/admin/login">Admin Login</a>
+      <a href="/client/login">Client Login</a>
+      <a href="/client/register">Client Signup</a>
+      <a href="/vendor/register">Vendor Register</a>
+      <a href="/admin/login">Admin Login</a>
       <% } else { %>
-        <% if (currentUser.type === 'client') { %>
-          <a href="/client/dashboard">Dashboard</a>
-          <a href="/client/logout">Logout</a>
-        <% } else if (currentUser.type === 'admin' || currentUser.type === 'super' || currentUser.type === 'agent') { %>
-          <a href="/admin/dashboard">Admin Dashboard</a>
-          <a href="/admin/logout">Logout</a>
-        <% } else { %>
-          <a href="/client/logout">Logout</a>
-        <% } %>
+      <% if (currentUser.type === 'client') { %>
+      <a href="/client/dashboard">Dashboard</a>
+      <a href="/client/logout">Logout</a>
+      <% } else if (currentUser.type === 'admin' || currentUser.type === 'super' || currentUser.type === 'agent') { %>
+      <a href="/admin/dashboard">Admin Dashboard</a>
+      <a href="/admin/logout">Logout</a>
+      <% } else { %>
+      <a href="/client/logout">Logout</a>
+      <% } %>
       <% } %>
     </nav>
 
-    <button class="hamburger" id="mobile-menu-toggle" aria-expanded="false" aria-label="Open menu">
+    <button
+      class="hamburger"
+      id="mobile-menu-toggle"
+      aria-expanded="false"
+      aria-label="Open menu"
+    >
       <i class="fa fa-bars"></i>
     </button>
   </div>

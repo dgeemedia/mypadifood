@@ -1,11 +1,20 @@
 // Usage: node scripts/createClient.js "Jane Doe" jane.doe@example.com "08012345678" "Ellaberry1@" "Lagos" "Ikeja" "10 Example St"
-require("dotenv").config();
-const bcrypt = require("bcryptjs");
-const { Pool } = require("pg");
+require('dotenv').config();
+const bcrypt = require('bcryptjs');
+const { Pool } = require('pg');
 
 async function main() {
-  const [, , full_name, email, phone, password, state = null, lga = null, address = null] =
-    process.argv;
+  const [
+    ,
+    ,
+    full_name,
+    email,
+    phone,
+    password,
+    state = null,
+    lga = null,
+    address = null,
+  ] = process.argv;
   if (!full_name || !email || !phone || !password) {
     console.error(
       'Usage: node scripts/createClient.js "Full Name" email phone password [state] [lga] [address]'
@@ -14,7 +23,10 @@ async function main() {
   }
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.PGSSLMODE === "require" ? { rejectUnauthorized: false } : false,
+    ssl:
+      process.env.PGSSLMODE === 'require'
+        ? { rejectUnauthorized: false }
+        : false,
   });
   try {
     const passwordHash = bcrypt.hashSync(password, 12);
@@ -31,11 +43,11 @@ async function main() {
       lga,
       address,
       passwordHash,
-      "manual",
+      'manual',
     ]);
-    console.log("Created client id=", rows[0].id);
+    console.log('Created client id=', rows[0].id);
   } catch (err) {
-    console.error("Error creating client:", err);
+    console.error('Error creating client:', err);
   } finally {
     await pool.end();
   }

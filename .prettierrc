@@ -1,9 +1,15 @@
 {
-  "printWidth": 100,
-  "tabWidth": 2,
-  "useTabs": false,
+  "plugins": ["prettier-plugin-ejs"],
   "semi": true,
-  "singleQuote": false,
+  "singleQuote": true,
+  "tabWidth": 2,
   "trailingComma": "es5",
-  "endOfLine": "auto"
+  "overrides": [
+    {
+      "files": "*.ejs",
+      "options": {
+        "parser": "html"
+      }
+    }
+  ]
 }

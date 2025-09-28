@@ -1,47 +1,73 @@
 <h2>Pending / Active Orders</h2>
 
 <% if (!orders || !orders.length) { %>
-  <p>No pending orders.</p>
+<p>No pending orders.</p>
 <% } else { %>
-  <ul class="pending-orders-list">
-    <% orders.forEach(o => { 
-         const isCompleted = o.status === 'completed';
-         const isAccepted = o.status === 'accepted';
-    %>
-      <li id="order-<%= o.id %>" style="border:1px solid #ddd; padding:10px; margin-bottom:8px; background: <%= isCompleted ? '#f3f3f3' : 'white' %>;">
-        <strong>Order:</strong> <%= o.id %> &nbsp;
-        <small style="font-weight:600;color:<%= isCompleted ? '#777' : '#0f172a' %>">(<%= o.status %>)</small><br/>
+<ul class="pending-orders-list">
+  <% orders.forEach(o => { const isCompleted = o.status === 'completed'; const
+  isAccepted = o.status === 'accepted'; %>
+  <li
+    id="order-<%= o.id %>"
+    style="border:1px solid #ddd; padding:10px; margin-bottom:8px; background: <%= isCompleted ? '#f3f3f3' : 'white' %>;"
+  >
+    <strong>Order:</strong>
+    <%= o.id %>
+    &nbsp;
+    <small style="font-weight:600;color:<%= isCompleted ? '#777' : '#0f172a' %>"
+      >(<%= o.status %>)</small
+    ><br />
 
-        <strong>Client:</strong> <%= o.client_name || o.client_id %> (<%= o.client_phone || '—' %>)<br/>
-        <strong>Client address:</strong> <%= o.client_address || '—' %><br/>
+    <strong>Client:</strong>
+    <%= o.client_name || o.client_id %>
+    (<%= o.client_phone || '—' %>)<br />
+    <strong>Client address:</strong>
+    <%= o.client_address || '—' %><br />
 
-        <strong>Vendor:</strong> <%= o.vendor_name || o.vendor_id %> (<%= o.vendor_phone || '—' %>)<br/>
-        <strong>Vendor address:</strong> <%= o.vendor_address || '—' %><br/>
+    <strong>Vendor:</strong>
+    <%= o.vendor_name || o.vendor_id %>
+    (<%= o.vendor_phone || '—' %>)<br />
+    <strong>Vendor address:</strong>
+    <%= o.vendor_address || '—' %><br />
 
-        <strong>Item:</strong> <%= o.item || '—' %> | <strong>₦<%= o.total_amount || 0 %></strong><br/>
-        <small>Created: <%= new Date(o.created_at).toLocaleString() %></small>
-        <div style="margin-top:8px;">
-          <a href="/admin/orders/<%= o.id %>">Open</a>
+    <strong>Item:</strong>
+    <%= o.item || '—' %>
+    | <strong>₦<%= o.total_amount || 0 %></strong><br />
+    <small
+      >Created:
+      <%= new Date(o.created_at).toLocaleString() %></small
+    >
+    <div style="margin-top: 8px">
+      <a href="/admin/orders/<%= o.id %>">Open</a>
 
-          <% if (!isCompleted) { %>
-            <% if (o.status === 'pending') { %>
-              <form method="post" action="/admin/orders/<%= o.id %>/accept" style="display:inline; margin-left:8px;">
-                <button type="submit" class="btn">Accept</button>
-              </form>
-            <% } else if (o.status === 'accepted') { %>
-              <form method="post" action="/admin/orders/<%= o.id %>/done" style="display:inline; margin-left:8px;">
-                <button type="submit" class="btn">Mark Done</button>
-              </form>
-            <% } %>
-          <% } else { %>
-            <span style="margin-left:8px; color:#666;">Completed</span>
-          <% } %>
+      <% if (!isCompleted) { %>
+      <% if (o.status === 'pending') { %>
+      <form
+        method="post"
+        action="/admin/orders/<%= o.id %>/accept"
+        style="display: inline; margin-left: 8px"
+      >
+        <button type="submit" class="btn">Accept</button>
+      </form>
+      <% } else if (o.status === 'accepted') { %>
+      <form
+        method="post"
+        action="/admin/orders/<%= o.id %>/done"
+        style="display: inline; margin-left: 8px"
+      >
+        <button type="submit" class="btn">Mark Done</button>
+      </form>
+      <% } %>
+      <% } else { %>
+      <span style="margin-left: 8px; color: #666">Completed</span>
+      <% } %>
 
-          <% if (o.assigned_admin) { %>
-            <div style="margin-top:6px; font-size:0.9em; color:#444;">Assigned: <%= o.assigned_admin_name || o.assigned_admin %></div>
-          <% } %>
-        </div>
-      </li>
-    <% }) %>
-  </ul>
+      <% if (o.assigned_admin) { %>
+      <div style="margin-top: 6px; font-size: 0.9em; color: #444">
+        Assigned: <%= o.assigned_admin_name || o.assigned_admin %>
+      </div>
+      <% } %>
+    </div>
+  </li>
+  <% }) %>
+</ul>
 <% } %>

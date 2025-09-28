@@ -10,17 +10,16 @@
     "lint": "eslint . --ext .js,.cjs",
     "lint:fix": "eslint . --ext .js,.cjs --fix",
     "format": "prettier --write \"**/*.{js,json,md,ejs,css,html}\"",
-    "gpt4all-server": "node gpt4all-server.js"
+    "gpt4all-server": "node gpt4all-server.js",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "lint-staged": {
     "*.js": [
       "pnpm run lint:fix",
-      "pnpm run format",
-      "git add"
+      "pnpm run format"
     ],
     "*.{json,md,ejs,css,html}": [
-      "pnpm run format",
-      "git add"
+      "pnpm run format"
     ]
   },
   "dependencies": {

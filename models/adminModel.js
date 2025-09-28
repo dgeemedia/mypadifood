@@ -1,18 +1,23 @@
 // models/adminModel.js
 // Admins: lookup/create and simple counters used by dashboard.
 
-const { pool } = require("../database/database");
+const { pool } = require('../database/database');
 
 /**
  * Find admin by email.
  */
 async function findByEmail(email) {
-  const { rows } = await pool.query("SELECT * FROM admins WHERE email=$1", [email]);
+  const { rows } = await pool.query('SELECT * FROM admins WHERE email=$1', [
+    email,
+  ]);
   return rows[0] || null;
 }
 
 async function findById(id) {
-  const { rows } = await pool.query("SELECT id,name,email,role FROM admins WHERE id=$1", [id]);
+  const { rows } = await pool.query(
+    'SELECT id,name,email,role FROM admins WHERE id=$1',
+    [id]
+  );
   return rows[0] || null;
 }
 
@@ -23,7 +28,7 @@ async function createAdmin({
   name,
   email,
   password_hash,
-  role = "agent",
+  role = 'agent',
   region_state = null,
   region_lga = null,
 }) {

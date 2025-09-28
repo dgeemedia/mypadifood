@@ -3,32 +3,60 @@
   <h1 class="account-title">Client Signup</h1>
 
   <!-- Flash messages -->
-  <div class="flash-messages">
-    <%- messages() %>
-  </div>
+  <div class="flash-messages"><%- messages() %></div>
 
   <% if (errors && errors.length) { %>
-    <ul class="form-errors" role="alert">
-      <% errors.forEach(err => { %>
-        <li><%= err.msg || err %></li>
-      <% }) %>
-    </ul>
+  <ul class="form-errors" role="alert">
+    <% errors.forEach(err => { %>
+    <li><%= err.msg || err %></li>
+    <% }) %>
+  </ul>
   <% } %>
 
-  <form method="post" action="/client/register" id="client-form" class="account-form" novalidate>
+  <form
+    method="post"
+    action="/client/register"
+    id="client-form"
+    class="account-form"
+    novalidate
+  >
     <div class="form-row">
-      <label for="client-fullname">Full name <span class="required" aria-hidden="true">*</span></label>
-      <input id="client-fullname" name="full_name" type="text" required value="<%= (locals && locals.full_name) ? locals.full_name : '' %>" />
+      <label for="client-fullname"
+        >Full name <span class="required" aria-hidden="true">*</span></label
+      >
+      <input
+        id="client-fullname"
+        name="full_name"
+        type="text"
+        required
+        value="<%= (locals && locals.full_name) ? locals.full_name : '' %>"
+      />
     </div>
 
     <div class="form-row">
-      <label for="client-email">Email <span class="required" aria-hidden="true">*</span></label>
-      <input id="client-email" name="email" type="email" required value="<%= (locals && locals.email) ? locals.email : '' %>" />
+      <label for="client-email"
+        >Email <span class="required" aria-hidden="true">*</span></label
+      >
+      <input
+        id="client-email"
+        name="email"
+        type="email"
+        required
+        value="<%= (locals && locals.email) ? locals.email : '' %>"
+      />
     </div>
 
     <div class="form-row">
-      <label for="client-phone">Phone <span class="required" aria-hidden="true">*</span></label>
-      <input id="client-phone" name="phone" type="text" required value="<%= (locals && locals.phone) ? locals.phone : '' %>" />
+      <label for="client-phone"
+        >Phone <span class="required" aria-hidden="true">*</span></label
+      >
+      <input
+        id="client-phone"
+        name="phone"
+        type="text"
+        required
+        value="<%= (locals && locals.phone) ? locals.phone : '' %>"
+      />
     </div>
 
     <div class="form-row">
@@ -36,9 +64,13 @@
       <select id="client-state" name="state" required>
         <option value="">Select state</option>
         <% if (Array.isArray(statesLGAs)) { %>
-          <% statesLGAs.forEach(s => { %>
-            <option value="<%= s.state %>" <%= (locals && locals.state === s.state) ? 'selected' : '' %>><%= s.state %></option>
-          <% }) %>
+        <% statesLGAs.forEach(s => { %>
+        <% if (locals && locals.state === s.state) { %>
+        <option value="<%= s.state %>" selected><%= s.state %></option>
+        <% } else { %>
+        <option value="<%= s.state %>"><%= s.state %></option>
+        <% } %>
+        <% }) %>
         <% } %>
       </select>
     </div>
@@ -51,12 +83,22 @@
     </div>
 
     <div class="form-row">
-      <label for="client-address">Address <span class="required" aria-hidden="true">*</span></label>
-      <input id="client-address" name="address" type="text" required value="<%= (locals && locals.address) ? locals.address : '' %>" />
+      <label for="client-address"
+        >Address <span class="required" aria-hidden="true">*</span></label
+      >
+      <input
+        id="client-address"
+        name="address"
+        type="text"
+        required
+        value="<%= (locals && locals.address) ? locals.address : '' %>"
+      />
     </div>
 
-    <div class="form-row" style="position:relative;">
-      <label for="client-password">Password <span class="required" aria-hidden="true">*</span></label>
+    <div class="form-row" style="position: relative">
+      <label for="client-password"
+        >Password <span class="required" aria-hidden="true">*</span></label
+      >
       <input
         id="client-password"
         name="password"
@@ -78,16 +120,33 @@
       </ul>
     </div>
 
-    <input type="hidden" name="latitude" id="client-latitude" value="<%= (locals && locals.latitude) ? locals.latitude : '' %>" />
-    <input type="hidden" name="longitude" id="client-longitude" value="<%= (locals && locals.longitude) ? locals.longitude : '' %>" />
-    <input type="hidden" name="location_source" id="client-location-source" value="<%= (locals && locals.location_source) ? locals.location_source : 'manual' %>" />
+    <input
+      type="hidden"
+      name="latitude"
+      id="client-latitude"
+      value="<%= (locals && locals.latitude) ? locals.latitude : '' %>"
+    />
+    <input
+      type="hidden"
+      name="longitude"
+      id="client-longitude"
+      value="<%= (locals && locals.longitude) ? locals.longitude : '' %>"
+    />
+    <input
+      type="hidden"
+      name="location_source"
+      id="client-location-source"
+      value="<%= (locals && locals.location_source) ? locals.location_source : 'manual' %>"
+    />
 
     <div class="form-row">
-      <button type="button" id="client-use-location" class="btn secondary">Use my device location</button>
+      <button type="button" id="client-use-location" class="btn secondary">
+        Use my device location
+      </button>
       <div class="muted-note">You can also fill state/LGA manually</div>
     </div>
 
-    <div class="form-row" style="margin-top:6px;">
+    <div class="form-row" style="margin-top: 6px">
       <div class="muted-note">By clicking submit you accept the terms.</div>
     </div>
 
@@ -96,10 +155,15 @@
     </div>
   </form>
 
-  <p class="register-link" style="width:100%; max-width:460px;">
+  <p class="register-link" style="width: 100%; max-width: 460px">
     Already have an account? <a href="/client/login">Log in here</a>
   </p>
 
   <!-- Server-provided states data (no inline JS). location-picker.js reads this element. -->
-  <div id="states-data" data-states='<%- JSON.stringify(statesLGAs || []) %>' style="display:none" aria-hidden="true"></div>
+  <div
+    id="states-data"
+    data-states="<%- JSON.stringify(statesLGAs || []) %>"
+    style="display: none"
+    aria-hidden="true"
+  ></div>
 </div>

@@ -1,5 +1,5 @@
 // models/orderModel.js
-const { pool } = require("../database/database");
+const { pool } = require('../database/database');
 
 /**
  * Create an order row.
@@ -9,7 +9,7 @@ async function createOrder({
   clientId,
   vendorId,
   item = null,
-  payment_method = "cod",
+  payment_method = 'cod',
   total_amount = 0,
 }) {
   const sql = `
@@ -17,7 +17,13 @@ async function createOrder({
     VALUES ($1,$2,$3,'pending',$4,$5)
     RETURNING id;
   `;
-  const { rows } = await pool.query(sql, [clientId, vendorId, item, payment_method, total_amount]);
+  const { rows } = await pool.query(sql, [
+    clientId,
+    vendorId,
+    item,
+    payment_method,
+    total_amount,
+  ]);
   return rows[0].id;
 }
 
@@ -41,7 +47,7 @@ async function getOrdersByClient(clientId) {
  */
 async function assignAdmin(orderId, adminId) {
   const sql = `UPDATE orders SET assigned_admin = $1, status = $2 WHERE id = $3 RETURNING *`;
-  const { rows } = await pool.query(sql, [adminId, "accepted", orderId]);
+  const { rows } = await pool.query(sql, [adminId, 'accepted', orderId]);
   return rows[0] || null;
 }
 
@@ -129,7 +135,12 @@ async function updatePaymentInit(orderId, paymentProvider, providerReference) {
     SET payment_provider = $1, payment_reference = $2, payment_method = $3
     WHERE id = $4
   `;
-  await pool.query(sql, [paymentProvider, providerReference || null, paymentProvider, orderId]);
+  await pool.query(sql, [
+    paymentProvider,
+    providerReference || null,
+    paymentProvider,
+    orderId,
+  ]);
 }
 
 /**

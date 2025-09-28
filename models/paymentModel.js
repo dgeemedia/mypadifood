@@ -1,5 +1,5 @@
 // models/paymentModel.js
-const { pool } = require("../database/database");
+const { pool } = require('../database/database');
 
 /**
  * Persist a provider payload for auditing.
@@ -20,7 +20,16 @@ async function createPayment({
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
     RETURNING *;
   `;
-  const values = [orderId, provider, event, providerReference, amount, currency, status, raw];
+  const values = [
+    orderId,
+    provider,
+    event,
+    providerReference,
+    amount,
+    currency,
+    status,
+    raw,
+  ];
   const { rows } = await pool.query(sql, values);
   return rows[0] || null;
 }
@@ -33,7 +42,7 @@ async function findByProviderReference(provider, providerReference) {
 
 async function findByOrderId(orderId) {
   const { rows } = await pool.query(
-    "SELECT * FROM payments WHERE order_id = $1 ORDER BY created_at DESC",
+    'SELECT * FROM payments WHERE order_id = $1 ORDER BY created_at DESC',
     [orderId]
   );
   return rows || [];

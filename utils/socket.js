@@ -32,7 +32,7 @@ function emitSafe(roomOrNamespace, event, payload) {
     ioInstance.to(roomOrNamespace).emit(event, payload);
     return true;
   } catch (e) {
-    console.error("emitSafe error", e);
+    console.error('emitSafe error', e);
     return false;
   }
 }

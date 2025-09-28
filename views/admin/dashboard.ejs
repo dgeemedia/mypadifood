@@ -6,24 +6,40 @@
 <nav>
   <a href="/admin/vendors/pending">Review Vendor Requests</a>
   <% if (currentUser && currentUser.type === 'super') { %>
-    | <a href="/admin/create">Create Admin</a>
+  | <a href="/admin/create">Create Admin</a>
   <% } %>
-  | <a href="#" id="nav-pending-orders">Pending Orders (live)</a>
-  | <a href="#" id="nav-completed-orders">Completed Orders</a>
-  | <a href="#" id="nav-notifications">Notifications <span id="notifBadge" style="background:#ff4d4f;color:#fff;padding:2px 6px;border-radius:12px;font-size:0.9em;margin-left:6px;"></span></a>
+  | <a href="#" id="nav-pending-orders">Pending Orders (live)</a> |
+  <a href="#" id="nav-completed-orders">Completed Orders</a> |
+  <a href="#" id="nav-notifications"
+    >Notifications
+    <span
+      id="notifBadge"
+      style="
+        background: #ff4d4f;
+        color: #fff;
+        padding: 2px 6px;
+        border-radius: 12px;
+        font-size: 0.9em;
+        margin-left: 6px;
+      "
+    ></span
+  ></a>
 </nav>
 
-<div id="notificationsPanel" style="margin-top:1rem; display:none;"></div>
+<div id="notificationsPanel" style="margin-top: 1rem; display: none"></div>
 
-<div id="pendingOrdersPanel" style="margin-top:1rem; display:none;">
+<div id="pendingOrdersPanel" style="margin-top: 1rem; display: none">
   <h3>Pending Orders (live)</h3>
   <div id="pendingOrders"></div>
-  <p id="pendingHint" style="font-size:0.9em;color:#666;">Click an order to open it. Blue border indicates client currently online.</p>
+  <p id="pendingHint" style="font-size: 0.9em; color: #666">
+    Click an order to open it. Blue border indicates client currently online.
+  </p>
 </div>
 
-<div id="completedOrdersPanel" style="margin-top:1rem; display:none;">
+<div id="completedOrdersPanel" style="margin-top: 1rem; display: none">
   <h3>Completed Orders (history)</h3>
   <div id="completedOrders"></div>
-  <p style="font-size:0.9em;color:#666;">These are completed orders — useful for audit and follow-ups.</p>
+  <p style="font-size: 0.9em; color: #666">
+    These are completed orders — useful for audit and follow-ups.
+  </p>
 </div>
-

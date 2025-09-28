@@ -3,3 +3,4 @@
 
 npm test
 pnpm -s lint-staged
+pnpm lint-staged

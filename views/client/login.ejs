@@ -1,20 +1,29 @@
 <!-- views/client/login.ejs -->
 <div class="account-page">
-  <h1 class="account-title"><%= (userType === 'admin' ? 'Admin Login' : 'Client Login') %></h1>
+  <h1 class="account-title">
+    <%= (userType === 'admin' ? 'Admin Login' : 'Client Login') %>
+  </h1>
 
   <!-- flash / express-messages -->
-  <div class="flash-messages">
-    <%- messages() %>
-  </div>
+  <div class="flash-messages"><%- messages() %></div>
 
-  <form id="loginForm" method="post" action="<%= userType === 'admin' ? '/admin/login' : '/client/login' %>" class="account-form">
+  <form
+    id="loginForm"
+    method="post"
+    action="<%= userType === 'admin' ? '/admin/login' : '/client/login' %>"
+    class="account-form"
+  >
     <div class="form-row">
-      <label for="login-email">Email <span class="required" aria-hidden="true">*</span></label>
+      <label for="login-email"
+        >Email <span class="required" aria-hidden="true">*</span></label
+      >
       <input id="login-email" name="email" type="email" required />
     </div>
 
-    <div class="form-row" style="position:relative;">
-      <label for="login-password">Password <span class="required" aria-hidden="true">*</span></label>
+    <div class="form-row" style="position: relative">
+      <label for="login-password"
+        >Password <span class="required" aria-hidden="true">*</span></label
+      >
       <input
         id="login-password"
         name="password"
@@ -41,25 +50,49 @@
     </div>
   </form>
 
-  <hr style="width:100%; max-width:460px; margin:18px 0;" />
+  <hr style="width: 100%; max-width: 460px; margin: 18px 0" />
 
-  <div class="account-page" style="padding:0;">
-    <h4 style="margin:8px 0;">Didn't receive verification email?</h4>
-    <form method="post" action="/client/resend-verification" class="account-form" style="margin-top:8px; max-width:460px;">
+  <div class="account-page" style="padding: 0">
+    <h4 style="margin: 8px 0">Didn't receive verification email?</h4>
+    <form
+      method="post"
+      action="/client/resend-verification"
+      class="account-form"
+      style="margin-top: 8px; max-width: 460px"
+    >
       <div class="form-row">
-        <label for="resend-email">Enter your email address <span class="required" aria-hidden="true">*</span></label>
-        <input id="resend-email" type="email" name="email" required placeholder="you@example.com" />
+        <label for="resend-email"
+          >Enter your email address
+          <span class="required" aria-hidden="true">*</span></label
+        >
+        <input
+          id="resend-email"
+          type="email"
+          name="email"
+          required
+          placeholder="you@example.com"
+        />
       </div>
       <div class="form-row">
-        <button type="submit" class="btn-primary">Resend verification email</button>
+        <button type="submit" class="btn-primary">
+          Resend verification email
+        </button>
       </div>
     </form>
   </div>
 
-  <p class="register-link" style="width:100%; max-width:460px; margin-top:10px;">
+  <p
+    class="register-link"
+    style="width: 100%; max-width: 460px; margin-top: 10px"
+  >
     Don't have an account? <a href="/client/register">Register here</a>
   </p>
 </div>
 
 <!-- Dev verification link (one-time). Rendered by server when SHOW_DEV_VERIFICATION === 'true' -->
-<div id="dev-verification" data-link="<%= typeof verification_link !== 'undefined' && verification_link ? verification_link : '' %>" style="display:none" aria-hidden="true"></div>
+<div
+  id="dev-verification"
+  data-link="<%= typeof verification_link !== 'undefined' && verification_link ? verification_link : '' %>"
+  style="display: none"
+  aria-hidden="true"
+></div>

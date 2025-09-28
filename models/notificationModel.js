@@ -1,7 +1,11 @@
 // models/notificationModel.js
-const { pool } = require("../database/database");
+const { pool } = require('../database/database');
 
-async function createNotification({ order_id = null, type = "order", payload = {} }) {
+async function createNotification({
+  order_id = null,
+  type = 'order',
+  payload = {},
+}) {
   const sql = `
     INSERT INTO admin_notifications (order_id, type, payload)
     VALUES ($1, $2, $3)
@@ -19,11 +23,15 @@ async function getUnreadNotifications() {
 }
 
 async function markNotificationRead(id) {
-  await pool.query(`UPDATE admin_notifications SET read = true WHERE id = $1`, [id]);
+  await pool.query(`UPDATE admin_notifications SET read = true WHERE id = $1`, [
+    id,
+  ]);
 }
 
 async function markAllRead() {
-  await pool.query(`UPDATE admin_notifications SET read = true WHERE read = false`);
+  await pool.query(
+    `UPDATE admin_notifications SET read = true WHERE read = false`
+  );
 }
 
 module.exports = {

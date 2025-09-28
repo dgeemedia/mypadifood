@@ -1,7 +1,7 @@
 // models/clientModel.js
 // Handles clients table: creation, lookup, simple read/update operations.
 
-const { pool } = require("../database/database");
+const { pool } = require('../database/database');
 
 /**
  * Insert a new client and return the inserted id.
@@ -19,7 +19,7 @@ async function createClient(data) {
     password_hash,
     latitude = null,
     longitude = null,
-    location_source = "manual",
+    location_source = 'manual',
   } = data;
 
   const sql = `
@@ -50,7 +50,9 @@ async function createClient(data) {
  * @returns {Promise<Object|null>}
  */
 async function findByEmail(email) {
-  const { rows } = await pool.query("SELECT * FROM clients WHERE email=$1", [email]);
+  const { rows } = await pool.query('SELECT * FROM clients WHERE email=$1', [
+    email,
+  ]);
   return rows[0] || null;
 }
 
@@ -60,7 +62,7 @@ async function findByEmail(email) {
  * @returns {Promise<Object|null>}
  */
 async function findById(id) {
-  const { rows } = await pool.query("SELECT * FROM clients WHERE id=$1", [id]);
+  const { rows } = await pool.query('SELECT * FROM clients WHERE id=$1', [id]);
   return rows[0] || null;
 }
 
@@ -70,7 +72,9 @@ async function findById(id) {
  * @returns {Promise<void>}
  */
 async function setVerified(clientId) {
-  await pool.query("UPDATE clients SET verified = true WHERE id=$1", [clientId]);
+  await pool.query('UPDATE clients SET verified = true WHERE id=$1', [
+    clientId,
+  ]);
 }
 
 /**
@@ -79,7 +83,10 @@ async function setVerified(clientId) {
  * @returns {Promise<{state:string,lga:string}>}
  */
 async function getLocation(clientId) {
-  const { rows } = await pool.query("SELECT state,lga FROM clients WHERE id=$1", [clientId]);
+  const { rows } = await pool.query(
+    'SELECT state,lga FROM clients WHERE id=$1',
+    [clientId]
+  );
   return rows[0] || null;
 }
 

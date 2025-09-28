@@ -20,12 +20,12 @@
   --max-width: 1100px;
   --gap: 1rem;
   font-family:
-    "Inter",
+    'Inter',
     system-ui,
     -apple-system,
-    "Segoe UI",
+    'Segoe UI',
     Roboto,
-    "Helvetica Neue",
+    'Helvetica Neue',
     Arial;
 }
 
@@ -73,7 +73,11 @@ body {
 
 /* Header */
 .site-header {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.6));
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.7),
+    rgba(255, 255, 255, 0.6)
+  );
   border-bottom: 1px solid rgba(15, 23, 42, 0.04);
   position: sticky;
   top: 0;
@@ -184,7 +188,11 @@ body {
   margin: 28px 0;
   padding: 24px;
   border-radius: var(--radius);
-  background: linear-gradient(180deg, rgba(31, 111, 235, 0.06), rgba(255, 255, 255, 0.6));
+  background: linear-gradient(
+    180deg,
+    rgba(31, 111, 235, 0.06),
+    rgba(255, 255, 255, 0.6)
+  );
   display: flex;
   gap: 20px;
   align-items: center;
@@ -203,7 +211,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
 }
-.hero input[type="text"],
+.hero input[type='text'],
 .hero select {
   padding: 10px 12px;
   border-radius: 10px;
@@ -252,7 +260,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
 }
-.vendor-card input[type="text"],
+.vendor-card input[type='text'],
 .vendor-card select {
   padding: 8px 10px;
   border-radius: 8px;
@@ -343,11 +351,11 @@ body {
 }
 
 /* Inputs */
-.account-form input[type="text"],
-.account-form input[type="email"],
-.account-form input[type="password"],
-.account-form input[type="number"],
-.account-form input[type="url"],
+.account-form input[type='text'],
+.account-form input[type='email'],
+.account-form input[type='password'],
+.account-form input[type='number'],
+.account-form input[type='url'],
 .account-form textarea,
 .account-form select {
   width: 100%;
@@ -497,7 +505,7 @@ body {
   padding-left: 2px;
 }
 .form-errors li::before {
-  content: "⚠️";
+  content: '⚠️';
   margin-right: 8px;
   display: inline-block;
   transform: translateY(-1px);
@@ -510,12 +518,12 @@ body {
   padding: 28px 0;
   color: #0f172a;
   font-family:
-    "Inter",
+    'Inter',
     system-ui,
     -apple-system,
-    "Segoe UI",
+    'Segoe UI',
     Roboto,
-    "Helvetica Neue",
+    'Helvetica Neue',
     Arial;
 }
 

@@ -1,19 +1,24 @@
 // controllers/vendorController.js
-const path = require("path");
-const fs = require("fs");
-const { v4: uuidv4 } = require("uuid");
+const path = require('path');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 
-const models = require("../models");
+const models = require('../models');
 const vendorModel = models.vendor;
 
-const { sendMail } = require("../utils/mailer");
+const { sendMail } = require('../utils/mailer');
 
 function loadStatesLGAs() {
   try {
-    const file = path.join(__dirname, "..", "locations", "Nigeria-State-Lga.json");
-    if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, "utf8"));
+    const file = path.join(
+      __dirname,
+      '..',
+      'locations',
+      'Nigeria-State-Lga.json'
+    );
+    if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch (e) {
-    console.error("Could not load statesLGAs:", e);
+    console.error('Could not load statesLGAs:', e);
   }
   return [];
 }
@@ -30,7 +35,7 @@ exports.showRegisterForm = (req, res) => {
   if (req.session.form_data) delete req.session.form_data;
   if (req.session.form_errors) delete req.session.form_errors;
 
-  return res.render("vendor/register", { statesLGAs, locals, errors });
+  return res.render('vendor/register', { statesLGAs, locals, errors });
 };
 
 // Handle vendor registration POST
@@ -62,7 +67,7 @@ exports.register = async (req, res) => {
       base_price: base_price || null,
       latitude: latitude || null,
       longitude: longitude || null,
-      location_source: location_source || "manual",
+      location_source: location_source || 'manual',
     });
 
     // attempt to fetch canonical vendor record from DB (preferred)
@@ -72,7 +77,7 @@ exports.register = async (req, res) => {
     } catch (e) {
       // non-fatal — we'll fall back to a minimal vendor object below
       console.warn(
-        "Could not load vendor after create (non-fatal):",
+        'Could not load vendor after create (non-fatal):',
         e && e.message ? e.message : e
       );
     }
@@ -89,16 +94,17 @@ exports.register = async (req, res) => {
         email,
         food_item,
         base_price: base_price || null,
-        status: "pending",
+        status: 'pending',
       };
     }
 
     // Send confirmation email asynchronously (log errors but do not block the response)
     if (email) {
-      const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
-      const subject = "MyPadiFood vendor application received";
+      const baseUrl =
+        process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+      const subject = 'MyPadiFood vendor application received';
       const html = `
-        <p>Hi ${name || "Vendor"},</p>
+        <p>Hi ${name || 'Vendor'},</p>
         <p>Thanks for registering on MyPadiFood. We have received your vendor application and it is currently <strong>pending review</strong> by our team.</p>
         <p>What happens next:</p>
         <ul>
@@ -108,12 +114,12 @@ exports.register = async (req, res) => {
         <p>If you have any questions, reply to this email or visit <a href="${baseUrl}">${baseUrl}</a>.</p>
         <p>Thank you for joining MyPadiFood.</p>
       `;
-      const text = `Hello ${name || "Vendor"},\n\nThanks for registering on MyPadiFood. Your application is pending review. We'll email you once it's approved.\n\nVisit: ${baseUrl}`;
+      const text = `Hello ${name || 'Vendor'},\n\nThanks for registering on MyPadiFood. Your application is pending review. We'll email you once it's approved.\n\nVisit: ${baseUrl}`;
 
       // fire-and-forget (don't await), but catch/log any errors
       sendMail({ to: email, subject, html, text }).catch((mailErr) => {
         console.error(
-          "Failed to send vendor confirmation email (non-fatal):",
+          'Failed to send vendor confirmation email (non-fatal):',
           mailErr && mailErr.message ? mailErr.message : mailErr
         );
       });
@@ -125,15 +131,15 @@ exports.register = async (req, res) => {
 
     // Option A: redirect to a protected /vendor/thanks route that will load the canonical record.
     // This keeps the UI flow consistent and ensures /vendor/thanks cannot be forged.
-    return res.redirect("/vendor/thanks");
+    return res.redirect('/vendor/thanks');
 
     // NOTE: If you prefer to render the thanks page immediately here (no redirect),
     // you could instead do: req.session.success = 'Vendor registration submitted...'; return res.render('vendor/thanks', { vendor });
     // But redirect approach is preferred for a clean one-time thanks page.
   } catch (err) {
-    console.error("Error submitting vendor registration:", err);
-    req.session.error = "Error submitting vendor registration.";
-    return res.redirect("/vendor/register");
+    console.error('Error submitting vendor registration:', err);
+    req.session.error = 'Error submitting vendor registration.';
+    return res.redirect('/vendor/register');
   }
 };
 
@@ -143,8 +149,8 @@ exports.thanksPage = async (req, res) => {
   try {
     const vendorId = req.session.vendor_thanks_id;
     if (!vendorId) {
-      req.session.error = "Unable to show confirmation page.";
-      return res.status(403).redirect("/vendor/register");
+      req.session.error = 'Unable to show confirmation page.';
+      return res.status(403).redirect('/vendor/register');
     }
 
     // Clear the session key so the page cannot be re-opened repeatedly
@@ -155,29 +161,34 @@ exports.thanksPage = async (req, res) => {
     try {
       vendor = await vendorModel.findById(vendorId);
     } catch (e) {
-      console.warn("Could not load vendor for thanks page:", e && e.message ? e.message : e);
+      console.warn(
+        'Could not load vendor for thanks page:',
+        e && e.message ? e.message : e
+      );
       vendor = null;
     }
 
     if (!vendor) {
       // If the DB record is missing for some reason, show a minimal thanks experience instead of a hard failure
       // (but set an informative flash message)
-      req.session.success = "Vendor registration submitted. Await admin approval.";
+      req.session.success =
+        'Vendor registration submitted. Await admin approval.';
       const fallbackVendor = {
         id: vendorId,
-        name: "Vendor",
-        address: "",
-        status: "pending",
+        name: 'Vendor',
+        address: '',
+        status: 'pending',
       };
-      return res.render("vendor/thanks", { vendor: fallbackVendor });
+      return res.render('vendor/thanks', { vendor: fallbackVendor });
     }
 
     // Render the canonical vendor thanks page
-    req.session.success = "Vendor registration submitted. Await admin approval.";
-    return res.render("vendor/thanks", { vendor });
+    req.session.success =
+      'Vendor registration submitted. Await admin approval.';
+    return res.render('vendor/thanks', { vendor });
   } catch (err) {
-    console.error("Error rendering vendor thanks page:", err);
-    req.session.error = "Could not show confirmation page.";
-    return res.redirect("/");
+    console.error('Error rendering vendor thanks page:', err);
+    req.session.error = 'Could not show confirmation page.';
+    return res.redirect('/');
   }
 };

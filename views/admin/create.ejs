@@ -6,25 +6,28 @@
   <label>Email <input name="email" type="email" required /></label>
   <label>Password <input name="password" type="password" required /></label>
 
-  <label>Role
+  <label
+    >Role
     <select name="role" required>
       <option value="agent">Agent</option>
       <option value="super">Super</option>
     </select>
   </label>
 
-  <label>Region - State
+  <label
+    >Region - State
     <select name="region_state" id="admin-region-state">
       <option value="">(All)</option>
       <% if (Array.isArray(statesLGAs)) { %>
-        <% statesLGAs.forEach(s => { %>
-          <option value="<%= s.state %>"><%= s.state %></option>
-        <% }) %>
+      <% statesLGAs.forEach(s => { %>
+      <option value="<%= s.state %>"><%= s.state %></option>
+      <% }) %>
       <% } %>
     </select>
   </label>
 
-  <label>Region - LGA
+  <label
+    >Region - LGA
     <select name="region_lga" id="admin-region-lga">
       <option value="">(All)</option>
     </select>
