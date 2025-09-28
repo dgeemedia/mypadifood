@@ -1,18 +1,24 @@
 // models/verificationModel.js
-const { pool } = require('../database/database');
+const { pool } = require("../database/database");
 
 /**
  * Insert a verification token.
  */
 async function createToken(token, clientId, expiresAt) {
-  await pool.query('INSERT INTO verification_tokens (token, client_id, expires_at) VALUES ($1,$2,$3)', [token, clientId, expiresAt]);
+  await pool.query(
+    "INSERT INTO verification_tokens (token, client_id, expires_at) VALUES ($1,$2,$3)",
+    [token, clientId, expiresAt]
+  );
 }
 
 /**
  * Find token row.
  */
 async function findToken(token) {
-  const { rows } = await pool.query('SELECT token, client_id, expires_at, created_at FROM verification_tokens WHERE token=$1', [token]);
+  const { rows } = await pool.query(
+    "SELECT token, client_id, expires_at, created_at FROM verification_tokens WHERE token=$1",
+    [token]
+  );
   return rows[0] || null;
 }
 
@@ -20,7 +26,7 @@ async function findToken(token) {
  * Delete token (consume).
  */
 async function deleteToken(token) {
-  await pool.query('DELETE FROM verification_tokens WHERE token=$1', [token]);
+  await pool.query("DELETE FROM verification_tokens WHERE token=$1", [token]);
 }
 
 /**
@@ -43,5 +49,5 @@ module.exports = {
   createToken,
   findToken,
   deleteToken,
-  getLatestTokenForClient
+  getLatestTokenForClient,
 };

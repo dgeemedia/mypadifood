@@ -6,7 +6,22 @@
     "start": "node server.js",
     "swagger": "node swagger.js",
     "dev": "nodemon server.js",
+    "prepare": "husky install",
+    "lint": "eslint . --ext .js,.cjs",
+    "lint:fix": "eslint . --ext .js,.cjs --fix",
+    "format": "prettier --write \"**/*.{js,json,md,ejs,css,html}\"",
     "gpt4all-server": "node gpt4all-server.js"
+  },
+  "lint-staged": {
+    "*.js": [
+      "pnpm run lint:fix",
+      "pnpm run format",
+      "git add"
+    ],
+    "*.{json,md,ejs,css,html}": [
+      "pnpm run format",
+      "git add"
+    ]
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.5",
@@ -38,8 +53,17 @@
   },
   "devDependencies": {
     "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-promise": "^7.2.1",
+    "eslint-plugin-unused-imports": "^4.2.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^16.2.1",
     "node-pg-migrate": "^8.0.3",
     "nodemon": "^3.0.1",
-    "prettier": "^3.6.2"
+    "prettier": "^3.6.2",
+    "prettier-plugin-ejs": "^1.0.3"
   }
 }

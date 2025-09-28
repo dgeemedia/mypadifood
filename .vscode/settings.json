@@ -1,17 +1,26 @@
 {
-    "sqltools.connections": [
-        {
-            "pgOptions": {
-                "ssl": {
-                    "rejectUnauthorized": true
-                }
-            },
-            "ssh": "Disabled",
-            "previewLimit": 50,
-            "server": "localhost",
-            "driver": "PostgreSQL",
-            "name": "mypadifood",
-            "connectString": "postgresql://mypadifood_user:8ahnup715FrRQr1sOSg42fPGQfUmgTn6@dpg-d2uvif95pdvs73au0620-a.oregon-postgres.render.com/mypadifood"
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "eslint.enable": true,
+  "eslint.validate": ["javascript", "javascriptreact", "html", "ejs"],
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true,
+    "source.fixAll.eslint": true
+  },
+
+  "sqltools.connections": [
+    {
+      "pgOptions": {
+        "ssl": {
+          "rejectUnauthorized": true
         }
-    ]
+      },
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "localhost",
+      "driver": "PostgreSQL",
+      "name": "mypadifood",
+      "connectString": "postgresql://mypadifood_user:8ahnup715FrRQr1sOSg42fPGQfUmgTn6@dpg-d2uvif95pdvs73au0620-a.oregon-postgres.render.com/mypadifood"
+    }
+  ]
 }

@@ -1,18 +1,18 @@
 // routes/payments.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const paymentsUtil = require('../utils/payments');
-const models = require('../models');
+const paymentsUtil = require("../utils/payments");
+const models = require("../models");
 const orderModel = models.order;
 const paymentModel = models.payment; // ensure you've added to models/index.js
 
 // ---------- Paystack verification redirect (GET) ----------
-router.get('/paystack/verify', async (req, res) => {
+router.get("/paystack/verify", async (req, res) => {
   const { reference } = req.query;
   if (!reference) {
-    req.session && (req.session.error = 'Missing reference from Paystack.');
-    return res.redirect('/client/dashboard');
+    req.session && (req.session.error = "Missing reference from Paystack.");
+    return res.redirect("/client/dashboard");
   }
 
   try {
@@ -20,42 +20,45 @@ router.get('/paystack/verify', async (req, res) => {
     const result = await paymentsUtil.verifyPaystack(reference);
     // persist raw verification response for audit
     await paymentModel.createPayment({
-      orderId: result.data && result.data.metadata && result.data.metadata.orderId ? result.data.metadata.orderId : null,
-      provider: 'paystack',
-      event: 'verification',
+      orderId:
+        result.data && result.data.metadata && result.data.metadata.orderId
+          ? result.data.metadata.orderId
+          : null,
+      provider: "paystack",
+      event: "verification",
       providerReference: reference,
-      amount: (result.data && result.data.amount) ? Number(result.data.amount) / 100 : null, // convert kobo to NGN
+      amount: result.data && result.data.amount ? Number(result.data.amount) / 100 : null, // convert kobo to NGN
       currency: result.data && result.data.currency,
       status: result.data && result.data.status,
-      raw: result
+      raw: result,
     });
 
     if (result && result.success) {
       const orderId = result.data && result.data.metadata && result.data.metadata.orderId;
       if (orderId) {
-        await orderModel.markPaid(orderId, 'paystack', reference);
-        req.session && (req.session.success = 'Payment successful. Thank you!');
-        return res.redirect('/client/dashboard');
+        await orderModel.markPaid(orderId, "paystack", reference);
+        req.session && (req.session.success = "Payment successful. Thank you!");
+        return res.redirect("/client/dashboard");
       } else {
         // try to find order by stored payment_reference
-        const existing = await require('../models').order; // existing model
+        const existing = await require("../models").order; // existing model
         // fall through and show success
-        req.session && (req.session.success = 'Payment successful (no matching order found).');
-        return res.redirect('/client/dashboard');
+        req.session && (req.session.success = "Payment successful (no matching order found).");
+        return res.redirect("/client/dashboard");
       }
     } else {
-      req.session && (req.session.error = 'Payment not successful. Please contact support.');
-      return res.redirect('/client/dashboard');
+      req.session && (req.session.error = "Payment not successful. Please contact support.");
+      return res.redirect("/client/dashboard");
     }
   } catch (err) {
-    console.error('Paystack verify error:', err);
-    req.session && (req.session.error = 'Verification failed for Paystack payment.');
-    return res.redirect('/client/dashboard');
+    console.error("Paystack verify error:", err);
+    req.session && (req.session.error = "Verification failed for Paystack payment.");
+    return res.redirect("/client/dashboard");
   }
 });
 
 // ---------- Flutterwave redirect/callback (GET) ----------
-router.get('/flutterwave/callback', async (req, res) => {
+router.get("/flutterwave/callback", async (req, res) => {
   const { status, tx_ref, transaction_id } = req.query;
 
   try {
@@ -63,64 +66,85 @@ router.get('/flutterwave/callback', async (req, res) => {
     if (transaction_id) {
       verification = await paymentsUtil.verifyFlutterwave(transaction_id);
     } else {
-      verification = { success: (status === 'successful' || status === 'successful'), data: { tx_ref, status } };
+      verification = {
+        success: status === "successful" || status === "successful",
+        data: { tx_ref, status },
+      };
     }
 
     // persist verification for audit
     await paymentModel.createPayment({
-      orderId: verification.data && verification.data.meta && verification.data.meta.orderId ? verification.data.meta.orderId : null,
-      provider: 'flutterwave',
-      event: 'verification',
-      providerReference: verification.data && (verification.data.id || verification.data.tx_ref) ? (verification.data.id || verification.data.tx_ref) : tx_ref,
-      amount: verification.data && verification.data.amount ? Number(verification.data.amount) : null,
+      orderId:
+        verification.data && verification.data.meta && verification.data.meta.orderId
+          ? verification.data.meta.orderId
+          : null,
+      provider: "flutterwave",
+      event: "verification",
+      providerReference:
+        verification.data && (verification.data.id || verification.data.tx_ref)
+          ? verification.data.id || verification.data.tx_ref
+          : tx_ref,
+      amount:
+        verification.data && verification.data.amount ? Number(verification.data.amount) : null,
       currency: verification.data && verification.data.currency ? verification.data.currency : null,
       status: verification.data && verification.data.status ? verification.data.status : null,
-      raw: verification
+      raw: verification,
     });
 
     if (verification && verification.success) {
-      const metaOrderId = verification.data && verification.data.meta && verification.data.meta.orderId;
+      const metaOrderId =
+        verification.data && verification.data.meta && verification.data.meta.orderId;
       let finalOrderId = metaOrderId || null;
 
       if (!finalOrderId && verification.data && verification.data.tx_ref) {
         // attempt to find order by payment_reference field
-        const { rows } = await require('../database/database').pool.query('SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1', [verification.data.tx_ref]);
+        const { rows } = await require("../database/database").pool.query(
+          "SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1",
+          [verification.data.tx_ref]
+        );
         if (rows && rows[0] && rows[0].id) finalOrderId = rows[0].id;
       }
 
       if (finalOrderId) {
-        await orderModel.markPaid(finalOrderId, 'flutterwave', verification.data && (verification.data.id || verification.data.tx_ref) ? (verification.data.id || verification.data.tx_ref) : tx_ref);
-        req.session && (req.session.success = 'Payment successful. Thank you!');
-        return res.redirect('/client/dashboard');
+        await orderModel.markPaid(
+          finalOrderId,
+          "flutterwave",
+          verification.data && (verification.data.id || verification.data.tx_ref)
+            ? verification.data.id || verification.data.tx_ref
+            : tx_ref
+        );
+        req.session && (req.session.success = "Payment successful. Thank you!");
+        return res.redirect("/client/dashboard");
       } else {
-        req.session && (req.session.success = 'Payment successful (no matching order found).');
-        return res.redirect('/client/dashboard');
+        req.session && (req.session.success = "Payment successful (no matching order found).");
+        return res.redirect("/client/dashboard");
       }
     } else {
-      req.session && (req.session.error = 'Flutterwave payment not successful or could not be verified.');
-      return res.redirect('/client/dashboard');
+      req.session &&
+        (req.session.error = "Flutterwave payment not successful or could not be verified.");
+      return res.redirect("/client/dashboard");
     }
   } catch (err) {
-    console.error('Flutterwave verify error:', err);
-    req.session && (req.session.error = 'Verification failed for Flutterwave payment.');
-    return res.redirect('/client/dashboard');
+    console.error("Flutterwave verify error:", err);
+    req.session && (req.session.error = "Verification failed for Flutterwave payment.");
+    return res.redirect("/client/dashboard");
   }
 });
 
 // ---------- Paystack webhook (POST) ----------
-router.post('/webhook/paystack', async (req, res) => {
+router.post("/webhook/paystack", async (req, res) => {
   try {
     // verify signature
     const ok = paymentsUtil.verifyPaystackWebhook(req);
     if (!ok) {
-      console.warn('Paystack webhook signature mismatch');
-      return res.status(400).send('invalid signature');
+      console.warn("Paystack webhook signature mismatch");
+      return res.status(400).send("invalid signature");
     }
 
     const payload = req.body; // parsed JSON
     const data = payload && payload.data ? payload.data : payload;
     const event = payload.event || null;
-    const reference = data && data.reference ? data.reference : (data && data.id ? data.id : null);
+    const reference = data && data.reference ? data.reference : data && data.id ? data.id : null;
     const orderId = data && data.metadata && data.metadata.orderId ? data.metadata.orderId : null;
     const amount = data && data.amount ? Number(data.amount) / 100 : null;
     const currency = data && data.currency ? data.currency : null;
@@ -129,44 +153,52 @@ router.post('/webhook/paystack', async (req, res) => {
     // persist raw payload
     await paymentModel.createPayment({
       orderId,
-      provider: 'paystack',
+      provider: "paystack",
       event,
       providerReference: reference,
       amount,
       currency,
       status,
-      raw: payload
+      raw: payload,
     });
 
     // If successful charge, mark order paid
-    if (data && (data.status === 'success' || data.status === 'successful' || payload.event === 'charge.success')) {
+    if (
+      data &&
+      (data.status === "success" ||
+        data.status === "successful" ||
+        payload.event === "charge.success")
+    ) {
       if (orderId) {
-        await orderModel.markPaid(orderId, 'paystack', reference);
+        await orderModel.markPaid(orderId, "paystack", reference);
       } else {
         // attempt to find order by payment_reference stored earlier
-        const { rows } = await require('../database/database').pool.query('SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1', [reference]);
+        const { rows } = await require("../database/database").pool.query(
+          "SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1",
+          [reference]
+        );
         if (rows && rows[0] && rows[0].id) {
-          await orderModel.markPaid(rows[0].id, 'paystack', reference);
+          await orderModel.markPaid(rows[0].id, "paystack", reference);
         }
       }
     }
 
     // Acknowledge quickly
-    return res.status(200).send('ok');
+    return res.status(200).send("ok");
   } catch (err) {
-    console.error('Paystack webhook handler error:', err);
-    return res.status(500).send('server error');
+    console.error("Paystack webhook handler error:", err);
+    return res.status(500).send("server error");
   }
 });
 
 // ---------- Flutterwave webhook (POST) ----------
-router.post('/webhook/flutterwave', async (req, res) => {
+router.post("/webhook/flutterwave", async (req, res) => {
   try {
     // verify header (verif-hash)
     const ok = paymentsUtil.verifyFlutterwaveWebhook(req);
     if (!ok) {
-      console.warn('Flutterwave webhook signature mismatch');
-      return res.status(400).send('invalid signature');
+      console.warn("Flutterwave webhook signature mismatch");
+      return res.status(400).send("invalid signature");
     }
 
     const payload = req.body; // parsed JSON
@@ -182,31 +214,34 @@ router.post('/webhook/flutterwave', async (req, res) => {
     // persist raw payload
     await paymentModel.createPayment({
       orderId,
-      provider: 'flutterwave',
+      provider: "flutterwave",
       event,
       providerReference: transaction_id || tx_ref,
       amount,
       currency,
       status,
-      raw: payload
+      raw: payload,
     });
 
     // If successful, mark order paid
-    if (status === 'successful' || status === 'completed') {
+    if (status === "successful" || status === "completed") {
       let finalOrderId = orderId || null;
       if (!finalOrderId && tx_ref) {
-        const { rows } = await require('../database/database').pool.query('SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1', [tx_ref]);
+        const { rows } = await require("../database/database").pool.query(
+          "SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1",
+          [tx_ref]
+        );
         if (rows && rows[0] && rows[0].id) finalOrderId = rows[0].id;
       }
       if (finalOrderId) {
-        await orderModel.markPaid(finalOrderId, 'flutterwave', transaction_id || tx_ref);
+        await orderModel.markPaid(finalOrderId, "flutterwave", transaction_id || tx_ref);
       }
     }
 
-    return res.status(200).send('ok');
+    return res.status(200).send("ok");
   } catch (err) {
-    console.error('Flutterwave webhook handler error:', err);
-    return res.status(500).send('server error');
+    console.error("Flutterwave webhook handler error:", err);
+    return res.status(500).send("server error");
   }
 });
 

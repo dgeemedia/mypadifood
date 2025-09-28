@@ -1,11 +1,20 @@
 // models/paymentModel.js
-const { pool } = require('../database/database');
+const { pool } = require("../database/database");
 
 /**
  * Persist a provider payload for auditing.
  * raw should be a JSON-serializable object.
  */
-async function createPayment({ orderId = null, provider, event = null, providerReference = null, amount = null, currency = null, status = null, raw = {} }) {
+async function createPayment({
+  orderId = null,
+  provider,
+  event = null,
+  providerReference = null,
+  amount = null,
+  currency = null,
+  status = null,
+  raw = {},
+}) {
   const sql = `
     INSERT INTO payments (order_id, provider, event, provider_reference, amount, currency, status, raw)
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
@@ -23,12 +32,15 @@ async function findByProviderReference(provider, providerReference) {
 }
 
 async function findByOrderId(orderId) {
-  const { rows } = await pool.query('SELECT * FROM payments WHERE order_id = $1 ORDER BY created_at DESC', [orderId]);
+  const { rows } = await pool.query(
+    "SELECT * FROM payments WHERE order_id = $1 ORDER BY created_at DESC",
+    [orderId]
+  );
   return rows || [];
 }
 
 module.exports = {
   createPayment,
   findByProviderReference,
-  findByOrderId
+  findByOrderId,
 };

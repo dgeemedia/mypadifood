@@ -1,11 +1,17 @@
 // models/orderModel.js
-const { pool } = require('../database/database');
+const { pool } = require("../database/database");
 
 /**
  * Create an order row.
  * Returns inserted id.
  */
-async function createOrder({ clientId, vendorId, item = null, payment_method = 'cod', total_amount = 0 }) {
+async function createOrder({
+  clientId,
+  vendorId,
+  item = null,
+  payment_method = "cod",
+  total_amount = 0,
+}) {
   const sql = `
     INSERT INTO orders (client_id, vendor_id, item, status, payment_method, total_amount)
     VALUES ($1,$2,$3,'pending',$4,$5)
@@ -35,7 +41,7 @@ async function getOrdersByClient(clientId) {
  */
 async function assignAdmin(orderId, adminId) {
   const sql = `UPDATE orders SET assigned_admin = $1, status = $2 WHERE id = $3 RETURNING *`;
-  const { rows } = await pool.query(sql, [adminId, 'accepted', orderId]);
+  const { rows } = await pool.query(sql, [adminId, "accepted", orderId]);
   return rows[0] || null;
 }
 
@@ -155,9 +161,8 @@ module.exports = {
   updateStatus,
   findById,
   getPendingOrdersForAdmin,
-  getCompletedOrdersForAdmin, 
+  getCompletedOrdersForAdmin,
   updatePaymentInit,
   markPaid,
-  updateOrderItem
+  updateOrderItem,
 };
-

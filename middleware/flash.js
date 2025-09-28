@@ -7,9 +7,15 @@
 // It clears req.session.success and req.session.error so messages are one-time.
 
 function _escapeHtml(str) {
-  if (str === undefined || str === null) return '';
+  if (str === undefined || str === null) return "";
   return String(str).replace(/[&<>"']/g, (s) => {
-    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[s];
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[s];
   });
 }
 
@@ -18,7 +24,7 @@ module.exports = function flashMiddleware(req, res, next) {
   res.locals.currentUser = req.session.user || null;
   res.locals.success = req.session.success || null;
   res.locals.error = req.session.error || null;
-  res.locals.title = res.locals.title || 'MyPadiFood';
+  res.locals.title = res.locals.title || "MyPadiFood";
 
   // Optional: expose dev verification link if present in session (one-time)
   if (req.session.verification_link) {
@@ -29,7 +35,7 @@ module.exports = function flashMiddleware(req, res, next) {
 
   // messages() helper expected by your EJS files (<%- messages() %>)
   res.locals.messages = function () {
-    let html = '';
+    let html = "";
 
     if (res.locals.success) {
       html += `<div class="flash flash-success" role="status">${_escapeHtml(res.locals.success)}</div>`;
