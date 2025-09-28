@@ -10,6 +10,12 @@ router.get('/login', adminController.showLogin);
 router.post('/login', adminController.login);
 router.get('/logout', adminController.logout);
 
+// Public password reset routes
+router.get('/forgot', adminController.showForgot);
+router.post('/forgot', adminController.forgot);
+router.get('/reset', adminController.showReset);    // e.g. /admin/reset?token=...
+router.post('/reset', adminController.reset);
+
 // Protected admin area (uses middleware.requireAdmin / requireSuper)
 router.get('/dashboard', auth.requireAdmin, adminController.dashboard);
 router.get(

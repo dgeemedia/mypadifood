@@ -69,10 +69,19 @@ async function countPendingOrders() {
   return rows[0].count;
 }
 
+async function updatePassword(adminId, password_hash) {
+  const { rows } = await pool.query(
+    'UPDATE admins SET password_hash = $1, updated_at = NOW() WHERE id = $2 RETURNING id, email',
+    [password_hash, adminId]
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   findByEmail,
   findById,
   createAdmin,
   countPendingVendors,
   countPendingOrders,
+  updatePassword
 };

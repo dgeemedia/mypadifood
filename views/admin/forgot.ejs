@@ -1,0 +1,21 @@
+<!-- views/admin/forgot.ejs -->
+<div class="account-page">
+  <h1 class="account-title">Admin password reset</h1>
+
+  <div class="flash-messages"><%- messages() %></div>
+
+  <form id="forgotForm" method="post" action="/admin/forgot" class="account-form">
+    <div class="form-row">
+      <label for="forgot-email">Email <span class="required" aria-hidden="true">*</span></label>
+      <input id="forgot-email" name="email" type="email" required placeholder="admin@example.com" />
+    </div>
+
+    <div class="form-row">
+      <button type="submit" class="btn-primary">Request password reset</button>
+    </div>
+  </form>
+
+  <p style="margin-top:12px">
+    <a href="/admin/login">Back to login</a>
+  </p>
+</div>

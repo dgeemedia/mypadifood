@@ -3,6 +3,9 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
 
+const { v4: uuidv4 } = require('uuid');
+const adminResetModel = require('../models').adminReset;
+
 const models = require('../models'); // { client, vendor, admin, order, verification, message }
 const adminModel = models.admin;
 const vendorModel = models.vendor;
@@ -77,6 +80,145 @@ exports.logout = (req, res) => {
     res.clearCookie('connect.sid');
     return res.redirect('/');
   });
+};
+
+// Show forgot-password form
+exports.showForgot = (req, res) => {
+  return res.render('admin/forgot');
+};
+
+// Handle forgot-password POST: create a token and email reset link (non-enumerating)
+exports.forgot = async (req, res) => {
+  try {
+    const email = (req.body && req.body.email) ? String(req.body.email).trim() : null;
+    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+
+    // Always show the same response to avoid revealing whether account exists
+    const genericMsg = 'If an account exists for that email, a password reset link was sent. Check your inbox.';
+
+    if (!email) {
+      req.session.success = genericMsg;
+      return res.redirect('/admin/login');
+    }
+
+    const admin = await adminModel.findByEmail(email);
+    if (!admin) {
+      // Still provide the generic message
+      req.session.success = genericMsg;
+      return res.redirect('/admin/login');
+    }
+
+    // Remove any old tokens for this admin (optional cleanup)
+    try { await adminResetModel.deleteTokensForAdmin(admin.id); } catch(e) { /* non-fatal */ }
+
+    const token = uuidv4();
+    const ttlHours = Number(process.env.ADMIN_RESET_TTL_HOURS || 2); // 2 hours default
+    const expiresAt = new Date(Date.now() + ttlHours * 3600 * 1000);
+
+    await adminResetModel.createToken(token, admin.id, expiresAt, { ip: req.ip || null });
+
+    const resetLink = `${baseUrl}/admin/reset?token=${encodeURIComponent(token)}`;
+
+    const subject = 'MyPadiFood admin password reset';
+    const html = `<p>Hi ${admin.name || 'Admin'},</p>
+      <p>We received a request to reset your admin account password. If you requested this, click the link below to set a new password (link expires in ${ttlHours} hours):</p>
+      <p><a href="${resetLink}">${resetLink}</a></p>
+      <p>If you did not request this, you can safely ignore this email.</p>`;
+    const text = `Reset your password: ${resetLink}`;
+
+    try {
+      await sendMail({ to: admin.email, subject, html, text });
+    } catch (mailErr) {
+      console.error('Failed to send admin reset email (non-fatal):', mailErr);
+    }
+
+    req.session.success = genericMsg;
+    return res.redirect('/admin/login');
+  } catch (err) {
+    console.error('Error in admin.forgot:', err);
+    req.session.error = 'Could not process password reset request.';
+    return res.redirect('/admin/login');
+  }
+};
+
+// GET /admin/reset?token=...
+exports.showReset = async (req, res) => {
+  try {
+    const token = req.query.token ? String(req.query.token) : null;
+    if (!token) {
+      req.session.error = 'Invalid reset link.';
+      return res.redirect('/admin/login');
+    }
+
+    const row = await adminResetModel.findToken(token);
+    if (!row) {
+      req.session.error = 'Invalid or expired reset link.';
+      return res.redirect('/admin/login');
+    }
+
+    if (row.expires_at && new Date(row.expires_at) < new Date()) {
+      // remove it
+      try { await adminResetModel.deleteToken(token); } catch(e) { /* ignore */ }
+      req.session.error = 'Reset link has expired.';
+      return res.redirect('/admin/login');
+    }
+
+    // Render reset page with token hidden field
+    return res.render('admin/reset', { token });
+  } catch (err) {
+    console.error('Error in admin.showReset:', err);
+    req.session.error = 'Could not open reset page.';
+    return res.redirect('/admin/login');
+  }
+};
+
+// POST /admin/reset (token + password)
+exports.reset = async (req, res) => {
+  try {
+    const token = (req.body && req.body.token) ? String(req.body.token) : null;
+    const password = (req.body && req.body.password) ? String(req.body.password) : null;
+
+    if (!token || !password) {
+      req.session.error = 'Missing token or password.';
+      return res.redirect('/admin/login');
+    }
+
+    // Password policy check (same as clients)
+    const pwPattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,}$/;
+    if (!pwPattern.test(password)) {
+      req.session.error = 'Password does not meet complexity requirements.';
+      return res.redirect(`/admin/reset?token=${encodeURIComponent(token)}`);
+    }
+
+    const row = await adminResetModel.findToken(token);
+    if (!row) {
+      req.session.error = 'Invalid or expired reset link.';
+      return res.redirect('/admin/login');
+    }
+    if (row.expires_at && new Date(row.expires_at) < new Date()) {
+      try { await adminResetModel.deleteToken(token); } catch(e) { /* ignore */ }
+      req.session.error = 'Reset link has expired.';
+      return res.redirect('/admin/login');
+    }
+
+    const adminId = row.admin_id;
+    const SALT_ROUNDS = Number(process.env.SALT_ROUNDS || 10);
+    const bcrypt = require('bcryptjs');
+    const hash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    // update password
+    await adminModel.updatePassword(adminId, hash);
+
+    // consume tokens for this admin (including the used one)
+    try { await adminResetModel.deleteTokensForAdmin(adminId); } catch(e) { /* ignore */ }
+
+    req.session.success = 'Password updated. You can now sign in.';
+    return res.redirect('/admin/login');
+  } catch (err) {
+    console.error('Error in admin.reset:', err);
+    req.session.error = 'Could not reset password.';
+    return res.redirect('/admin/login');
+  }
 };
 
 // Admin dashboard: simple counters for pending vendors/orders

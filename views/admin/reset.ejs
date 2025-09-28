@@ -1,0 +1,37 @@
+<!-- views/admin/reset.ejs -->
+<div class="account-page">
+  <h1 class="account-title">Set a new admin password</h1>
+
+  <div class="flash-messages"><%- messages() %></div>
+
+  <form id="resetForm" method="post" action="/admin/reset" class="account-form" novalidate>
+    <input type="hidden" name="token" value="<%= token %>" />
+
+    <div class="form-row" style="position:relative;">
+      <label for="reset-password">New password <span class="required" aria-hidden="true">*</span></label>
+      <input id="reset-password" name="password" type="password" required
+        pattern="^(?=.*\\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\\s).{8,}$"
+        aria-describedby="pw-requirements-reset"
+      />
+      <button type="button" class="pw-toggle" aria-pressed="false">Show</button>
+    </div>
+
+    <div id="pw-requirements-reset" class="pw-requirements" aria-hidden="true">
+      <strong>Password requirements:</strong>
+      <ul>
+        <li>Minimum 8 characters</li>
+        <li>At least 1 uppercase letter</li>
+        <li>At least 1 number</li>
+        <li>At least 1 special character</li>
+      </ul>
+    </div>
+
+    <div class="form-row">
+      <button type="submit" class="btn-primary">Set password</button>
+    </div>
+  </form>
+
+  <p style="margin-top:12px">
+    <a href="/admin/login">Back to login</a>
+  </p>
+</div>

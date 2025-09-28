@@ -14,3 +14,14 @@ CREATE INDEX IF NOT EXISTS idx_admin_notifications_order_id ON admin_notificatio
 CREATE INDEX IF NOT EXISTS idx_admin_notifications_read ON admin_notifications(read);
 
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP WITH TIME ZONE NULL;
+
+
+CREATE TABLE admin_reset_tokens (
+  token text PRIMARY KEY,
+  admin_id uuid REFERENCES admins(id) ON DELETE CASCADE,
+  meta jsonb,
+  expires_at timestamptz,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX admin_reset_tokens_admin_id_idx ON admin_reset_tokens (admin_id);
