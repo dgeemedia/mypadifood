@@ -1,0 +1,114 @@
+<!--//views/client/special-order-view.ejs-->
+<% /* Client weekly plan view (no inline script) */ %>
+<h2>Weekly Plan — <%= plan.id %></h2>
+
+<input type="hidden" id="currentWeeklyPlanId" value="<%= plan.id %>" />
+
+<section>
+  <h3>Summary</h3>
+
+  <p>
+    <strong>Client:</strong><br/>
+    <span><strong>Name:</strong> <%= plan.client_name || 'Unknown' %></span><br/>
+    <span><strong>Phone:</strong>
+      <% if (plan.client_phone) { %>
+        <a href="tel:<%= plan.client_phone %>"><%= plan.client_phone %></a>
+      <% } else { %>
+        — 
+      <% } %>
+    </span><br/>
+    <span><strong>Address:</strong>
+      <%= plan.client_address || plan.address || '—' %>
+    </span>
+    <% if (plan.client_lat && plan.client_lng) { %>
+      <br/>
+      <a href="https://www.google.com/maps/search/?api=1&query=<%= plan.client_lat %>,<%= plan.client_lng %>"
+         target="_blank" rel="noopener noreferrer">View on map</a>
+    <% } %>
+  </p>
+
+  <p>
+    <strong>Week (Monday):</strong>
+    <%= plan.week_of ? (plan.week_of.toISOString ? plan.week_of.toISOString().slice(0,10) : plan.week_of) : '—' %>
+  </p>
+  <p>
+    <strong>Plan type:</strong> <%= plan.plan_type %>
+  </p>
+  <p><strong>Total price:</strong> ₦<%= plan.total_price %></p>
+  <p><strong>Status:</strong> <%= plan.status %></p>
+  <p><strong>Assigned admin:</strong> <%= plan.assigned_admin || '—' %></p>
+  <p>
+    <strong>Modifiable window:</strong>
+    <% if (plan.modifiable_from && plan.modifiable_until) { %>
+      <%= new Date(plan.modifiable_from).toLocaleString() %> — <%= new Date(plan.modifiable_until).toLocaleString() %>
+    <% } else { %>
+      — 
+    <% } %>
+  </p>
+</section>
+
+<section>
+  <h3>Meals (Snapshot)</h3>
+
+  <% if (!plan.items || !plan.items.length) { %>
+    <p>No meals recorded for this plan.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>Day</th>
+          <th>Slot</th>
+          <th>Food</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% plan.items.forEach(it => { %>
+          <tr>
+            <td><%= it.day_of_week %></td>
+            <td><%= it.slot %></td>
+            <td><%= it.food_label || it.food_key || '&#8212;' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+
+<section>
+  <h3>Messages</h3>
+  <div id="weeklyPlanMessages" style="max-height:300px; overflow:auto; border:1px solid #eee; padding:8px;">
+    <% if (messages && messages.length) { %>
+      <% messages.forEach(m => { %>
+        <div class="weekly-plan-msg">
+          <strong><%= m.sender_type || m.senderType %></strong>:
+          <%= m.message %>
+          <div style="font-size:0.8em;color:#666;"><%= new Date(m.created_at).toLocaleString() %></div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <p>No messages yet.</p>
+    <% } %>
+  </div>
+</section>
+
+<section style="margin-top:1rem">
+  <% if (plan.status !== 'completed') { %>
+    <form method="post" action="/client/special-order/<%= plan.id %>/update" style="display:inline">
+      <% /* show modify button only when server allowed; server enforces window */ %>
+      <button type="submit" class="btn">Modify (if allowed)</button>
+    </form>
+  <% } %>
+
+  <a href="/client/dashboard" style="margin-left:12px">Back to dashboard</a>
+</section>
+
+<section style="margin-top:1rem">
+  <div style="margin-top:8px;">
+    <input id="weeklyPlanChatInput" placeholder="Write a message to team..." style="width:70%;" />
+    <button id="weeklyPlanSendBtn">Send</button>
+  </div>
+</section>
+
+<%- include('../partials/chat-modal') %>
+
+<!-- load shared chat client which wires weekly-plan composer and joins the weekly_plan room -->

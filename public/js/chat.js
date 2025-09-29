@@ -1,4 +1,3 @@
-// public/js/chat.js
 // Socket-enabled chat client for MyPadiFood
 // Supports two modes:
 // 1) server-rendered page with window.ORDER_ID set (auto-join room immediately)

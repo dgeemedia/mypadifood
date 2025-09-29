@@ -46,6 +46,7 @@ router.get(
   auth.requireClient,
   clientController.showSpecialOrderForm
 );
+router.get('/special-order/:id', auth.requireClient, clientController.viewWeeklyPlan);
 router.post(
   '/special-order',
   auth.requireClient,

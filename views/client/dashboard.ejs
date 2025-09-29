@@ -34,7 +34,7 @@
         <td>₦<%= p.total_price %></td>
         <td><%= p.status %></td>
         <td>
-          <a href="/client/special-order?view=<%= p.id %>">View</a>
+          <a href="/client/special-order/<%= p.id %>">View</a>
           <% /* offer update link only if current time within mod window (server enforces) */ %>
           <% if (p.modifiable_from && p.modifiable_until) { %>
           <form
