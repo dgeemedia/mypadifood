@@ -11,7 +11,8 @@ const { Pool } = require('pg');
 function makePool() {
   const connectionString = process.env.DATABASE_URL || null;
   const wantsSSL =
-    (process.env.PGSSLMODE && process.env.PGSSLMODE.toLowerCase() === 'require') ||
+    (process.env.PGSSLMODE &&
+      process.env.PGSSLMODE.toLowerCase() === 'require') ||
     (process.env.FORCE_SSL && process.env.FORCE_SSL.toLowerCase() === 'true');
 
   if (connectionString) {
@@ -26,7 +27,8 @@ function makePool() {
   const database = process.env.PGDATABASE;
   const port = process.env.PGPORT ? Number(process.env.PGPORT) : undefined;
 
-  if (!host || !user || typeof password === 'undefined' || !database) return null;
+  if (!host || !user || typeof password === 'undefined' || !database)
+    return null;
   const poolOpts = { host, user, password: String(password), database, port };
   if (wantsSSL) poolOpts.ssl = { rejectUnauthorized: false };
   return new Pool(poolOpts);
@@ -41,22 +43,29 @@ async function main() {
   const region_lga = argv[4] || null;
 
   if (!email || !password) {
-    console.error('Usage: node createAgent.js <email> <password> [full name] [state] [lga]');
+    console.error(
+      'Usage: node createAgent.js <email> <password> [full name] [state] [lga]'
+    );
     process.exit(2);
   }
 
   const pool = makePool();
   if (!pool) {
-    console.error('No Postgres connection configuration found. Ensure DATABASE_URL or PG env vars are set.');
+    console.error(
+      'No Postgres connection configuration found. Ensure DATABASE_URL or PG env vars are set.'
+    );
     process.exit(3);
   }
 
   try {
     await pool.query('SELECT 1');
 
-    const pwPattern = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,}$/;
+    const pwPattern =
+      /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,}$/;
     if (!pwPattern.test(password)) {
-      console.error('Password does not meet complexity requirements. Use at least 8 chars, one uppercase, one number and one special char.');
+      console.error(
+        'Password does not meet complexity requirements. Use at least 8 chars, one uppercase, one number and one special char.'
+      );
       process.exit(4);
     }
 
@@ -95,8 +104,13 @@ async function main() {
     await pool.end();
     process.exit(0);
   } catch (err) {
-    console.error('Failed to create/update agent:', err && err.message ? err.message : err);
-    try { await pool.end(); } catch (_) {}
+    console.error(
+      'Failed to create/update agent:',
+      err && err.message ? err.message : err
+    );
+    try {
+      await pool.end();
+    } catch (_) {}
     process.exit(1);
   }
 }

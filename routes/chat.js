@@ -2,11 +2,27 @@
 const express = require('express');
 const router = express.Router();
 const chatController = require('../controllers/chatController');
+const auth = require('../middleware/auth'); // optional auth helpers (may export requireAuthOptional)
 
-// POST new message (both client and admin can post)
+// Order chat routes
 router.post('/message', chatController.postMessage);
-
-// GET messages for an order
 router.get('/order/:orderId', chatController.getMessages);
+
+// Weekly plan chat (allow authenticated clients/admins; accept anonymous if your auth helper is absent)
+const optionalAuthMiddleware =
+  auth && auth.requireAuthOptional
+    ? auth.requireAuthOptional
+    : (req, res, next) => next();
+
+router.post(
+  '/weekly-plan/message',
+  optionalAuthMiddleware,
+  chatController.postWeeklyPlanMessage
+);
+router.get(
+  '/weekly-plan/:planId',
+  optionalAuthMiddleware,
+  chatController.getWeeklyPlanMessages
+);
 
 module.exports = router;

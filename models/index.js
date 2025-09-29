@@ -1,4 +1,5 @@
-// models/index.js (append)
+// models/index.js
+
 module.exports = {
   client: require('./clientModel'),
   vendor: require('./vendorModel'),
@@ -9,4 +10,6 @@ module.exports = {
   payment: require('./paymentModel'),
   notification: require('./notificationModel'),
   adminReset: require('./adminResetModel'),
+  weeklyPlan: require('./weeklyPlanModel'),
+  weeklyPlanMessages: require('./weeklyPlanMessageModel'),
 };

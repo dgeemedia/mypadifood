@@ -26,7 +26,6 @@
 
     // Admin-level events (real-time order notifications)
     socket.on('new_order', (orderSummary) => {
-      // admin clients will receive this if they've joined 'admins'
       try {
         handleIncomingOrder(orderSummary);
       } catch (e) {
@@ -35,11 +34,8 @@
     });
 
     socket.on('order_message', (payload) => {
-      // payload: { orderId, message }
       try {
-        // If admin page showing pending orders, update entry / flash
         showOrderMessageNotification(payload);
-        // Also append to chat modal if it's open for that order
         const msgOrderId =
           payload &&
           (payload.orderId ||
@@ -61,14 +57,94 @@
       }
     });
 
+    // Weekly-plan messages (clients & admins)
+    socket.on('weekly_plan_message', (msg) => {
+      try {
+        // Append to weekly plan message container if present
+        const messagesContainer = document.getElementById('weeklyPlanMessages');
+        if (messagesContainer && msg) {
+          // Determine current plan id on page (if any)
+          const currentPlanIdEl = document.getElementById(
+            'currentWeeklyPlanId'
+          );
+          const cur = currentPlanIdEl ? String(currentPlanIdEl.value) : null;
+          const mPlanId = String(
+            msg.weekly_plan_order_id ||
+              msg.weekly_plan_id ||
+              msg.weekly_plan ||
+              ''
+          );
+          if (!cur || cur === mPlanId) {
+            const div = document.createElement('div');
+            div.className = 'weekly-plan-msg';
+            const display = escapeHtml(
+              msg.display_name || msg.sender_type || msg.senderType || ''
+            );
+            const text = escapeHtml(msg.message || msg.msg || '');
+            const ts =
+              msg.created_at || msg.createdAt || new Date().toISOString();
+            div.innerHTML = `<strong>${display}</strong>: ${text} <div style="font-size:0.8em;color:#666">${new Date(ts).toLocaleString()}</div>`;
+            messagesContainer.appendChild(div);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          }
+        }
+
+        // increment notification badge globally
+        const badge = document.getElementById('notifBadge');
+        if (badge) {
+          const current = parseInt(badge.textContent || '0', 10) || 0;
+          badge.textContent = String(current + 1);
+        }
+      } catch (e) {
+        console.warn('weekly_plan_message handler', e);
+      }
+    });
+
+    // Receive new weekly plans (admins)
+    socket.on('new_weekly_plan', (payload) => {
+      try {
+        const badge = document.getElementById('notifBadge');
+        if (badge) {
+          const current = parseInt(badge.textContent || '0', 10) || 0;
+          badge.textContent = String(current + 1);
+        }
+
+        // If admin page has a pending weekly plans area, show it
+        const pendingPanel = document.getElementById('pendingWeeklyPlansPanel');
+        const pendingList = document.getElementById('pendingWeeklyPlans');
+        if (pendingList) {
+          const el = document.createElement('div');
+          el.className = 'pending-weekly-plan';
+          el.style.border = '1px solid #cfeffd';
+          el.style.padding = '8px';
+          el.style.marginBottom = '8px';
+
+          const clientName = payload.client_name || 'Client';
+          const clientPhone = payload.client_phone
+            ? ` (${payload.client_phone})`
+            : '';
+          const clientAddress = payload.client_address
+            ? ` — ${payload.client_address}`
+            : '';
+
+          el.innerHTML = `<strong>Weekly plan</strong> — ${escapeHtml(clientName)}${escapeHtml(clientPhone)} — Week: ${escapeHtml(payload.week_of || '')} — ₦${escapeHtml(String(payload.total_price || payload.total || ''))} <a href="/admin/food-orders/${payload.id}" style="margin-left:8px">Open</a><div style="margin-top:6px;color:#666;font-size:0.9em">${escapeHtml(clientAddress)}</div>`;
+          pendingList.insertBefore(el, pendingList.firstChild);
+        }
+
+        if (pendingPanel && pendingPanel.style.display === 'none')
+          pendingPanel.style.display = 'block';
+      } catch (e) {
+        console.warn('new_weekly_plan handler error', e);
+      }
+    });
+
     socket.on('joined_order', (payload) => {
       // optional debug or UI reaction
       // console.debug('joined_order', payload);
     });
 
     socket.on('order_opened', (payload) => {
-      // admin pages may react to client presence (we handle it in handleIncomingOrder or similar)
-      // console.debug('order_opened', payload);
+      // admin pages may react to client presence
     });
 
     socket.on('error', (err) => {
@@ -77,17 +153,14 @@
 
     // NEW: live admin dashboard updates
     socket.on('order_updated', (payload) => {
-      // update the order entry UI if present
       try {
         const id = payload.orderId || payload.order_id;
         if (!id) return;
         const el = document.getElementById(`order-${id}`);
         if (el) {
-          // update status label if present (first small element near id)
           const small = el.querySelector('small');
           if (small) small.textContent = `(${payload.status || 'updated'})`;
 
-          // optionally add assigned admin display
           if (payload.assigned_admin_name || payload.assigned_admin) {
             let assignedDiv = el.querySelector('.assigned-admin-display');
             if (!assignedDiv) {
@@ -101,9 +174,7 @@
             assignedDiv.textContent = `Assigned: ${payload.assigned_admin_name || payload.assigned_admin}`;
           }
 
-          // If status is accepted, expose a "Mark Done" button if desired (best-effort UI)
           if (payload.status === 'accepted') {
-            // remove existing accept button if present, add "Mark Done"
             const acceptForm = el.querySelector(
               `form[action="/admin/orders/${id}/accept"]`
             );
@@ -142,11 +213,9 @@
         const el = document.getElementById(`order-${id}`);
         if (el) {
           el.style.background = '#f3f3f3';
-          // hide buttons inside the element (forms/buttons)
           Array.from(el.querySelectorAll('button, form')).forEach(
             (n) => (n.style.display = 'none')
           );
-          // mark completed label
           let badge = el.querySelector('.completed-badge');
           if (!badge) {
             badge = document.createElement('span');
@@ -167,16 +236,14 @@
 
   // --- Admin handlers / helpers ---
   function handleIncomingOrder(order) {
-    // Only run on admin pages (element exists)
     const panel = document.getElementById('pendingOrders');
     if (!panel) return;
-    // build a small card with details (client & vendor)
     const item = document.createElement('div');
     item.className = 'pending-order-item';
     item.style.border = '1px solid #dfe6ef';
     item.style.padding = '10px';
     item.style.marginBottom = '8px';
-    // guard the field names (some emitters use camelCase or snake_case)
+
     const id = order.id || order.orderId || order.order_id || '—';
     const clientName =
       order.client_name || order.clientName || order.client || '—';
@@ -204,19 +271,15 @@
         <button class="btn btn-assign" data-order-id="${id}" style="margin-left:8px;">Accept</button>
       </div>
     `;
-    // prepend so newest are first
     panel.insertBefore(item, panel.firstChild);
 
-    // ensure the panel wrapper is visible
     const panelWrap = document.getElementById('pendingOrdersPanel');
     if (panelWrap && panelWrap.style.display === 'none')
       panelWrap.style.display = 'block';
   }
 
   function showOrderMessageNotification(payload) {
-    // simple console/info notification; replace with toast if desired
     console.info('Order message', payload);
-    // if admin pending panel hidden, make it visible
     const panelWrap = document.getElementById('pendingOrdersPanel');
     if (panelWrap && panelWrap.style.display === 'none')
       panelWrap.style.display = 'block';
@@ -227,26 +290,21 @@
     (async () => {
       const orderId = window.ORDER_ID;
       currentOrderId = orderId;
-      // expose to window helpers
       window._mypadifood_chat = window._mypadifood_chat || {};
       window._mypadifood_chat.currentOrderId = currentOrderId;
 
       ensureSocket();
-      // immediately join the order room on socket side
       try {
         socket.emit('join_order', { orderId });
       } catch (e) {
         console.warn('join_order emit failed', e);
       }
 
-      // load and render existing messages
       await loadMessagesFor(orderId);
 
-      // if we have UI (chat modal or page), make sure it is visible
       const modal = document.getElementById('chatModal');
       if (modal) modal.style.display = 'block';
 
-      // show/hide bot prompt if exists
       try {
         const msgs = await fetch(`/chat/order/${orderId}`).then((r) =>
           r.json()
@@ -255,9 +313,7 @@
           msgs.messages && msgs.messages.find((m) => m.sender_type === 'bot');
         const botArea = document.getElementById('botPromptArea');
         if (botArea) botArea.style.display = bot ? 'block' : 'none';
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     })();
   }
 
@@ -286,26 +342,23 @@
 
     try {
       s.emit('join_order', { orderId });
-      s.emit('open_chat', { orderId }); // fallback notification
+      s.emit('open_chat', { orderId });
     } catch (e) {
       console.warn('emit join_order/open_chat failed', e);
     }
 
     await loadMessagesFor(orderId);
 
-    // show/hide bot prompt based on DB
     try {
       const msgs = await fetch(`/chat/order/${orderId}`).then((r) => r.json());
       const bot =
         msgs.messages && msgs.messages.find((m) => m.sender_type === 'bot');
       const botArea = document.getElementById('botPromptArea');
       if (botArea) botArea.style.display = bot ? 'block' : 'none';
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
   }
 
-  // ===== REPLACED loadMessagesFor (improved bot prompt detection) =====
+  // ===== loadMessagesFor =====
   async function loadMessagesFor(orderId) {
     if (!orderId) return;
     currentOrderId = orderId;
@@ -315,19 +368,14 @@
       const container = document.getElementById('chatMessages');
       if (!container) return;
       container.innerHTML = '';
-
-      // ensure messages come in chronological order
       (json.messages || []).forEach((m) => appendMessage(m));
       container.scrollTop = container.scrollHeight;
 
-      // set modal title / order id display
       const titleEl = document.getElementById('chatTitle');
       const orderEl = document.getElementById('chatOrderId');
       if (titleEl) titleEl.textContent = 'Chat';
       if (orderEl) orderEl.textContent = `Order #${orderId}`;
 
-      // show bot prompt area only if there is an *active bot prompt* (heuristic)
-      // We look for bot messages that look like a yes/no prompt (contains "would you like", "select yes or no", "modify this request", etc.)
       const botArea = document.getElementById('botPromptArea');
       const isBotPrompt = (json.messages || []).some((x) => {
         if (!x) return false;
@@ -344,7 +392,6 @@
 
       if (botArea) botArea.style.display = isBotPrompt ? 'block' : 'none';
 
-      // ensure header Yes/No (if present) follow same visibility (hide them for clarity)
       const headerYes = document.getElementById('botYes');
       const headerNo = document.getElementById('botNo');
       if (headerYes)
@@ -356,12 +403,11 @@
     }
   }
 
-  // ===== REPLACED appendMessage (chat-style rendering) =====
+  // ===== appendMessage =====
   function appendMessage(m) {
     const container = document.getElementById('chatMessages');
     if (!container || !m) return;
 
-    // Defensive normalisation
     const senderType =
       ((m.sender_type || m.senderType || '') + '').toLowerCase() || 'bot';
     const displayName =
@@ -378,7 +424,6 @@
         ? new Date(m.createdAt)
         : null;
 
-    // build elements
     const wrapper = document.createElement('div');
     wrapper.className =
       'msg ' +
@@ -404,13 +449,11 @@
 
     const body = document.createElement('div');
     body.className = 'msg-body';
-    // preserve newlines but keep it safe from HTML injection
     body.textContent = text;
 
     wrapper.appendChild(header);
     wrapper.appendChild(body);
 
-    // append and scroll
     container.appendChild(wrapper);
     container.scrollTop = container.scrollHeight;
   }
@@ -428,16 +471,14 @@
           body: JSON.stringify({ orderId: currentOrderId, message: text }),
         });
         if (input) input.value = '';
-        // server will emit 'new_message' and it will be appended
       } catch (err) {
         console.error('send message error', err);
       }
     }
   });
 
-  // ===== REPLACED bot Yes/No/Modify click handlers =====
+  // Bot Yes/No/Modify handlers (client-side)
   document.addEventListener('click', async (e) => {
-    // YES: reveal modification textarea
     if (
       e.target &&
       (e.target.id === 'botYes' || e.target.dataset.action === 'bot-yes')
@@ -449,7 +490,6 @@
       return;
     }
 
-    // SUBMIT modification: send message, hide bot prompt and textarea
     if (e.target && e.target.id === 'clientModifySubmit') {
       const txtEl = document.getElementById('clientModifyText');
       const txt = txtEl ? txtEl.value.trim() : '';
@@ -462,7 +502,6 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId: currentOrderId, message: txt }),
         });
-        // hide and reset UI
         if (txtEl) txtEl.value = '';
         const area = document.getElementById('clientModifyArea');
         if (area) area.style.display = 'none';
@@ -482,7 +521,6 @@
       return;
     }
 
-    // NO: send short 'no' response and hide prompt immediately
     if (
       e.target &&
       (e.target.id === 'botNo' || e.target.dataset.action === 'bot-no')
@@ -508,15 +546,12 @@
           }),
         });
 
-        // hide the bot prompt UI so it doesn't "stick out"
         const botArea = document.getElementById('botPromptArea');
         if (botArea) botArea.style.display = 'none';
 
-        // also hide header inline buttons
         if (headerYes) headerYes.style.display = 'none';
         if (headerNo) headerNo.style.display = 'none';
 
-        // Optional: show a tiny ephemeral confirmation in chat (client-side only)
         const container = document.getElementById('chatMessages');
         if (container) {
           const temp = document.createElement('div');
@@ -527,7 +562,6 @@
             'Thanks — your response was recorded. An agent will contact you if needed.';
           container.appendChild(temp);
           container.scrollTop = container.scrollHeight;
-          // remove temp after a short while (server will likely emit a real bot message too)
           setTimeout(() => {
             try {
               temp.remove();
@@ -538,7 +572,6 @@
         console.error('botNo error', err);
         alert('Could not send your response. Please try again.');
       } finally {
-        // re-enable buttons text if any remained
         [
           document.getElementById('botYes'),
           document.getElementById('botNo'),
@@ -552,7 +585,6 @@
       return;
     }
 
-    // close chat
     if (e.target && e.target.id === 'closeChat') {
       if (socket && currentOrderId) {
         try {
@@ -567,7 +599,6 @@
       return;
     }
 
-    // admin accept button (client side fallback) — redirect to admin order page to accept
     if (e.target && e.target.matches('.btn-assign')) {
       const id = e.target.getAttribute('data-order-id');
       if (!id) return;
@@ -594,6 +625,24 @@
       }
     }
 
+    // If viewing a weekly plan (admin or client view), auto-join that weekly_plan room
+    try {
+      const currentPlanIdEl = document.getElementById('currentWeeklyPlanId');
+      if (currentPlanIdEl) {
+        ensureSocket();
+        const pid = String(currentPlanIdEl.value);
+        if (pid) {
+          try {
+            socket.emit('join_weekly_plan', { planId: pid });
+          } catch (e) {
+            console.warn('join_weekly_plan failed', e);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('weekly plan auto-join check failed', e);
+    }
+
     // Attach click handlers for .btn-view-chat if not already covered
     document.addEventListener('click', (e) => {
       if (e.target && e.target.matches('.btn-view-chat')) {
@@ -604,7 +653,72 @@
         }
       }
     });
+
+    // Wire weekly-plan composer (send button) if present
+    try {
+      const sendBtn = document.getElementById('weeklyPlanSendBtn');
+      const input = document.getElementById('weeklyPlanChatInput');
+      const planIdEl = document.getElementById('currentWeeklyPlanId');
+
+      if (sendBtn && input && planIdEl) {
+        sendBtn.addEventListener('click', async function (ev) {
+          ev.preventDefault();
+          const text = input.value.trim();
+          const planId = String(planIdEl.value);
+          if (!text || !planId) return;
+          try {
+            const result = await window.sendWeeklyPlanMessage(planId, text);
+            if (result && result.ok) {
+              input.value = '';
+            } else {
+              alert(
+                result && result.message
+                  ? result.message
+                  : 'Could not send message'
+              );
+            }
+          } catch (e) {
+            console.error('Failed to send weekly plan message', e);
+            alert('Could not send message. Please try again.');
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('weekly plan composer wiring failed', e);
+    }
   });
+})();
+
+// Small helpers for weekly-plan messages & client send
+(function () {
+  // helper to send weekly-plan message via REST (server persists and emits)
+  window.sendWeeklyPlanMessage = async function (planId, text) {
+    if (!planId || !text) return;
+    try {
+      const res = await fetch('/chat/weekly-plan/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, message: text }),
+      });
+      return await res.json();
+    } catch (e) {
+      console.error('sendWeeklyPlanMessage error', e);
+      throw e;
+    }
+  };
+
+  // small html escape helper
+  window.escapeHtml = function (s) {
+    return (s + '').replace(/[&<>"']/g, function (c) {
+      return {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      }[c];
+    });
+  };
 })();
 
 /* Draggable chat: pointer-based dragging + persistence
@@ -615,16 +729,13 @@
   const handle = document.getElementById('chatDragHandle');
   if (!modal || !handle) return;
 
-  // localStorage key
   const POS_KEY = 'mypadifood_chat_modal_pos_v1';
 
-  // apply saved position if present
   try {
     const raw = localStorage.getItem(POS_KEY);
     if (raw) {
       const pos = JSON.parse(raw);
       if (pos && typeof pos.left === 'number' && typeof pos.top === 'number') {
-        // apply left/top and remove right/bottom to avoid CSS conflicts
         modal.style.left =
           Math.max(
             8,
@@ -643,7 +754,6 @@
     console.warn('Could not restore chat position', e);
   }
 
-  // helper to clamp coordinates inside viewport with small margin
   function clamp(x, min, max) {
     return Math.min(max, Math.max(min, x));
   }
@@ -655,51 +765,38 @@
   let startLeft = 0,
     startTop = 0;
 
-  handle.style.touchAction = 'none'; // prevent gestures interfering on the handle
+  handle.style.touchAction = 'none';
   handle.style.cursor = 'grab';
 
   function onPointerDown(ev) {
-    // only start drag for primary pointer
     if (dragging) return;
-    // if target is a button inside the header, bail out
     if (
       ev.target.closest('button') ||
       ev.target.nodeName === 'BUTTON' ||
       ev.target.getAttribute('role') === 'button'
-    ) {
+    )
       return;
-    }
 
     pointerId = ev.pointerId;
     dragging = true;
     modal.classList.add('dragging');
     handle.style.cursor = 'grabbing';
 
-    // ensure modal has left/top anchored
     const rect = modal.getBoundingClientRect();
-    // if currently using right/bottom, compute left/top from rect
-    if (!modal.style.left) {
-      modal.style.left = rect.left + 'px';
-    }
-    if (!modal.style.top) {
-      modal.style.top = rect.top + 'px';
-    }
-    // lock right/bottom so left/top take effect
+    if (!modal.style.left) modal.style.left = rect.left + 'px';
+    if (!modal.style.top) modal.style.top = rect.top + 'px';
     modal.style.right = 'auto';
     modal.style.bottom = 'auto';
 
-    // store start offsets
     startX = ev.clientX;
     startY = ev.clientY;
     startLeft = parseFloat(modal.style.left || rect.left);
     startTop = parseFloat(modal.style.top || rect.top);
 
-    // capture pointer so we get pointermove outside the handle too
     try {
       handle.setPointerCapture(pointerId);
     } catch (e) {}
 
-    // attach listeners
     document.addEventListener('pointermove', onPointerMove);
     document.addEventListener('pointerup', onPointerUp);
     document.addEventListener('pointercancel', onPointerUp);
@@ -713,14 +810,11 @@
     const dy = ev.clientY - startY;
     let newLeft = startLeft + dx;
     let newTop = startTop + dy;
-
-    // clamp within viewport with 8px margin
     const margin = 8;
     const maxLeft = window.innerWidth - modal.offsetWidth - margin;
     const maxTop = window.innerHeight - modal.offsetHeight - margin;
     newLeft = clamp(newLeft, margin, Math.max(margin, maxLeft));
     newTop = clamp(newTop, margin, Math.max(margin, maxTop));
-
     modal.style.left = Math.round(newLeft) + 'px';
     modal.style.top = Math.round(newTop) + 'px';
     ev.preventDefault();
@@ -735,7 +829,6 @@
       handle.releasePointerCapture(pointerId);
     } catch (e) {}
 
-    // save position
     try {
       const left = parseFloat(
         modal.style.left || modal.getBoundingClientRect().left
@@ -748,7 +841,6 @@
       console.warn('Could not save chat position', e);
     }
 
-    // remove listeners
     document.removeEventListener('pointermove', onPointerMove);
     document.removeEventListener('pointerup', onPointerUp);
     document.removeEventListener('pointercancel', onPointerUp);
@@ -756,7 +848,6 @@
     ev.preventDefault();
   }
 
-  // double-click handle to reset position to bottom-right
   handle.addEventListener('dblclick', (ev) => {
     ev.preventDefault();
     modal.style.left = 'auto';
@@ -768,10 +859,8 @@
     } catch (e) {}
   });
 
-  // pointerdown to begin drag
   handle.addEventListener('pointerdown', onPointerDown);
 
-  // When window resizes, keep chat inside viewport (adjust if necessary)
   window.addEventListener('resize', () => {
     try {
       const rect = modal.getBoundingClientRect();

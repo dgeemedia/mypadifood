@@ -1,7 +1,11 @@
-<!--views/admin/dashboard.ejs-->
+<!-- views/admin/dashboard.ejs -->
 <h2>Admin Dashboard</h2>
 <p>Pending vendors: <%= vendorsCount %></p>
 <p>Pending orders: <%= ordersCount %></p>
+<p>
+  Pending weekly plans: <%= typeof weeklyPlansCount !== 'undefined' ?
+  weeklyPlansCount : 0 %>
+</p>
 
 <nav>
   <a href="/admin/vendors/pending">Review Vendor Requests</a>
@@ -9,7 +13,8 @@
   | <a href="/admin/create">Create Admin</a>
   <% } %>
   | <a href="#" id="nav-pending-orders">Pending Orders (live)</a> |
-  <a href="#" id="nav-completed-orders">Completed Orders</a> |
+  <a href="#" id="nav-completed-orders">Completed Orders</a> | |
+  <a href="/admin/food-orders">Weekly Plans</a> |
   <a href="#" id="nav-notifications"
     >Notifications
     <span
@@ -22,8 +27,9 @@
         font-size: 0.9em;
         margin-left: 6px;
       "
-    ></span
-  ></a>
+      >0</span
+    ></a
+  >
 </nav>
 
 <div id="notificationsPanel" style="margin-top: 1rem; display: none"></div>
@@ -33,6 +39,15 @@
   <div id="pendingOrders"></div>
   <p id="pendingHint" style="font-size: 0.9em; color: #666">
     Click an order to open it. Blue border indicates client currently online.
+  </p>
+</div>
+
+<!-- NEW: Pending weekly plans panel (populated by chat.js on 'new_weekly_plan') -->
+<div id="pendingWeeklyPlansPanel" style="margin-top: 1rem; display: none">
+  <h3>Pending Weekly Plans (live)</h3>
+  <div id="pendingWeeklyPlans"></div>
+  <p style="font-size: 0.9em; color: #666">
+    New weekly plans will appear here for review.
   </p>
 </div>
 

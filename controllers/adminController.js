@@ -6,11 +6,18 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const adminResetModel = require('../models').adminReset;
 
-const models = require('../models'); // { client, vendor, admin, order, verification, message }
+const models = require('../models'); // { client, vendor, admin, order, verification, message, ... }
 const adminModel = models.admin;
 const vendorModel = models.vendor;
 const orderModel = models.order;
 const messageModel = models.message;
+const notificationModel = models.notification || null;
+
+// weekly plan models (prefer models/index exports but fall back to direct require)
+const weeklyPlanModel =
+  models.weeklyPlan || require('../models/weeklyPlanModel');
+const weeklyPlanMessageModel =
+  models.weeklyPlanMessages || require('../models/weeklyPlanMessageModel');
 
 const socketUtil = require('../utils/socket'); // for emitting socket events
 const { sendMail } = require('../utils/mailer'); // email helper
@@ -244,12 +251,27 @@ exports.reset = async (req, res) => {
   }
 };
 
-// Admin dashboard: simple counters for pending vendors/orders
+// Admin dashboard: simple counters for pending vendors/orders + weeklyPlansCount
 exports.dashboard = async (req, res) => {
   try {
     const vendorsCount = await adminModel.countPendingVendors();
     const ordersCount = await adminModel.countPendingOrders();
-    return res.render('admin/dashboard', { vendorsCount, ordersCount });
+
+    // compute weekly plans pending count (best-effort)
+    let weeklyPlansCount = 0;
+    try {
+      const pendingPlans = await weeklyPlanModel.getPendingPlansForAdmin();
+      weeklyPlansCount = Array.isArray(pendingPlans) ? pendingPlans.length : 0;
+    } catch (e) {
+      // non-fatal — still render dashboard
+      console.warn('Could not compute weeklyPlansCount', e);
+    }
+
+    return res.render('admin/dashboard', {
+      vendorsCount,
+      ordersCount,
+      weeklyPlansCount,
+    });
   } catch (err) {
     console.error('Error loading admin dashboard:', err);
     req.session.error = 'Error loading admin dashboard';
@@ -336,6 +358,10 @@ exports.createAdmin = async (req, res) => {
     return res.redirect('/admin/create');
   }
 };
+
+/* ---------------------------
+   ORDERS: existing admin handlers
+   --------------------------- */
 
 // List pending orders for admin review
 exports.pendingOrdersForAdmin = async (req, res) => {
@@ -537,5 +563,191 @@ exports.completeOrder = async (req, res) => {
     console.error('completeOrder error', err);
     req.session.error = 'Could not mark order as completed';
     return res.redirect('/admin/orders/pending');
+  }
+};
+
+/* ---------------------------
+   WEEKLY PLANS: admin handlers
+   --------------------------- */
+
+exports.pendingWeeklyPlans = async (req, res) => {
+  try {
+    const rows = await weeklyPlanModel.getPendingPlansForAdmin();
+    if (
+      req.query.format === 'json' ||
+      req.xhr ||
+      req.headers.accept?.includes('application/json')
+    ) {
+      return res.json({ ok: true, plans: rows });
+    }
+    return res.render('admin/food-orders', {
+      plans: rows,
+      pageScripts: ['/js/admin-food-orders.js'],
+    });
+  } catch (err) {
+    console.error('Error loading pending weekly plans for admin:', err);
+    req.session.error = 'Error loading weekly plans';
+    return res.redirect('/admin/dashboard');
+  }
+};
+
+exports.viewWeeklyPlan = async (req, res) => {
+  try {
+    const { planId } = req.params;
+    const plan = await weeklyPlanModel.getPlanWithItems(planId);
+    if (!plan) {
+      req.session.error = 'Weekly plan not found';
+      return res.redirect('/admin/food-orders');
+    }
+    const messages = await weeklyPlanMessageModel.getMessagesByPlan(
+      planId,
+      500
+    );
+    try {
+      // mark weekly plan messages as read by admin (best-effort)
+      await weeklyPlanMessageModel.markReadByAdmin(planId);
+    } catch (e) {
+      /* non-fatal */
+    }
+    return res.render('admin/food-order-view', {
+      plan,
+      messages,
+      pageScripts: ['/js/admin-food-orders.js'],
+    });
+  } catch (err) {
+    console.error('Error loading weekly plan view:', err);
+    req.session.error = 'Error loading weekly plan';
+    return res.redirect('/admin/food-orders');
+  }
+};
+
+exports.acceptWeeklyPlan = async (req, res) => {
+  try {
+    if (
+      !req.session.user ||
+      !(req.session.user.type === 'admin' || req.session.user.type === 'super')
+    ) {
+      req.session.error = 'Only admins may accept weekly plans';
+      return res.redirect('/admin/food-orders');
+    }
+    const adminId = req.session.user.id;
+    const { planId } = req.params;
+    const assigned = await weeklyPlanModel.assignAdmin(planId, adminId);
+    if (!assigned) {
+      req.session.error = 'Could not assign admin';
+      return res.redirect('/admin/food-orders');
+    }
+    // create notification
+    if (
+      notificationModel &&
+      typeof notificationModel.createNotification === 'function'
+    ) {
+      try {
+        // IMPORTANT: Do NOT put weekly plan id into order_id (FK->orders). Use null here
+        await notificationModel.createNotification({
+          order_id: null,
+          type: 'weekly_plan_assigned',
+          payload: {
+            weekly_plan_id: planId,
+            assigned_admin: adminId,
+            assigned_admin_name: req.session.user.name,
+            assigned_at: new Date(),
+          },
+        });
+      } catch (nerr) {
+        console.warn('Could not create assigned notification', nerr);
+      }
+    }
+    // emit via socket
+    try {
+      const io = require('../utils/socket').get();
+      if (io) {
+        io.to(`weekly_plan_${planId}`).emit('weekly_plan_message', {
+          weekly_plan_id: planId,
+          sender_type: 'admin',
+          sender_id: adminId,
+          message: `Hello, my name is ${req.session.user.name}. I will handle your weekly plan.`,
+          created_at: new Date(),
+        });
+        io.to('admins').emit('weekly_plan_assigned', {
+          plan_id: planId,
+          assigned_admin: adminId,
+          assigned_admin_name: req.session.user.name,
+        });
+      }
+    } catch (e) {
+      console.warn('socket emit failed', e);
+    }
+    req.session.success =
+      'You accepted the weekly plan and notified the client';
+    return res.redirect(`/admin/food-orders/${planId}`);
+  } catch (err) {
+    console.error('acceptWeeklyPlan error', err);
+    req.session.error = 'Could not accept weekly plan';
+    return res.redirect('/admin/food-orders');
+  }
+};
+
+exports.completeWeeklyPlan = async (req, res) => {
+  try {
+    if (
+      !req.session.user ||
+      !(req.session.user.type === 'admin' || req.session.user.type === 'super')
+    ) {
+      req.session.error = 'Only admins may complete weekly plans';
+      return res.redirect('/admin/food-orders');
+    }
+    const adminId = req.session.user.id;
+    const { planId } = req.params;
+    const plan = await weeklyPlanModel.getPlanWithItems(planId);
+    if (!plan) {
+      req.session.error = 'Plan not found';
+      return res.redirect('/admin/food-orders');
+    }
+    const isAssigned =
+      plan.assigned_admin && String(plan.assigned_admin) === String(adminId);
+    const isSuper = req.session.user.type === 'super';
+    if (!isAssigned && !isSuper) {
+      req.session.error = 'You are not assigned to this weekly plan';
+      return res.redirect(`/admin/food-orders/${planId}`);
+    }
+    const updated = await weeklyPlanModel.updateStatus(planId, 'completed');
+    if (!updated) {
+      req.session.error = 'Could not mark weekly plan completed';
+      return res.redirect(`/admin/food-orders/${planId}`);
+    }
+    // create message + emit
+    try {
+      await weeklyPlanMessageModel.createMessage({
+        weeklyPlanId: planId,
+        senderType: 'admin',
+        senderId: adminId,
+        message: `${req.session.user.name} marked this weekly plan as completed / delivered.`,
+        metadata: { action: 'completed' },
+      });
+    } catch (merr) {
+      console.warn('Could not create weekly plan completion message', merr);
+    }
+    try {
+      const io = require('../utils/socket').get();
+      if (io) {
+        io.to(`weekly_plan_${planId}`).emit('weekly_plan_message', {
+          weekly_plan_id: planId,
+          sender_type: 'admin',
+          sender_id: adminId,
+          message: `${req.session.user.name} marked this plan as completed.`,
+          created_at: new Date(),
+        });
+        io.to('admins').emit('weekly_plan_completed', { plan_id: planId });
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    req.session.success = 'Weekly plan marked completed';
+    return res.redirect(`/admin/food-orders/${planId}`);
+  } catch (err) {
+    console.error('completeWeeklyPlan error', err);
+    req.session.error = 'Could not mark weekly plan as completed';
+    return res.redirect('/admin/food-orders');
   }
 };

@@ -9,6 +9,14 @@ const clientModel = models.client;
 const verificationModel = models.verification;
 const vendorModel = models.vendor;
 const orderModel = models.order;
+const messageModel = models.message;
+const notificationModel = models.notification;
+const paymentsUtil = require('../utils/payments');
+
+const weeklyPlanModel =
+  models.weeklyPlan || require('../models/weeklyPlanModel');
+const weeklyPlanMessageModel =
+  models.weeklyPlanMessages || require('../models/weeklyPlanMessageModel');
 
 const { sendMail } = require('../utils/mailer');
 
@@ -28,6 +36,26 @@ function loadStatesLGAs() {
     console.error('Could not load statesLGAs:', e);
   }
   return [];
+}
+
+// Helpers for Lagos timezone handling
+function nowLagos() {
+  // Server might be in UTC. Nigeria is UTC+1 (no DST).
+  const now = new Date();
+  return new Date(now.getTime() + 1 * 60 * 60 * 1000);
+}
+
+function computeModWindowForWeek(weekOfDate) {
+  // weekOfDate: Date (Monday)
+  const weekOf = new Date(weekOfDate);
+  // previous Friday: Monday - 3 days
+  const prevFriday = new Date(weekOf);
+  prevFriday.setDate(weekOf.getDate() - 3);
+  prevFriday.setHours(0, 0, 0, 0);
+  const prevSunday = new Date(prevFriday);
+  prevSunday.setDate(prevFriday.getDate() + 2);
+  prevSunday.setHours(23, 59, 59, 999);
+  return { modFrom: prevFriday, modUntil: prevSunday };
 }
 
 // Show registration page (preserve any previous form data/errors)
@@ -354,7 +382,21 @@ exports.dashboard = async (req, res) => {
     const recentOrderId = req.session.recent_order_id || null;
     if (req.session.recent_order_id) delete req.session.recent_order_id;
 
-    return res.render('client/dashboard', { vendors, orders, recentOrderId });
+    // also fetch weekly plans to show in dashboard if desired
+    let weeklyPlans = [];
+    try {
+      weeklyPlans = await weeklyPlanModel.getPlansByClient(clientId);
+    } catch (e) {
+      // non-fatal; we still render dashboard
+      console.warn('Could not load weekly plans for dashboard', e);
+    }
+
+    return res.render('client/dashboard', {
+      vendors,
+      orders,
+      recentOrderId,
+      weeklyPlans,
+    });
   } catch (err) {
     console.error('Error loading client dashboard:', err);
     req.session.error = 'Error loading dashboard';
@@ -390,12 +432,12 @@ exports.postOrderMenu = async (req, res) => {
 
     // update the order item field (optional)
     if (menu_text) {
-      // make sure this function exists in models/orderModel.js (see next code block)
+      // make sure this function exists in models/orderModel.js
       await orderModel.updateOrderItem(orderId, menu_text);
     }
 
     // create a message record
-    const createdMsg = await models.message.createMessage({
+    const createdMsg = await messageModel.createMessage({
       orderId,
       senderType: 'client',
       senderId: clientId,
@@ -406,11 +448,11 @@ exports.postOrderMenu = async (req, res) => {
     // create persistent notification for admins (if notification model exists)
     let notification = null;
     if (
-      models.notification &&
-      typeof models.notification.createNotification === 'function'
+      notificationModel &&
+      typeof notificationModel.createNotification === 'function'
     ) {
       try {
-        notification = await models.notification.createNotification({
+        notification = await notificationModel.createNotification({
           order_id: orderId,
           type: 'menu_update',
           payload: {
@@ -483,7 +525,7 @@ exports.bookVendor = async (req, res) => {
     req.session.recent_order_id = orderId;
 
     const messageSummary = `Booking request: Client: ${client.full_name || ''} | Phone: ${client.phone || ''} | Address: ${client.address || ''} | Vendor: ${vendor ? vendor.name : ''} | Item: ${item || ''} | Payment: ${payment_method || 'cod'}`;
-    const createdMsg = await models.message.createMessage({
+    const createdMsg = await messageModel.createMessage({
       orderId,
       senderType: 'client',
       senderId: clientId,
@@ -492,7 +534,7 @@ exports.bookVendor = async (req, res) => {
     });
 
     const botPrompt = `Would you like to modify this request? Please select Yes or No.`;
-    const botPromptMsg = await models.message.createMessage({
+    const botPromptMsg = await messageModel.createMessage({
       orderId,
       senderType: 'bot',
       senderId: null,
@@ -503,11 +545,11 @@ exports.bookVendor = async (req, res) => {
     // persistent notification for admins (guarded; non-fatal)
     let notification = null;
     if (
-      models.notification &&
-      typeof models.notification.createNotification === 'function'
+      notificationModel &&
+      typeof notificationModel.createNotification === 'function'
     ) {
       try {
-        notification = await models.notification.createNotification({
+        notification = await notificationModel.createNotification({
           order_id: orderId,
           type: 'order',
           payload: {
@@ -556,11 +598,9 @@ exports.bookVendor = async (req, res) => {
     }
 
     if (payment_method === 'paystack' || payment_method === 'flutterwave') {
-      const payments = require('../utils/payments');
-
       try {
         if (payment_method === 'paystack') {
-          const init = await payments.initPaystack(
+          const init = await paymentsUtil.initPaystack(
             { email: client.email, amount: price },
             orderId
           );
@@ -573,7 +613,7 @@ exports.bookVendor = async (req, res) => {
         }
 
         if (payment_method === 'flutterwave') {
-          const init = await payments.initFlutterwave(
+          const init = await paymentsUtil.initFlutterwave(
             {
               amount: price,
               customer: {
@@ -608,6 +648,386 @@ exports.bookVendor = async (req, res) => {
   } catch (err) {
     console.error('Error creating booking:', err);
     req.session.error = 'Error creating booking';
+    return res.redirect('/client/dashboard');
+  }
+};
+
+/* -------------------------------------------
+   WEEKLY PLAN: client-facing handlers
+   These functions integrate with weeklyPlanModel
+   and weeklyPlanMessageModel.
+   ------------------------------------------- */
+
+exports.showSpecialOrderForm = async (req, res) => {
+  try {
+    if (
+      !req.session ||
+      !req.session.user ||
+      req.session.user.type !== 'client'
+    ) {
+      req.session.error = 'Please log in to place a weekly plan';
+      return res.redirect('/client/login');
+    }
+
+    const clientId = req.session.user.id;
+    const client = await clientModel.findById(clientId);
+    const vendors = await vendorModel.getApprovedVendors({
+      state: client?.state,
+      lga: client?.lga,
+    });
+
+    // compute next Monday as default week_of (Lagos timezone)
+    const now = nowLagos();
+    const todayDow = now.getDay();
+    const daysToNextMonday = (8 - todayDow) % 7 || 7;
+    const nextMonday = new Date(now);
+    nextMonday.setDate(now.getDate() + daysToNextMonday);
+    nextMonday.setHours(0, 0, 0, 0);
+
+    return res.render('client/special-order', {
+      vendors,
+      defaultWeekOf: nextMonday.toISOString().slice(0, 10),
+      pageScripts: ['/js/special-order.js'],
+    });
+  } catch (e) {
+    console.error('showSpecialOrderForm error', e);
+    req.session.error = 'Could not open special order form';
+    return res.redirect('/client/dashboard');
+  }
+};
+
+exports.postSpecialOrder = async (req, res) => {
+  try {
+    if (
+      !req.session ||
+      !req.session.user ||
+      req.session.user.type !== 'client'
+    ) {
+      req.session.error = 'Please log in to place a weekly plan';
+      return res.redirect('/client/login');
+    }
+    const clientId = req.session.user.id;
+    const planType = String(req.body.plan_type || 'single');
+    const weekOf = String(req.body.week_of || '');
+    const vendorId = req.body.vendorId || null;
+    const paymentMethod = req.body.payment_method || 'cod';
+    // parse items JSON
+    let items = [];
+    if (req.body.items) {
+      try {
+        items = JSON.parse(req.body.items);
+      } catch (e) {
+        items = [];
+      }
+    } else {
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+      for (const d of days) {
+        if (planType === 'single') {
+          const k = req.body[`${d}_1`];
+          if (k)
+            items.push({ day_of_week: d, slot: 1, food_key: k, food_label: k });
+        } else {
+          const k1 = req.body[`${d}_1`];
+          const k2 = req.body[`${d}_2`];
+          if (k1)
+            items.push({
+              day_of_week: d,
+              slot: 1,
+              food_key: k1,
+              food_label: k1,
+            });
+          if (k2)
+            items.push({
+              day_of_week: d,
+              slot: 2,
+              food_key: k2,
+              food_label: k2,
+            });
+        }
+      }
+    }
+
+    const PRICES = {
+      single: Number(process.env.WEEKLY_SINGLE_PRICE || 4000),
+      double: Number(process.env.WEEKLY_DOUBLE_PRICE || 8000),
+    };
+    const totalPrice = PRICES[planType] || PRICES.single;
+    const weekDate = new Date(weekOf + 'T00:00:00Z');
+    const { modFrom, modUntil } = computeModWindowForWeek(weekDate);
+
+    const created = await weeklyPlanModel.createWeeklyPlan({
+      clientId,
+      vendorId,
+      weekOf,
+      planType,
+      totalPrice,
+      paymentMethod,
+      modifiableFrom: modFrom,
+      modifiableUntil: modUntil,
+      items,
+    });
+
+    // create persistent notification if available
+    // create persistent notification for weekly plan (guarded; non-fatal)
+    try {
+      if (
+        notificationModel &&
+        typeof notificationModel.createNotification === 'function'
+      ) {
+        // Do NOT set order_id to the weekly-plan id. That column FK->orders.
+        // Instead pass order_id: null (or omit) and include weekly_plan_id in payload.
+        await notificationModel.createNotification({
+          order_id: null,
+          type: 'weekly_plan',
+          payload: {
+            weekly_plan_id: created.id,
+            client_id: clientId,
+            client_name: req.session.user.name || null,
+            client_phone: req.session.user.phone || null,
+            client_address: req.session.user.address || null,
+            week_of: weekOf,
+            plan_type: planType,
+            total_price: totalPrice,
+            created_at: new Date(),
+          },
+        });
+      }
+    } catch (e) {
+      console.warn('notif create failed', e);
+    }
+
+    // Emit via socket to admins (so admin dashboards get live update)
+    try {
+      const io = require('../utils/socket').get();
+      if (io) {
+        const payload = {
+          id: created.id,
+          client_id: clientId,
+          client_name: req.session.user.name || null,
+          client_phone: req.session.user.phone || null,
+          client_address: req.session.user.address || null,
+          week_of: weekOf,
+          plan_type: planType,
+          total_price: totalPrice,
+          created_at: new Date(),
+        };
+        io.to('admins').emit('new_weekly_plan', payload);
+      }
+    } catch (e) {
+      console.warn('socket emit failed', e);
+    }
+
+    // Payment flow
+    if (paymentMethod === 'paystack' || paymentMethod === 'flutterwave') {
+      try {
+        const client = await clientModel.findById(clientId);
+        if (paymentMethod === 'paystack') {
+          const init = await paymentsUtil.initPaystack(
+            { email: client.email, amount: totalPrice },
+            created.id
+          );
+          await weeklyPlanModel.setPaymentStatus(created.id, 'pending');
+          return res.redirect(init.authorization_url);
+        }
+        if (paymentMethod === 'flutterwave') {
+          const init = await paymentsUtil.initFlutterwave(
+            {
+              amount: totalPrice,
+              customer: {
+                email: client.email,
+                phonenumber: client.phone,
+                name: client.full_name,
+              },
+            },
+            created.id
+          );
+          await weeklyPlanModel.setPaymentStatus(created.id, 'pending');
+          return res.redirect(init.payment_link);
+        }
+      } catch (payErr) {
+        console.error('Payment init error', payErr);
+        req.session.error =
+          'Could not start online payment. Please try again or choose pay on delivery.';
+        return res.redirect('/client/dashboard');
+      }
+    }
+
+    req.session.success =
+      'Weekly plan created. Our Food Order Specialist will review it.';
+    return res.redirect('/client/dashboard');
+  } catch (err) {
+    console.error(
+      'postSpecialOrder error',
+      err && err.detail ? err.detail : err
+    );
+    req.session.error = 'Could not create weekly plan';
+    return res.redirect('/client/dashboard');
+  }
+};
+
+exports.updateSpecialOrder = async (req, res) => {
+  try {
+    if (
+      !req.session ||
+      !req.session.user ||
+      req.session.user.type !== 'client'
+    ) {
+      req.session.error = 'Please log in';
+      return res.redirect('/client/login');
+    }
+    const clientId = req.session.user.id;
+    const planId = req.params.id;
+    const plan = await weeklyPlanModel.getPlanWithItems(planId);
+    if (!plan) {
+      req.session.error = 'Plan not found';
+      return res.redirect('/client/dashboard');
+    }
+    if (String(plan.client_id) !== String(clientId)) {
+      req.session.error = 'Not authorized';
+      return res.redirect('/client/dashboard');
+    }
+
+    const now = nowLagos();
+    const modFrom = new Date(plan.modifiable_from);
+    const modUntil = new Date(plan.modifiable_until);
+    if (!(now >= modFrom && now <= modUntil)) {
+      req.session.error =
+        'This plan is not modifiable at this time. Modifications allowed Friday 00:00 - Sunday 23:59 Lagos time.';
+      return res.redirect('/client/dashboard');
+    }
+
+    let items = [];
+    if (req.body.items) {
+      try {
+        items = JSON.parse(req.body.items);
+      } catch (e) {
+        items = [];
+      }
+    } else {
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+      for (const d of days) {
+        if (plan.plan_type === 'single') {
+          const k = req.body[`${d}_1`];
+          if (k)
+            items.push({ day_of_week: d, slot: 1, food_key: k, food_label: k });
+        } else {
+          const k1 = req.body[`${d}_1`];
+          const k2 = req.body[`${d}_2`];
+          if (k1)
+            items.push({
+              day_of_week: d,
+              slot: 1,
+              food_key: k1,
+              food_label: k1,
+            });
+          if (k2)
+            items.push({
+              day_of_week: d,
+              slot: 2,
+              food_key: k2,
+              food_label: k2,
+            });
+        }
+      }
+    }
+
+    await weeklyPlanModel.updatePlanItems(planId, items);
+
+    // notification + socket emit to admins
+    try {
+      if (
+        notificationModel &&
+        typeof notificationModel.createNotification === 'function'
+      ) {
+        await notificationModel.createNotification({
+          order_id: null,
+          type: 'weekly_plan_update',
+          payload: {
+            weekly_plan_id: planId,
+            client_id: clientId,
+            client_name: req.session.user.name || null,
+            updated_at: new Date(),
+          },
+        });
+      }
+    } catch (notifErr) {
+      console.warn('notif create error', notifErr);
+    }
+
+    try {
+      const io = require('../utils/socket').get();
+      if (io) {
+        io.to('admins').emit('weekly_plan_updated', {
+          plan_id: planId,
+          client_id: clientId,
+        });
+      }
+    } catch (e) {
+      /* ignore */
+    }
+
+    req.session.success = 'Plan updated and sent to our team';
+    return res.redirect('/client/dashboard');
+  } catch (err) {
+    console.error('updateSpecialOrder error', err);
+    req.session.error = 'Could not update plan';
+    return res.redirect('/client/dashboard');
+  }
+};
+
+// small helpers for client controller listing/viewing
+exports.listWeeklyPlans = async (req, res) => {
+  try {
+    if (
+      !req.session ||
+      !req.session.user ||
+      req.session.user.type !== 'client'
+    ) {
+      req.session.error = 'Please log in';
+      return res.redirect('/client/login');
+    }
+    const clientId = req.session.user.id;
+    const plans = await weeklyPlanModel.getPlansByClient(clientId);
+    return res.render('client/dashboard', {
+      weeklyPlans: plans,
+      orders: req.orders || [],
+      vendors: req.vendors || [],
+    });
+  } catch (e) {
+    console.error('listWeeklyPlans error', e);
+    req.session.error = 'Could not list plans';
+    return res.redirect('/client/dashboard');
+  }
+};
+
+exports.viewWeeklyPlan = async (req, res) => {
+  try {
+    if (
+      !req.session ||
+      !req.session.user ||
+      req.session.user.type !== 'client'
+    ) {
+      req.session.error = 'Please log in';
+      return res.redirect('/client/login');
+    }
+    const planId = req.params.id;
+    const plan = await weeklyPlanModel.getPlanWithItems(planId);
+    if (!plan) {
+      req.session.error = 'Plan not found';
+      return res.redirect('/client/dashboard');
+    }
+    if (String(plan.client_id) !== String(req.session.user.id)) {
+      req.session.error = 'Not authorized';
+      return res.redirect('/client/dashboard');
+    }
+    const messages = await weeklyPlanMessageModel.getMessagesByPlan(
+      planId,
+      500
+    );
+    return res.render('client/special-order-view', { plan, messages });
+  } catch (e) {
+    console.error('viewWeeklyPlan error', e);
+    req.session.error = 'Could not view plan';
     return res.redirect('/client/dashboard');
   }
 };

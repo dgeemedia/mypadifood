@@ -5,6 +5,55 @@
 </h2>
 
 <section>
+  <h3>Special Weekly Booking</h3>
+  <p>
+    Subscribe to a weekly meal plan for busy professionals.
+    <a href="/client/special-order" class="btn">Create Weekly Plan</a>
+  </p>
+
+  <% if (!weeklyPlans || !weeklyPlans.length) { %>
+  <p>You have no weekly plans yet.</p>
+  <% } else { %>
+  <table>
+    <thead>
+      <tr>
+        <th>Week (Mon)</th>
+        <th>Plan</th>
+        <th>Price (₦)</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% weeklyPlans.forEach(p => { %>
+      <tr>
+        <td>
+          <%= p.week_of ? (p.week_of.toISOString ? p.week_of.toISOString().slice(0,10) : p.week_of) : '—' %>
+        </td>
+        <td><%= p.plan_type %></td>
+        <td>₦<%= p.total_price %></td>
+        <td><%= p.status %></td>
+        <td>
+          <a href="/client/special-order?view=<%= p.id %>">View</a>
+          <% /* offer update link only if current time within mod window (server enforces) */ %>
+          <% if (p.modifiable_from && p.modifiable_until) { %>
+          <form
+            method="post"
+            action="/client/special-order/<%= p.id %>/update"
+            style="display: inline"
+          >
+            <button type="submit" class="btn">Modify</button>
+          </form>
+          <% } %>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <% } %>
+</section>
+
+<section>
   <h3>Your Orders</h3>
   <% if (!orders || !orders.length) { %>
   <p>No orders yet.</p>

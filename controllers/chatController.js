@@ -1,9 +1,17 @@
 // controllers/chatController.js
+
 const models = require('../models');
 const messageModel = models.message;
 const orderModel = models.order;
 const vendorModel = models.vendor;
+const adminModel = models.admin;
 const socketUtil = require('../utils/socket');
+
+// Weekly plan models (exported via models/index.js or fallback)
+const weeklyPlanModel =
+  models.weeklyPlan || require('../models/weeklyPlanModel');
+const weeklyPlanMessageModel =
+  models.weeklyPlanMessages || require('../models/weeklyPlanMessageModel');
 
 /**
  * Authorize that current session user may access this order.
@@ -99,7 +107,6 @@ exports.postMessage = async (req, res) => {
             : 'Client';
     } else if (senderType === 'admin') {
       try {
-        const adminModel = require('../models').admin;
         const adminRow = senderId ? await adminModel.findById(senderId) : null;
         displayName = adminRow
           ? adminRow.name
@@ -315,6 +322,177 @@ exports.getMessages = async (req, res) => {
     return res.json({ ok: true, messages: rows });
   } catch (err) {
     console.error('getMessages', err);
+    const status = err.status || 500;
+    return res
+      .status(status)
+      .json({ ok: false, message: err.message || 'Server error' });
+  }
+};
+
+/* ---------------------------
+   Weekly-plan chat support
+   --------------------------- */
+
+/**
+ * Check access for weekly plan:
+ * Allowed: the client who owns the plan, assigned_admin, or super admin.
+ * Throws Error with status if unauthorized.
+ */
+async function authorizeWeeklyPlanAccess(req, planId) {
+  if (!req || !req.session || !req.session.user) {
+    const e = new Error('Not authenticated');
+    e.status = 401;
+    throw e;
+  }
+  const plan = await weeklyPlanModel.getPlanWithItems(planId);
+  if (!plan) {
+    const e = new Error('Weekly plan not found');
+    e.status = 404;
+    throw e;
+  }
+
+  const user = req.session.user;
+  const isClient =
+    user.type === 'client' && String(user.id) === String(plan.client_id);
+  const isAssignedAdmin =
+    (user.type === 'admin' || user.type === 'agent') &&
+    plan.assigned_admin &&
+    String(user.id) === String(plan.assigned_admin);
+  const isSuper = user.type === 'super';
+
+  if (!(isClient || isAssignedAdmin || isSuper)) {
+    const e = new Error('Not authorized to access this weekly plan');
+    e.status = 403;
+    throw e;
+  }
+
+  return plan;
+}
+
+/**
+ * POST /chat/weekly-plan/message
+ * Body: { planId, message }
+ * Server authorizes using session, persists via weeklyPlanMessageModel
+ * then emits to `weekly_plan_{planId}` room and also to 'admins' room.
+ */
+exports.postWeeklyPlanMessage = async (req, res) => {
+  try {
+    const { planId, message } = req.body;
+    if (!planId || !message)
+      return res
+        .status(400)
+        .json({ ok: false, message: 'Missing planId or message' });
+
+    await authorizeWeeklyPlanAccess(req, planId);
+
+    // determine sender
+    let senderType = 'bot';
+    let senderId = null;
+    if (req.session && req.session.user) {
+      if (req.session.user.type === 'client') {
+        senderType = 'client';
+        senderId = req.session.user.id;
+      } else if (
+        req.session.user.type === 'admin' ||
+        req.session.user.type === 'super' ||
+        req.session.user.type === 'agent'
+      ) {
+        senderType = 'admin';
+        senderId = req.session.user.id;
+      }
+    }
+
+    const created = await weeklyPlanMessageModel.createMessage({
+      weeklyPlanId: planId,
+      senderType,
+      senderId,
+      message,
+      metadata: {},
+    });
+
+    // attach display name
+    let display_name = '';
+    if (senderType === 'client') {
+      display_name = req.session.user.name || 'Client';
+    } else if (senderType === 'admin') {
+      try {
+        const a = senderId ? await adminModel.findById(senderId) : null;
+        display_name = a ? a.name : `Admin${senderId || ''}`;
+      } catch (e) {
+        display_name = `Admin${senderId || ''}`;
+      }
+    } else display_name = 'Support';
+
+    const payload = Object.assign({}, created, { display_name });
+
+    // emit to room and to admins
+    try {
+      const io = socketUtil.get();
+      if (io) {
+        io.to(`weekly_plan_${planId}`).emit('weekly_plan_message', payload);
+        io.to('admins').emit('weekly_plan_message', payload);
+      }
+    } catch (e) {
+      console.warn('weekly plan socket emit failed', e);
+    }
+
+    // create persistent notification for admins (optional)
+    try {
+      if (
+        models.notification &&
+        typeof models.notification.createNotification === 'function'
+      ) {
+        await models.notification.createNotification({
+          order_id: planId,
+          type: 'weekly_plan_message',
+          payload: {
+            plan_id: planId,
+            sender_type: senderType,
+            message: message,
+            created_at: new Date(),
+          },
+        });
+      }
+    } catch (e) {
+      console.warn('Could not create weekly plan notification (non-fatal)', e);
+    }
+
+    return res.json({ ok: true, message: payload });
+  } catch (err) {
+    console.error('postWeeklyPlanMessage error', err);
+    const status = err.status || 500;
+    return res
+      .status(status)
+      .json({ ok: false, message: err.message || 'Server error' });
+  }
+};
+
+/**
+ * GET /chat/weekly-plan/:planId
+ * Return messages for a weekly plan
+ */
+exports.getWeeklyPlanMessages = async (req, res) => {
+  try {
+    const planId = req.params.planId;
+    if (!planId)
+      return res.status(400).json({ ok: false, message: 'Missing planId' });
+    await authorizeWeeklyPlanAccess(req, planId);
+    const rows = await weeklyPlanMessageModel.getMessagesByPlan(planId, 500);
+    // mark read flag for admin/client if you track it
+    if (req.session && req.session.user && req.session.user.type === 'admin') {
+      try {
+        await weeklyPlanMessageModel.markReadByAdmin(planId);
+      } catch (e) {}
+    } else if (
+      req.session &&
+      req.session.user &&
+      req.session.user.type === 'client'
+    ) {
+      // implement markReadByClient if you want
+    }
+    return res.json({ ok: true, messages: rows });
+  } catch (err) {
+    console.error('getWeeklyPlanMessages error', err);
     const status = err.status || 500;
     return res
       .status(status)

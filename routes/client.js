@@ -38,4 +38,33 @@ router.post(
   clientController.postOrderMenu
 );
 
+// ===============================
+// Weekly plan routes (protected)
+// ===============================
+router.get(
+  '/special-order',
+  auth.requireClient,
+  clientController.showSpecialOrderForm
+);
+router.post(
+  '/special-order',
+  auth.requireClient,
+  clientController.postSpecialOrder
+);
+router.post(
+  '/special-order/:id/update',
+  auth.requireClient,
+  clientController.updateSpecialOrder
+);
+router.get(
+  '/weekly-plans',
+  auth.requireClient,
+  clientController.listWeeklyPlans
+);
+router.get(
+  '/weekly-plans/:id',
+  auth.requireClient,
+  clientController.viewWeeklyPlan
+);
+
 module.exports = router;

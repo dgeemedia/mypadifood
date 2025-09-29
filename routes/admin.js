@@ -33,6 +33,7 @@ router.post(
 router.get('/create', auth.requireAdmin, adminController.showCreateForm);
 router.post('/create', auth.requireAdmin, adminController.createAdmin);
 
+// Notifications mark-read (AJAX)
 router.post('/notifications/:id/read', auth.requireAdmin, async (req, res) => {
   try {
     const id = req.params.id;
@@ -43,5 +44,30 @@ router.post('/notifications/:id/read', auth.requireAdmin, async (req, res) => {
     res.status(500).json({ ok: false });
   }
 });
+
+/* ---------------------------
+   WEEKLY PLANS (admin)
+   keep these here at /admin/food-orders...
+*/
+router.get(
+  '/food-orders',
+  auth.requireAdmin,
+  adminController.pendingWeeklyPlans
+);
+router.get(
+  '/food-orders/:planId',
+  auth.requireAdmin,
+  adminController.viewWeeklyPlan
+);
+router.post(
+  '/food-orders/:planId/accept',
+  auth.requireAdmin,
+  adminController.acceptWeeklyPlan
+);
+router.post(
+  '/food-orders/:planId/complete',
+  auth.requireAdmin,
+  adminController.completeWeeklyPlan
+);
 
 module.exports = router;

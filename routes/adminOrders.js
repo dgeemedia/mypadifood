@@ -4,6 +4,16 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const adminController = require('../controllers/adminController');
 
+// ===============================
+// Regular food orders
+// Mount this router under /admin/orders to produce:
+//  - GET /admin/orders/pending
+//  - GET /admin/orders/completed
+//  - GET /admin/orders/:orderId
+//  - POST /admin/orders/:orderId/accept
+//  - POST /admin/orders/:orderId/done
+// ===============================
+
 // list pending orders
 router.get(
   '/pending',
