@@ -436,18 +436,21 @@ exports.postWeeklyPlanMessage = async (req, res) => {
       console.warn('weekly plan socket emit failed', e);
     }
 
-    // create persistent notification for admins (optional)
+        // create persistent notification for admins (optional)
     try {
       if (
         models.notification &&
         typeof models.notification.createNotification === 'function'
       ) {
+        // IMPORTANT: do NOT put weekly plan id into order_id (FK -> orders).
+        // Use order_id: null and include weekly_plan_id in the payload.
         await models.notification.createNotification({
-          order_id: planId,
+          order_id: null,
           type: 'weekly_plan_message',
           payload: {
-            plan_id: planId,
+            weekly_plan_id: planId,
             sender_type: senderType,
+            sender_id: senderId,
             message: message,
             created_at: new Date(),
           },

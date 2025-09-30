@@ -711,7 +711,8 @@ exports.postSpecialOrder = async (req, res) => {
     const weekOf = String(req.body.week_of || '');
     const vendorId = req.body.vendorId || null;
     const paymentMethod = req.body.payment_method || 'cod';
-    // parse items JSON
+
+    // parse items JSON (client sends a JSON string in hidden field 'items')
     let items = [];
     if (req.body.items) {
       try {
@@ -719,13 +720,53 @@ exports.postSpecialOrder = async (req, res) => {
       } catch (e) {
         items = [];
       }
+      // Fallback: if items is an empty array, attempt to read discrete form fields
+      // (handles cases where client sent "[]" but the individual selects are present)
+      if (!items || !items.length) {
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        for (const d of days) {
+          if (planType === 'single') {
+            const k = req.body[`${d}_1`];
+            if (k)
+              items.push({
+                day_of_week: d,
+                slot: 1,
+                food_key: k,
+                food_label: k,
+              });
+          } else {
+            const k1 = req.body[`${d}_1`];
+            const k2 = req.body[`${d}_2`];
+            if (k1)
+              items.push({
+                day_of_week: d,
+                slot: 1,
+                food_key: k1,
+                food_label: k1,
+              });
+            if (k2)
+              items.push({
+                day_of_week: d,
+                slot: 2,
+                food_key: k2,
+                food_label: k2,
+              });
+          }
+        }
+      }
     } else {
+      // existing fallback when no items JSON provided
       const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
       for (const d of days) {
         if (planType === 'single') {
           const k = req.body[`${d}_1`];
           if (k)
-            items.push({ day_of_week: d, slot: 1, food_key: k, food_label: k });
+            items.push({
+              day_of_week: d,
+              slot: 1,
+              food_key: k,
+              food_label: k,
+            });
         } else {
           const k1 = req.body[`${d}_1`];
           const k2 = req.body[`${d}_2`];
@@ -896,6 +937,7 @@ exports.updateSpecialOrder = async (req, res) => {
       return res.redirect('/client/dashboard');
     }
 
+    // robust items parsing: try JSON hidden field first, fallback to per-day fields
     let items = [];
     if (req.body.items) {
       try {
@@ -903,13 +945,51 @@ exports.updateSpecialOrder = async (req, res) => {
       } catch (e) {
         items = [];
       }
+      // If parsed items is empty, fallback to discrete fields
+      if (!items || !items.length) {
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        for (const d of days) {
+          if (plan.plan_type === 'single') {
+            const k = req.body[`${d}_1`];
+            if (k)
+              items.push({
+                day_of_week: d,
+                slot: 1,
+                food_key: k,
+                food_label: k,
+              });
+          } else {
+            const k1 = req.body[`${d}_1`];
+            const k2 = req.body[`${d}_2`];
+            if (k1)
+              items.push({
+                day_of_week: d,
+                slot: 1,
+                food_key: k1,
+                food_label: k1,
+              });
+            if (k2)
+              items.push({
+                day_of_week: d,
+                slot: 2,
+                food_key: k2,
+                food_label: k2,
+              });
+          }
+        }
+      }
     } else {
       const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
       for (const d of days) {
         if (plan.plan_type === 'single') {
           const k = req.body[`${d}_1`];
           if (k)
-            items.push({ day_of_week: d, slot: 1, food_key: k, food_label: k });
+            items.push({
+              day_of_week: d,
+              slot: 1,
+              food_key: k,
+              food_label: k,
+            });
         } else {
           const k1 = req.body[`${d}_1`];
           const k2 = req.body[`${d}_2`];
