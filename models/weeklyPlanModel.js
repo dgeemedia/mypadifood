@@ -62,13 +62,25 @@ async function getPlansByClient(clientId) {
 
 async function getPlanWithItems(planId) {
   const { rows } = await pool.query(
-    'SELECT * FROM weekly_plan_orders WHERE id = $1',
+    `SELECT p.*,
+            c.full_name  AS client_name,
+            c.phone      AS client_phone,
+            c.address    AS client_address,
+            a.name       AS assigned_admin_name
+     FROM weekly_plan_orders p
+     LEFT JOIN clients c ON p.client_id = c.id
+     LEFT JOIN admins a  ON p.assigned_admin = a.id
+     WHERE p.id = $1`,
     [planId]
   );
   const plan = rows[0] || null;
   if (!plan) return null;
+
   const itemsRes = await pool.query(
-    'SELECT id, day_of_week, slot, food_key, food_label, created_at FROM weekly_plan_items WHERE weekly_plan_order_id = $1 ORDER BY day_of_week, slot',
+    `SELECT id, day_of_week, slot, food_key, food_label, created_at
+     FROM weekly_plan_items
+     WHERE weekly_plan_order_id = $1
+     ORDER BY day_of_week, slot`,
     [planId]
   );
   plan.items = itemsRes.rows;

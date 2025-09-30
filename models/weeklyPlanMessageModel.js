@@ -20,9 +20,13 @@ async function createMessage({
 
 async function getMessagesByPlan(weeklyPlanId, limit = 500) {
   const sql = `
-    SELECT * FROM weekly_plan_messages
-    WHERE weekly_plan_order_id = $1
-    ORDER BY created_at ASC
+    SELECT m.*,
+           COALESCE(c.full_name, a.name, 'Support') AS display_name
+    FROM weekly_plan_messages m
+    LEFT JOIN clients c ON (m.sender_type = 'client' AND m.sender_id = c.id)
+    LEFT JOIN admins  a ON (m.sender_type = 'admin'  AND m.sender_id = a.id)
+    WHERE m.weekly_plan_order_id = $1
+    ORDER BY m.created_at ASC
     LIMIT $2
   `;
   const { rows } = await pool.query(sql, [weeklyPlanId, limit]);

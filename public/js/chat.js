@@ -1,3 +1,4 @@
+//public/js/chat.js
 // Socket-enabled chat client for MyPadiFood
 // Supports two modes:
 // 1) server-rendered page with window.ORDER_ID set (auto-join room immediately)
@@ -57,32 +58,59 @@
     });
 
     // Weekly-plan messages (clients & admins)
+    // Improved handler: prefers server-provided display_name, falls back to sensible names,
+    // escapes HTML, appends to container and bumps notif badge.
     socket.on('weekly_plan_message', (msg) => {
       try {
-        // Append to weekly plan message container if present
         const messagesContainer = document.getElementById('weeklyPlanMessages');
-        if (messagesContainer && msg) {
-          // Determine current plan id on page (if any)
-          const currentPlanIdEl = document.getElementById(
-            'currentWeeklyPlanId'
-          );
-          const cur = currentPlanIdEl ? String(currentPlanIdEl.value) : null;
-          const mPlanId = String(
-            msg.weekly_plan_order_id ||
-              msg.weekly_plan_id ||
-              msg.weekly_plan ||
-              ''
-          );
-          if (!cur || cur === mPlanId) {
+
+        // Determine current plan id on page (if any)
+        const currentPlanIdEl = document.getElementById('currentWeeklyPlanId');
+        const curPlanId = currentPlanIdEl ? String(currentPlanIdEl.value) : null;
+        const mPlanId = String(
+          msg.weekly_plan_order_id ||
+            msg.weekly_plan_id ||
+            msg.weekly_plan ||
+            msg.planId ||
+            ''
+        );
+
+        // If this page shows a particular plan, only append messages for that plan
+        if (!curPlanId || curPlanId === mPlanId) {
+          if (messagesContainer && msg) {
+            // Compose display name with fallbacks:
+            // 1) msg.display_name (server-provided)
+            // 2) msg.sender_name / msg.senderName
+            // 3) msg.client_name / msg.clientName (if client)
+            // 4) msg.assigned_admin_name (if admin)
+            // 5) fallback to 'Customer' / 'Food Specialist' / sender_type / 'Support'
+            const rawDisplay =
+              msg.display_name ||
+              msg.displayName ||
+              msg.sender_name ||
+              msg.senderName ||
+              msg.client_name ||
+              msg.clientName ||
+              (msg.sender_type === 'client' ? null : null) ||
+              (msg.assigned_admin_name || msg.assignedAdminName) ||
+              null;
+
+            let displayName = rawDisplay;
+            if (!displayName) {
+              const st = (msg.sender_type || msg.senderType || '').toLowerCase();
+              if (st === 'client') displayName = msg.client_name || 'Customer';
+              else if (st === 'admin') displayName = msg.assigned_admin_name || msg.admin_name || 'Food Specialist';
+              else displayName = msg.sender_type || msg.senderType || 'Support';
+            }
+
+            const nameEsc = escapeHtml(String(displayName || 'Support'));
+            const textEsc = escapeHtml(String(msg.message || msg.msg || ''));
+            const tsRaw = msg.created_at || msg.createdAt || new Date().toISOString();
+            const timeStr = escapeHtml(new Date(tsRaw).toLocaleString());
+
             const div = document.createElement('div');
             div.className = 'weekly-plan-msg';
-            const display = escapeHtml(
-              msg.display_name || msg.sender_type || msg.senderType || ''
-            );
-            const text = escapeHtml(msg.message || msg.msg || '');
-            const ts =
-              msg.created_at || msg.createdAt || new Date().toISOString();
-            div.innerHTML = `<strong>${display}</strong>: ${text} <div style="font-size:0.8em;color:#666">${new Date(ts).toLocaleString()}</div>`;
+            div.innerHTML = `<strong>${nameEsc}</strong>: ${textEsc} <div style="font-size:0.8em;color:#666">${timeStr}</div>`;
             messagesContainer.appendChild(div);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
           }
@@ -119,12 +147,8 @@
           el.style.marginBottom = '8px';
 
           const clientName = payload.client_name || 'Client';
-          const clientPhone = payload.client_phone
-            ? ` (${payload.client_phone})`
-            : '';
-          const clientAddress = payload.client_address
-            ? ` — ${payload.client_address}`
-            : '';
+          const clientPhone = payload.client_phone ? ` (${payload.client_phone})` : '';
+          const clientAddress = payload.client_address ? ` — ${payload.client_address}` : '';
 
           el.innerHTML = `<strong>Weekly plan</strong> — ${escapeHtml(clientName)}${escapeHtml(clientPhone)} — Week: ${escapeHtml(payload.week_of || '')} — ₦${escapeHtml(String(payload.total_price || payload.total || ''))} <a href="/admin/food-orders/${payload.id}" style="margin-left:8px">Open</a><div style="margin-top:6px;color:#666;font-size:0.9em">${escapeHtml(clientAddress)}</div>`;
           pendingList.insertBefore(el, pendingList.firstChild);
