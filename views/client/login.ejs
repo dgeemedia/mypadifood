@@ -1,13 +1,14 @@
 <!-- views/client/login.ejs -->
 <div class="account-page">
   <h1 class="account-title">
-    <%= (userType === 'admin' ? 'Admin Login' : 'Client Login') %>
+    <%= (userType === 'admin' ? 'Admin Login' : 'Customer Login') %>
   </h1>
 
   <!-- flash / express-messages -->
   <div class="flash-messages"><%- messages() %></div>
 
 <form id="loginForm" method="post" action="/login" class="account-form">
+<input type="hidden" name="userType" value="client" />
 
     <div class="form-row">
       <label for="login-email"

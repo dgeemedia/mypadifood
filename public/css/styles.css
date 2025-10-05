@@ -121,7 +121,22 @@ body {
 .mobile-drawer[aria-hidden="false"] { display: block; }
 .mobile-drawer-inner { width: 92%; max-width: 340px; background: #fff; height: 100%; padding: 18px; box-shadow: 0 6px 24px rgba(0,0,0,0.12); }
 .mobile-drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.btn-close { background: none; color: navy; border: none; cursor: pointer; padding: 6px; font-size: 0.95rem; }
+.btn-close {
+  background: none;
+  color: var(--brand);
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  font-size: 3rem; /* bigger X */
+  line-height: 1;
+  border-radius: 6px;
+}
+.btn-close:hover,
+.btn-close:focus {
+  background:none;
+  outline: none;
+}
+
 
 /* Mobile nav links */
 .mobile-nav { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }

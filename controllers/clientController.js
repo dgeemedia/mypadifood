@@ -110,6 +110,23 @@ exports.register = async (req, res) => {
       location_source: location_source || 'manual',
     });
 
+    // Feature flag: turn email verification on/off via env var
+    const verificationEnabled =
+      String(process.env.ENABLE_EMAIL_VERIFICATION || 'false').toLowerCase() ===
+      'true';
+
+    if (!verificationEnabled) {
+      // Mark user verified immediately for new signups
+      try {
+        await clientModel.setVerified(clientId);
+      } catch (e) {
+        console.warn('Failed to auto-mark client verified (non-fatal):', e);
+      }
+      req.session.success = 'Registration successful. You can now log in.';
+      return res.redirect('/client/login');
+    }
+
+    // --- existing verification flow kept (runs only when verificationEnabled) ---
     const token = uuidv4();
     const expiresAt = new Date(
       Date.now() + VERIFICATION_TOKEN_TTL_HOURS * 3600 * 1000
@@ -148,6 +165,16 @@ exports.register = async (req, res) => {
 
 // Verify email
 exports.verifyEmail = async (req, res) => {
+  // If verification is disabled, just inform and redirect
+  const verificationEnabled =
+    String(process.env.ENABLE_EMAIL_VERIFICATION || 'false').toLowerCase() ===
+    'true';
+  if (!verificationEnabled) {
+    req.session.success =
+      'Email verification is currently disabled. Your account is active.';
+    return res.redirect('/client/login');
+  }
+
   const { token } = req.query;
   if (!token) {
     req.session.error = 'Invalid verification link.';
@@ -202,6 +229,16 @@ exports.verifyEmail = async (req, res) => {
 
 // Resend verification
 exports.resendVerification = async (req, res) => {
+  // If verification is disabled, nothing to resend
+  const verificationEnabled =
+    String(process.env.ENABLE_EMAIL_VERIFICATION || 'false').toLowerCase() ===
+    'true';
+  if (!verificationEnabled) {
+    req.session.success =
+      'Email verification is currently disabled. Your account is active.';
+    return res.redirect('/client/login');
+  }
+
   try {
     const emailFromBody =
       req.body && req.body.email ? String(req.body.email).trim() : null;
