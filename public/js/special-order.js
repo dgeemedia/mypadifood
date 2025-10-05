@@ -1,6 +1,6 @@
 // public/js/special-order.js
 // Client-side behaviour for /client/special-order
-// Place this file at public/js/special-order.js and include it in your layout (see layout patch below).
+// Defensive: checks elements exist before calling methods on them.
 
 document.addEventListener('DOMContentLoaded', function () {
   // FOOD_BUCKET: key / label used by server and stored as food_key / food_label
@@ -24,17 +24,32 @@ document.addEventListener('DOMContentLoaded', function () {
     { key: 'grilled_chicken', label: 'Grilled Chicken' },
   ];
 
+  // Required DOM IDs used by this script
   const form = document.getElementById('weeklyPlanForm');
   const planTypeEl = document.getElementById('planType');
   const itemsField = document.getElementById('itemsField');
   const weekOfEl = document.getElementById('weekOf');
   const modInfo = document.getElementById('modifiableWindowInfo');
 
-  // populate all select boxes
+  // If the whole form is missing, stop (this script may be included site-wide)
+  if (!form) {
+    console.debug('special-order: weeklyPlanForm not found — script will not run on this page.');
+    return;
+  }
+
+  // warn if other important elements are missing, but continue where possible
+  if (!planTypeEl) console.warn('special-order: planType element not found (id="planType")');
+  if (!itemsField) console.warn('special-order: itemsField element not found (id="itemsField") — items will not be submitted');
+  if (!weekOfEl) console.warn('special-order: weekOf element not found (id="weekOf")');
+  if (!modInfo) console.warn('special-order: modifiableWindowInfo element not found (id="modifiableWindowInfo")');
+
+  // populate all select boxes with FOOD_BUCKET options
   function populateSelects() {
     const selects = document.querySelectorAll('.food-select');
     selects.forEach((sel) => {
-      // leave default first option, then add bucket options
+      // prevent duplicate population if script runs twice
+      const already = Array.from(sel.options).some((o) => FOOD_BUCKET.some(f => f.label === o.textContent));
+      if (already) return;
       FOOD_BUCKET.forEach((f) => {
         const opt = document.createElement('option');
         opt.value = f.key;
@@ -46,19 +61,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // toggle second slot visibility based on plan type
   function toggleSlots() {
-    const showSecond = planTypeEl.value === 'double';
+    const showSecond = planTypeEl && planTypeEl.value === 'double';
     document.querySelectorAll('.slot2').forEach((el) => {
       el.style.display = showSecond ? 'block' : 'none';
     });
   }
 
   // compute modifiable window for a given weekOf date string (YYYY-MM-DD)
-  // rule: allow client modifications Friday 00:00 -> Sunday 23:59 prior to the week (weekOf is Monday)
   function computeModWindow(weekOfStr) {
     if (!weekOfStr) return null;
-    // create Date object in local timezone
     const weekDate = new Date(weekOfStr + 'T00:00:00'); // local midnight
-    // previous Friday = Monday - 3 days
     const prevFriday = new Date(weekDate);
     prevFriday.setDate(weekDate.getDate() - 3);
     prevFriday.setHours(0, 0, 0, 0);
@@ -70,6 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // show mod window info to user
   function showModWindowInfo() {
+    if (!weekOfEl || !modInfo) return;
     const weekOf = weekOfEl.value;
     const win = computeModWindow(weekOf);
     if (!win) {
@@ -94,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
       }
       const s2 = block.querySelector('.food-select[data-slot="2"]');
-      if (s2 && s2.value && planTypeEl.value === 'double') {
+      if (s2 && s2.value && planTypeEl && planTypeEl.value === 'double') {
         items.push({
           day_of_week: day,
           slot: 2,
@@ -106,47 +119,51 @@ document.addEventListener('DOMContentLoaded', function () {
     return items;
   }
 
-  // prevent form submission if there are no meals selected
+  // validate items
   function validateBeforeSubmit(items) {
     if (!items || !items.length) {
       alert('Please select at least one meal for the week before submitting.');
       return false;
     }
-    // additional checks: ensure each day has required number of slots
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
     for (const d of days) {
-      const requiredSlots = planTypeEl.value === 'double' ? 2 : 1;
+      const requiredSlots = planTypeEl && planTypeEl.value === 'double' ? 2 : 1;
       const count = items.filter((i) => i.day_of_week === d).length;
       if (count < requiredSlots) {
-        if (
-          !confirm(
-            `You have not chosen ${requiredSlots} meal(s) for ${d.charAt(0).toUpperCase() + d.slice(1)}. Continue anyway?`
-          )
-        )
+        if (!confirm(`You have not chosen ${requiredSlots} meal(s) for ${d.charAt(0).toUpperCase() + d.slice(1)}. Continue anyway?`))
           return false;
       }
     }
     return true;
   }
 
-  // event handlers
-  planTypeEl.addEventListener('change', toggleSlots);
-  weekOfEl.addEventListener('change', showModWindowInfo);
+  // Attach event listeners conditionally
+  if (planTypeEl) {
+    planTypeEl.addEventListener('change', toggleSlots);
+  }
 
-  form.addEventListener('submit', function (ev) {
-    // prepare items JSON
-    const items = buildItemsPayload();
-    if (!validateBeforeSubmit(items)) {
-      ev.preventDefault();
-      return;
-    }
-    itemsField.value = JSON.stringify(items);
+  if (weekOfEl) {
+    weekOfEl.addEventListener('change', showModWindowInfo);
+  }
 
-    // client-side note: main enforcement for modification windows is server-side.
-    // we do not block creating a weekly plan here.
-  });
+  if (form) {
+    form.addEventListener('submit', function (ev) {
+      // prepare items JSON
+      const items = buildItemsPayload();
+      if (!validateBeforeSubmit(items)) {
+        ev.preventDefault();
+        return;
+      }
+      if (itemsField) {
+        itemsField.value = JSON.stringify(items);
+      } else {
+        // fallback: store items in a hidden input if present, otherwise attach to form as data attribute
+        form.dataset.items = JSON.stringify(items);
+      }
+    });
+  }
 
-  // initialize
+  // initialize UI state
   populateSelects();
   toggleSlots();
   showModWindowInfo();
