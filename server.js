@@ -6,6 +6,8 @@ const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session); // store sessions in Postgres
 const path = require('path');
 const expressLayouts = require('express-ejs-layouts'); // layout middleware for EJS
+const cookieParser = require('cookie-parser');
+const authJwt = require('./middleware/authJwt'); // JWT middleware (check token + require helpers)
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -46,16 +48,39 @@ app.use(
   })
 );
 
-// Static assets
-app.use(express.static(path.join(__dirname, 'public')));
+// Parse cookies BEFORE the session middleware (so other middleware can read cookies)
+app.use(cookieParser());
 
 // Use the shared session middleware with Express
 app.use(sessionMiddleware);
 
+// Attach the JWT checker AFTER session middleware so it can use req.session for compatibility if desired
+app.use(authJwt.checkJWTToken); // makes req.user and res.locals.currentUser available
+
+// === Compatibility shim: copy JWT payload into session.user for legacy code & sockets ===
+// This is executed immediately after authJwt.checkJWTToken so req.user (if any) is present.
+app.use((req, res, next) => {
+  try {
+    if (req.user && req.session) {
+      // copy minimal payload into session so legacy session-check code & sockets see it
+      req.session.user = req.user;
+    }
+  } catch (e) {
+    // don't block requests if shim fails
+    console.error('JWT -> session shim error', e);
+  }
+  return next();
+});
+
 // use flash/messages middleware
 app.use(require('./middleware/flash'));
 
+// Static assets
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Routes
+// Mount auth routes early so /login etc are handled by the new controller
+app.use('/', require('./routes/auth'));       // <-- unified JWT login/logout routes
 // --- MOUNT vendor router BEFORE the catch-all index router so literal paths like
 //     /vendor/register are handled by the vendor router and not mistaken for :id
 app.use('/vendor', require('./routes/vendor'));
@@ -66,18 +91,6 @@ app.use('/chat', require('./routes/chat')); // chat route
 app.use('/admin/orders', require('./routes/adminOrders'));
 app.use('/api', require('./routes/payments')); // payment endpoints (stubs)
 app.use('/api/gpt4all', require('./routes/api/gpt4all')); // gpt4all support chat
-
-// Swagger (basic)
-const swaggerUi = require('swagger-ui-express');
-const swaggerJsdoc = require('swagger-jsdoc');
-const swaggerSpec = swaggerJsdoc({
-  definition: {
-    openapi: '3.0.0',
-    info: { title: 'MyPadifood API', version: '1.0.0' },
-  },
-  apis: ['./routes/*.js'],
-});
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ===== Socket.IO setup: create HTTP server, attach socket.io, expose to controllers via utils/socket =====
 const http = require('http');

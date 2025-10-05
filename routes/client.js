@@ -5,6 +5,7 @@ const router = express.Router();
 const clientController = require('../controllers/clientController');
 const clientValidation = require('../utils/client-validation');
 const auth = require('../middleware/auth');
+const authController = require('../controllers/authController');
 
 // Registration & verification
 router.get('/register', clientController.showRegister);
@@ -25,8 +26,10 @@ router.post('/resend-verification', clientController.resendVerification);
 
 // Login/logout
 router.get('/login', clientController.showLogin);
-router.post('/login', clientController.login);
-router.get('/logout', clientController.logout);
+router.post('/login', authController.login);   // <--- use unified login
+router.get('/logout', (req, res) => {
+  return res.redirect('/logout');
+});
 
 // Dashboard & booking (protected)
 router.get('/dashboard', auth.requireClient, clientController.dashboard);

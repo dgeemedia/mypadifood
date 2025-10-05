@@ -4,11 +4,14 @@ const router = express.Router();
 
 const adminController = require('../controllers/adminController');
 const auth = require('../middleware/auth');
+const authController = require('../controllers/authController');
 
 // Public admin auth routes
 router.get('/login', adminController.showLogin);
-router.post('/login', adminController.login);
-router.get('/logout', adminController.logout);
+router.post('/login', authController.login);
+router.get('/logout', (req, res) => {
+  return res.redirect('/logout');
+});
 
 // Public password reset routes
 router.get('/forgot', adminController.showForgot);
