@@ -6,14 +6,29 @@
 (function () {
   // helper: safe parse JSON
   function parseStatesData(raw) {
-    if (!raw) return [];
-    try {
-      return typeof raw === "string" ? JSON.parse(raw) : raw;
-    } catch (e) {
-      console.error("location-picker: failed to parse states data", e);
-      return [];
-    }
+  if (!raw) return [];
+  try {
+    // If the value looks like it was HTML-escaped (&quot;), unescape the common entities:
+    const unescaped = raw
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&#39;/g, "'");
+
+    // If wrapped in single quotes (some templates do this), strip them:
+    const trimmed = unescaped.trim();
+    const stripped =
+      trimmed.length > 1 && trimmed[0] === "'" && trimmed[trimmed.length - 1] === "'"
+        ? trimmed.slice(1, -1)
+        : trimmed;
+
+    return JSON.parse(stripped);
+  } catch (e) {
+    console.error("location-picker: failed to parse states data", e, { raw });
+    return [];
   }
+}
 
   // read data from the hidden DOM element first, else fallback to window.STATE_DATA
   function loadStates() {
