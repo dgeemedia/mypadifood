@@ -38,18 +38,32 @@ exports.login = async (req, res) => {
     // Also inspect the request path (helps when form posts to /client/login).
     const path = (req.originalUrl || req.path || '').toLowerCase();
     const preferClient =
-      userType === 'client' || path.includes('/client') || path.includes('/client/login');
+      userType === 'client' ||
+      path.includes('/client') ||
+      path.includes('/client/login');
     const preferAdmin =
-      userType === 'admin' || path.includes('/admin') || path.includes('/admin/login');
+      userType === 'admin' ||
+      path.includes('/admin') ||
+      path.includes('/admin/login');
 
     // normalize to lower-case (most DBs store canonical lower-case emails)
     const normalizedEmail = email.toLowerCase();
 
-    console.debug('[auth.login] attempt', { email: normalizedEmail, from: req.originalUrl, preferClient, preferAdmin });
+    console.debug('[auth.login] attempt', {
+      email: normalizedEmail,
+      from: req.originalUrl,
+      preferClient,
+      preferAdmin,
+    });
 
     if (!normalizedEmail || !password) {
       console.debug('[auth.login] missing email or password');
-      return res.status(400).render('auth/login', { title: 'Sign in', error: 'Missing credentials' });
+      return res
+        .status(400)
+        .render('auth/login', {
+          title: 'Sign in',
+          error: 'Missing credentials',
+        });
     }
 
     if (!adminModel || !clientModel) {
@@ -57,14 +71,19 @@ exports.login = async (req, res) => {
         adminModel: !!adminModel,
         clientModel: !!clientModel,
       });
-      return res.status(500).render('auth/login', { title: 'Sign in', error: 'Server error' });
+      return res
+        .status(500)
+        .render('auth/login', { title: 'Sign in', error: 'Server error' });
     }
 
     // Helper to verify a record with bcrypt and set cookie+redirect
     async function verifyAndLogin(record, type) {
-      const hash = record.password_hash || record.password || record.passwordHash;
+      const hash =
+        record.password_hash || record.password || record.passwordHash;
       if (!hash) {
-        console.error(`[auth.login] ${type} record has no password hash`, { record });
+        console.error(`[auth.login] ${type} record has no password hash`, {
+          record,
+        });
         return { ok: false, err: 'Server error' };
       }
       const ok = await bcrypt.compare(password, hash);
@@ -74,9 +93,14 @@ exports.login = async (req, res) => {
         id: record.id,
         name: record.name || record.full_name || record.display_name || null,
         email: record.email,
-        type: type === 'admin' && (record.role === 'super' ? 'super' : (record.role || 'admin')) || (type === 'client' ? 'client' : type),
+        type:
+          (type === 'admin' &&
+            (record.role === 'super' ? 'super' : record.role || 'admin')) ||
+          (type === 'client' ? 'client' : type),
       };
-      const token = jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: Math.floor(TOKEN_MAX_AGE_MS / 1000) });
+      const token = jwt.sign(payload, ACCESS_TOKEN_SECRET, {
+        expiresIn: Math.floor(TOKEN_MAX_AGE_MS / 1000),
+      });
       const cookieOpts = { httpOnly: true, maxAge: TOKEN_MAX_AGE_MS };
       if (process.env.NODE_ENV === 'production') cookieOpts.secure = true;
       res.cookie('jwt', token, cookieOpts);
@@ -88,11 +112,19 @@ exports.login = async (req, res) => {
     if (preferClient && !preferAdmin) {
       // client-first
       try {
-        const client = await clientModel.findByEmail(normalizedEmail) || await clientModel.findByEmail(email);
+        const client =
+          (await clientModel.findByEmail(normalizedEmail)) ||
+          (await clientModel.findByEmail(email));
         if (client) {
           const result = await verifyAndLogin(client, 'client');
           if (result.ok) return res.redirect('/client/dashboard');
-          if (result.err === 'Invalid credentials') return res.status(401).render('auth/login', { title: 'Sign in', error: 'Invalid credentials' });
+          if (result.err === 'Invalid credentials')
+            return res
+              .status(401)
+              .render('auth/login', {
+                title: 'Sign in',
+                error: 'Invalid credentials',
+              });
         }
       } catch (e) {
         console.error('[auth.login] clientModel.findByEmail error', e);
@@ -100,27 +132,48 @@ exports.login = async (req, res) => {
 
       // fallback to admin if client not found
       try {
-        const admin = await adminModel.findByEmail(normalizedEmail) || await adminModel.findByEmail(email);
+        const admin =
+          (await adminModel.findByEmail(normalizedEmail)) ||
+          (await adminModel.findByEmail(email));
         if (admin) {
           const result = await verifyAndLogin(admin, 'admin');
           if (result.ok) return res.redirect('/admin/dashboard');
-          if (result.err === 'Invalid credentials') return res.status(401).render('auth/login', { title: 'Sign in', error: 'Invalid credentials' });
+          if (result.err === 'Invalid credentials')
+            return res
+              .status(401)
+              .render('auth/login', {
+                title: 'Sign in',
+                error: 'Invalid credentials',
+              });
         }
       } catch (e) {
         console.error('[auth.login] adminModel.findByEmail error', e);
       }
 
-      return res.status(401).render('auth/login', { title: 'Sign in', error: 'Invalid credentials' });
+      return res
+        .status(401)
+        .render('auth/login', {
+          title: 'Sign in',
+          error: 'Invalid credentials',
+        });
     }
 
     if (preferAdmin && !preferClient) {
       // admin-first
       try {
-        const admin = await adminModel.findByEmail(normalizedEmail) || await adminModel.findByEmail(email);
+        const admin =
+          (await adminModel.findByEmail(normalizedEmail)) ||
+          (await adminModel.findByEmail(email));
         if (admin) {
           const result = await verifyAndLogin(admin, 'admin');
           if (result.ok) return res.redirect('/admin/dashboard');
-          if (result.err === 'Invalid credentials') return res.status(401).render('auth/login', { title: 'Sign in', error: 'Invalid credentials' });
+          if (result.err === 'Invalid credentials')
+            return res
+              .status(401)
+              .render('auth/login', {
+                title: 'Sign in',
+                error: 'Invalid credentials',
+              });
         }
       } catch (e) {
         console.error('[auth.login] adminModel.findByEmail error', e);
@@ -128,27 +181,48 @@ exports.login = async (req, res) => {
 
       // fallback to client
       try {
-        const client = await clientModel.findByEmail(normalizedEmail) || await clientModel.findByEmail(email);
+        const client =
+          (await clientModel.findByEmail(normalizedEmail)) ||
+          (await clientModel.findByEmail(email));
         if (client) {
           const result = await verifyAndLogin(client, 'client');
           if (result.ok) return res.redirect('/client/dashboard');
-          if (result.err === 'Invalid credentials') return res.status(401).render('auth/login', { title: 'Sign in', error: 'Invalid credentials' });
+          if (result.err === 'Invalid credentials')
+            return res
+              .status(401)
+              .render('auth/login', {
+                title: 'Sign in',
+                error: 'Invalid credentials',
+              });
         }
       } catch (e) {
         console.error('[auth.login] clientModel.findByEmail error', e);
       }
 
-      return res.status(401).render('auth/login', { title: 'Sign in', error: 'Invalid credentials' });
+      return res
+        .status(401)
+        .render('auth/login', {
+          title: 'Sign in',
+          error: 'Invalid credentials',
+        });
     }
 
     // Default: current behaviour (admin first, then client)
     // 1) try admin
     try {
-      const admin = await adminModel.findByEmail(normalizedEmail) || await adminModel.findByEmail(email);
+      const admin =
+        (await adminModel.findByEmail(normalizedEmail)) ||
+        (await adminModel.findByEmail(email));
       if (admin) {
         const result = await verifyAndLogin(admin, 'admin');
         if (result.ok) return res.redirect('/admin/dashboard');
-        if (result.err === 'Invalid credentials') return res.status(401).render('auth/login', { title: 'Sign in', error: 'Invalid credentials' });
+        if (result.err === 'Invalid credentials')
+          return res
+            .status(401)
+            .render('auth/login', {
+              title: 'Sign in',
+              error: 'Invalid credentials',
+            });
       }
     } catch (e) {
       console.error('[auth.login] adminModel.findByEmail error', e);
@@ -156,21 +230,33 @@ exports.login = async (req, res) => {
 
     // 2) try client
     try {
-      const client = await clientModel.findByEmail(normalizedEmail) || await clientModel.findByEmail(email);
+      const client =
+        (await clientModel.findByEmail(normalizedEmail)) ||
+        (await clientModel.findByEmail(email));
       if (client) {
         const result = await verifyAndLogin(client, 'client');
         if (result.ok) return res.redirect('/client/dashboard');
-        if (result.err === 'Invalid credentials') return res.status(401).render('auth/login', { title: 'Sign in', error: 'Invalid credentials' });
+        if (result.err === 'Invalid credentials')
+          return res
+            .status(401)
+            .render('auth/login', {
+              title: 'Sign in',
+              error: 'Invalid credentials',
+            });
       }
     } catch (e) {
       console.error('[auth.login] clientModel.findByEmail error', e);
     }
 
     console.debug('[auth.login] no user found for', normalizedEmail);
-    return res.status(401).render('auth/login', { title: 'Sign in', error: 'Invalid credentials' });
+    return res
+      .status(401)
+      .render('auth/login', { title: 'Sign in', error: 'Invalid credentials' });
   } catch (err) {
     console.error('auth.login error', err);
-    return res.status(500).render('auth/login', { title: 'Sign in', error: 'Login failed' });
+    return res
+      .status(500)
+      .render('auth/login', { title: 'Sign in', error: 'Login failed' });
   }
 };
 
@@ -208,8 +294,9 @@ exports.logout = (req, res) => {
   } catch (e) {
     console.error('Error in logout:', e);
     // best-effort redirect
-    try { res.clearCookie('jwt'); } catch {}
+    try {
+      res.clearCookie('jwt');
+    } catch {}
     return res.redirect('/');
   }
 };
-

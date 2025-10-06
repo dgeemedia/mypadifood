@@ -15,19 +15,26 @@
       <a class="nav-link" href="/contact">Contact</a>
 
       <% if (!currentUser) { %>
-        <a class="nav-cta" href="/login">Sign in</a>
-        <a class="nav-ghost" href="/signup">Sign up</a>
+      <a class="nav-cta" href="/login">Sign in</a>
+      <a class="nav-ghost" href="/signup">Sign up</a>
       <% } else { %>
-        <% if (currentUser.type === 'admin' || currentUser.type === 'super' || currentUser.type === 'agent') { %>
-          <a class="nav-link" href="/admin/dashboard">Dashboard</a>
-        <% } else { %>
-          <a class="nav-link" href="/client/dashboard">Dashboard</a>
-        <% } %>
+      <% if (currentUser.type === 'admin' || currentUser.type === 'super' || currentUser.type === 'agent') { %>
+      <a class="nav-link" href="/admin/dashboard">Dashboard</a>
+      <% } else { %>
+      <a class="nav-link" href="/client/dashboard">Dashboard</a>
+      <% } %>
 
-        <form method="post" action="/logout" class="logout-form" style="display:inline">
-          <input type="hidden" name="next" value="/" />
-          <button type="submit" class="link-like" aria-label="Logout">Logout</button>
-        </form>
+      <form
+        method="post"
+        action="/logout"
+        class="logout-form"
+        style="display: inline"
+      >
+        <input type="hidden" name="next" value="/" />
+        <button type="submit" class="link-like" aria-label="Logout">
+          Logout
+        </button>
+      </form>
       <% } %>
     </nav>
 

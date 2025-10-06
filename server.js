@@ -80,7 +80,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
 // Mount auth routes early so /login etc are handled by the new controller
-app.use('/', require('./routes/auth'));       // <-- unified JWT login/logout routes
+app.use('/', require('./routes/auth')); // <-- unified JWT login/logout routes
 // --- MOUNT vendor router BEFORE the catch-all index router so literal paths like
 //     /vendor/register are handled by the vendor router and not mistaken for :id
 app.use('/vendor', require('./routes/vendor'));

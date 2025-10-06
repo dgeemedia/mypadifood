@@ -26,7 +26,7 @@ router.post('/resend-verification', clientController.resendVerification);
 
 // Login/logout
 router.get('/login', clientController.showLogin);
-router.post('/login', authController.login);   // <--- use unified login
+router.post('/login', authController.login); // <--- use unified login
 router.get('/logout', (req, res) => {
   return res.redirect('/logout');
 });
@@ -49,7 +49,11 @@ router.get(
   auth.requireClient,
   clientController.showSpecialOrderForm
 );
-router.get('/special-order/:id', auth.requireClient, clientController.viewWeeklyPlan);
+router.get(
+  '/special-order/:id',
+  auth.requireClient,
+  clientController.viewWeeklyPlan
+);
 router.post(
   '/special-order',
   auth.requireClient,

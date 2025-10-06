@@ -33,22 +33,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // If the whole form is missing, stop (this script may be included site-wide)
   if (!form) {
-    console.debug('special-order: weeklyPlanForm not found — script will not run on this page.');
+    console.debug(
+      'special-order: weeklyPlanForm not found — script will not run on this page.'
+    );
     return;
   }
 
   // warn if other important elements are missing, but continue where possible
-  if (!planTypeEl) console.warn('special-order: planType element not found (id="planType")');
-  if (!itemsField) console.warn('special-order: itemsField element not found (id="itemsField") — items will not be submitted');
-  if (!weekOfEl) console.warn('special-order: weekOf element not found (id="weekOf")');
-  if (!modInfo) console.warn('special-order: modifiableWindowInfo element not found (id="modifiableWindowInfo")');
+  if (!planTypeEl)
+    console.warn('special-order: planType element not found (id="planType")');
+  if (!itemsField)
+    console.warn(
+      'special-order: itemsField element not found (id="itemsField") — items will not be submitted'
+    );
+  if (!weekOfEl)
+    console.warn('special-order: weekOf element not found (id="weekOf")');
+  if (!modInfo)
+    console.warn(
+      'special-order: modifiableWindowInfo element not found (id="modifiableWindowInfo")'
+    );
 
   // populate all select boxes with FOOD_BUCKET options
   function populateSelects() {
     const selects = document.querySelectorAll('.food-select');
     selects.forEach((sel) => {
       // prevent duplicate population if script runs twice
-      const already = Array.from(sel.options).some((o) => FOOD_BUCKET.some(f => f.label === o.textContent));
+      const already = Array.from(sel.options).some((o) =>
+        FOOD_BUCKET.some((f) => f.label === o.textContent)
+      );
       if (already) return;
       FOOD_BUCKET.forEach((f) => {
         const opt = document.createElement('option');
@@ -130,7 +142,11 @@ document.addEventListener('DOMContentLoaded', function () {
       const requiredSlots = planTypeEl && planTypeEl.value === 'double' ? 2 : 1;
       const count = items.filter((i) => i.day_of_week === d).length;
       if (count < requiredSlots) {
-        if (!confirm(`You have not chosen ${requiredSlots} meal(s) for ${d.charAt(0).toUpperCase() + d.slice(1)}. Continue anyway?`))
+        if (
+          !confirm(
+            `You have not chosen ${requiredSlots} meal(s) for ${d.charAt(0).toUpperCase() + d.slice(1)}. Continue anyway?`
+          )
+        )
           return false;
       }
     }

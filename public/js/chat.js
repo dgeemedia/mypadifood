@@ -66,7 +66,9 @@
 
         // Determine current plan id on page (if any)
         const currentPlanIdEl = document.getElementById('currentWeeklyPlanId');
-        const curPlanId = currentPlanIdEl ? String(currentPlanIdEl.value) : null;
+        const curPlanId = currentPlanIdEl
+          ? String(currentPlanIdEl.value)
+          : null;
         const mPlanId = String(
           msg.weekly_plan_order_id ||
             msg.weekly_plan_id ||
@@ -92,20 +94,30 @@
               msg.client_name ||
               msg.clientName ||
               (msg.sender_type === 'client' ? null : null) ||
-              (msg.assigned_admin_name || msg.assignedAdminName) ||
+              msg.assigned_admin_name ||
+              msg.assignedAdminName ||
               null;
 
             let displayName = rawDisplay;
             if (!displayName) {
-              const st = (msg.sender_type || msg.senderType || '').toLowerCase();
+              const st = (
+                msg.sender_type ||
+                msg.senderType ||
+                ''
+              ).toLowerCase();
               if (st === 'client') displayName = msg.client_name || 'Customer';
-              else if (st === 'admin') displayName = msg.assigned_admin_name || msg.admin_name || 'Food Specialist';
+              else if (st === 'admin')
+                displayName =
+                  msg.assigned_admin_name ||
+                  msg.admin_name ||
+                  'Food Specialist';
               else displayName = msg.sender_type || msg.senderType || 'Support';
             }
 
             const nameEsc = escapeHtml(String(displayName || 'Support'));
             const textEsc = escapeHtml(String(msg.message || msg.msg || ''));
-            const tsRaw = msg.created_at || msg.createdAt || new Date().toISOString();
+            const tsRaw =
+              msg.created_at || msg.createdAt || new Date().toISOString();
             const timeStr = escapeHtml(new Date(tsRaw).toLocaleString());
 
             const div = document.createElement('div');
@@ -147,8 +159,12 @@
           el.style.marginBottom = '8px';
 
           const clientName = payload.client_name || 'Client';
-          const clientPhone = payload.client_phone ? ` (${payload.client_phone})` : '';
-          const clientAddress = payload.client_address ? ` — ${payload.client_address}` : '';
+          const clientPhone = payload.client_phone
+            ? ` (${payload.client_phone})`
+            : '';
+          const clientAddress = payload.client_address
+            ? ` — ${payload.client_address}`
+            : '';
 
           el.innerHTML = `<strong>Weekly plan</strong> — ${escapeHtml(clientName)}${escapeHtml(clientPhone)} — Week: ${escapeHtml(payload.week_of || '')} — ₦${escapeHtml(String(payload.total_price || payload.total || ''))} <a href="/admin/food-orders/${payload.id}" style="margin-left:8px">Open</a><div style="margin-top:6px;color:#666;font-size:0.9em">${escapeHtml(clientAddress)}</div>`;
           pendingList.insertBefore(el, pendingList.firstChild);

@@ -436,7 +436,7 @@ exports.postWeeklyPlanMessage = async (req, res) => {
       console.warn('weekly plan socket emit failed', e);
     }
 
-        // create persistent notification for admins (optional)
+    // create persistent notification for admins (optional)
     try {
       if (
         models.notification &&

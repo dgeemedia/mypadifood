@@ -17,7 +17,9 @@ function checkJWTToken(req, res, next) {
   try {
     const token =
       (req.cookies && req.cookies.jwt) ||
-      (req.headers.authorization ? String(req.headers.authorization).split(' ')[1] : null);
+      (req.headers.authorization
+        ? String(req.headers.authorization).split(' ')[1]
+        : null);
 
     if (!token) {
       return next();
@@ -57,7 +59,9 @@ function requireAuth(req, res, next) {
 function requireClient(req, res, next) {
   if (req.user && req.user.type === 'client') return next();
   // optional: set a flash if you still use flash messages; compatible fallback below:
-  if (req.session) req.session.error = 'You must be logged in as a client to access that page.';
+  if (req.session)
+    req.session.error =
+      'You must be logged in as a client to access that page.';
   return res.redirect('/client/login');
 }
 
@@ -68,11 +72,15 @@ function requireClient(req, res, next) {
 function requireAdmin(req, res, next) {
   if (
     req.user &&
-    (req.user.type === 'admin' || req.user.type === 'super' || req.user.type === 'agent')
+    (req.user.type === 'admin' ||
+      req.user.type === 'super' ||
+      req.user.type === 'agent')
   ) {
     return next();
   }
-  if (req.session) req.session.error = 'You must be logged in as an admin to access that page.';
+  if (req.session)
+    req.session.error =
+      'You must be logged in as an admin to access that page.';
   return res.redirect('/admin/login');
 }
 

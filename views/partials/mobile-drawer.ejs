@@ -12,7 +12,13 @@
         <img src="/images/logo.svg" alt="MyPadiFood" class="logo" height="36" />
         <span class="brand">MyPadiFood</span>
       </a>
-    <button id="mobile-drawer-close" aria-label="Close menu" class="btn-close">&times;</button>
+      <button
+        id="mobile-drawer-close"
+        aria-label="Close menu"
+        class="btn-close"
+      >
+        &times;
+      </button>
     </div>
 
     <nav class="mobile-nav" aria-label="Mobile navigation">
@@ -22,19 +28,19 @@
       <a href="/contact" class="mobile-link">Contact</a>
 
       <% if (!currentUser) { %>
-        <a href="/login" class="mobile-cta">Sign in</a>
-        <a href="/signup" class="mobile-link">Sign up</a>
+      <a href="/login" class="mobile-cta">Sign in</a>
+      <a href="/signup" class="mobile-link">Sign up</a>
       <% } else { %>
-        <% if (currentUser.type === 'admin' || currentUser.type === 'super' || currentUser.type === 'agent') { %>
-          <a href="/admin/dashboard" class="mobile-link">Dashboard</a>
-        <% } else { %>
-          <a href="/client/dashboard" class="mobile-link">Dashboard</a>
-        <% } %>
+      <% if (currentUser.type === 'admin' || currentUser.type === 'super' || currentUser.type === 'agent') { %>
+      <a href="/admin/dashboard" class="mobile-link">Dashboard</a>
+      <% } else { %>
+      <a href="/client/dashboard" class="mobile-link">Dashboard</a>
+      <% } %>
 
-        <form method="post" action="/logout" class="mobile-logout-form">
-          <input type="hidden" name="next" value="/" />
-          <button type="submit" class="mobile-link link-like">Logout</button>
-        </form>
+      <form method="post" action="/logout" class="mobile-logout-form">
+        <input type="hidden" name="next" value="/" />
+        <button type="submit" class="mobile-link link-like">Logout</button>
+      </form>
       <% } %>
     </nav>
   </div>
