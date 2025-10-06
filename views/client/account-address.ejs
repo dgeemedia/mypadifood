@@ -1,0 +1,16 @@
+<!-- views/client/account-address.ejs -->
+<h2>Edit address</h2>
+
+<div id="address-form-result" role="status" aria-live="polite"></div>
+
+<form id="addressForm" class="account-edit-form" novalidate>
+  <div class="form-row">
+    <label for="address">Address</label>
+    <input id="address" name="address" type="text" value="<%= currentUser ? currentUser.address : '' %>" required />
+  </div>
+
+  <div class="form-row">
+    <button type="submit" class="btn-primary">Save address</button>
+    <a href="/client/dashboard" class="btn">Return to dashboard</a>
+  </div>
+</form>

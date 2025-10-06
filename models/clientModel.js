@@ -107,6 +107,24 @@ async function getOrders(clientId) {
   return rows;
 }
 
+async function updatePhone(clientId, newPhone) {
+  const sql = `UPDATE clients SET phone=$1 WHERE id=$2 RETURNING *`;
+  const { rows } = await pool.query(sql, [newPhone, clientId]);
+  return rows[0] || null;
+}
+
+async function updateAddress(clientId, newAddress) {
+  const sql = `UPDATE clients SET address=$1 WHERE id=$2 RETURNING *`;
+  const { rows } = await pool.query(sql, [newAddress, clientId]);
+  return rows[0] || null;
+}
+
+async function updatePassword(clientId, newHash) {
+  const sql = `UPDATE clients SET password_hash=$1 WHERE id=$2 RETURNING *`;
+  const { rows } = await pool.query(sql, [newHash, clientId]);
+  return rows[0] || null;
+}
+
 module.exports = {
   createClient,
   findByEmail,
@@ -114,4 +132,7 @@ module.exports = {
   setVerified,
   getLocation,
   getOrders,
+  updatePhone,
+  updateAddress,
+  updatePassword,
 };
