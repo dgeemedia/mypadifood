@@ -77,9 +77,10 @@
 
     <div class="form-row">
       <label for="client-lga">LGA</label>
-      <select id="client-lga" name="lga" required>
-        <option value="">Select LGA</option>
-      </select>
+      <select id="client-lga" name="lga" data-selected="<%= (locals && locals.lga) ? locals.lga : '' %>" required>
+  <option value="">Select LGA</option>
+</select>
+
     </div>
 
     <div class="form-row">
@@ -167,3 +168,7 @@
     aria-hidden="true"
   ></div>
 </div>
+<script>
+  // Expose statesLGAs as a JS object so location-picker doesn't need to parse attributes.
+  window.STATE_DATA = <%- JSON.stringify(statesLGAs || []) %>;
+</script>

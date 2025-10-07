@@ -1,30 +1,21 @@
-/* public/js/location-picker.js
-   - Reads states/LGAs from #states-data[data-states]
-   - Populates matching LGA <select> when a state is selected
-   - Works for client/vendor/admin forms by id or name
-*/
+// public/js/location-picker.js (overwrite with this)
 (function () {
-  // helper: safe parse JSON
   function parseStatesData(raw) {
     if (!raw) return [];
+    // If it's already an object/array, return it immediately
+    if (typeof raw === 'object') return raw;
     try {
-      // If the value looks like it was HTML-escaped (&quot;), unescape the common entities:
-      const unescaped = raw
+      const unescaped = String(raw)
         .replace(/&quot;/g, '"')
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
         .replace(/&#39;/g, "'");
-
-      // If wrapped in single quotes (some templates do this), strip them:
       const trimmed = unescaped.trim();
       const stripped =
-        trimmed.length > 1 &&
-        trimmed[0] === "'" &&
-        trimmed[trimmed.length - 1] === "'"
+        trimmed.length > 1 && trimmed[0] === "'" && trimmed[trimmed.length - 1] === "'"
           ? trimmed.slice(1, -1)
           : trimmed;
-
       return JSON.parse(stripped);
     } catch (e) {
       console.error('location-picker: failed to parse states data', e, { raw });
@@ -32,20 +23,20 @@
     }
   }
 
-  // read data from the hidden DOM element first, else fallback to window.STATE_DATA
   function loadStates() {
+    // Prefer window.STATE_DATA if present and already an object/array
+    if (window && typeof window.STATE_DATA !== 'undefined') {
+      return parseStatesData(window.STATE_DATA);
+    }
     const el = document.getElementById('states-data');
     if (el && el.dataset && el.dataset.states) {
       return parseStatesData(el.dataset.states);
     }
-    if (window.STATE_DATA) return parseStatesData(window.STATE_DATA);
     return [];
   }
 
-  // find the LGA select related to the given state select
   function findLgaSelect(stateSelect) {
     if (!stateSelect) return null;
-    // prefer same-form inputs
     const form = stateSelect.closest('form');
     if (form) {
       const byName = form.querySelector(
@@ -53,8 +44,6 @@
       );
       if (byName) return byName;
     }
-
-    // id mapping fallback
     const idMap = {
       'client-state': 'client-lga',
       'vendor-state': 'vendor-lga',
@@ -64,26 +53,19 @@
       const elem = document.getElementById(idMap[stateSelect.id]);
       if (elem) return elem;
     }
-
-    // last-resort: first LGA select on the page
-    return document.querySelector(
-      'select[name="region_lga"], select[name="lga"]'
-    );
+    return document.querySelector('select[name="region_lga"], select[name="lga"]');
   }
 
-  // robust name match (trim + case-insensitive)
   function findEntryForState(statesData, stateName) {
     if (!stateName) return null;
     const normalized = String(stateName).trim().toLowerCase();
-    return statesData.find(
-      (s) =>
-        String(s.state || '')
-          .trim()
-          .toLowerCase() === normalized
-    );
+    return statesData.find((s) => String(s.state || '').trim().toLowerCase() === normalized);
   }
 
-  // populate the LGA select with options for the chosen state
+  function normalizeVal(v) {
+    return v == null ? '' : String(v).trim();
+  }
+
   function populateLgasFor(stateSelect, statesData) {
     if (!stateSelect) return;
     const lgaSelect = findLgaSelect(stateSelect);
@@ -92,20 +74,38 @@
       return;
     }
 
-    const previous = lgaSelect.value || '';
-    // clear
+    // get previous selection (value attr) OR data-selected HTML attr (server-supplied)
+    const previousRaw = normalizeVal(lgaSelect.value) ||
+                        normalizeVal(lgaSelect.dataset && lgaSelect.dataset.selected) ||
+                        normalizeVal(lgaSelect.getAttribute && lgaSelect.getAttribute('data-selected'));
+    const previous = previousRaw;
+
+    // clear options
     lgaSelect.innerHTML = '';
     const placeholder = document.createElement('option');
     placeholder.value = '';
     placeholder.textContent = 'Select LGA';
     lgaSelect.appendChild(placeholder);
 
-    const stateName = stateSelect.value;
-    if (!stateName) return;
+    const stateName = normalizeVal(stateSelect.value);
+    if (!stateName) {
+      return;
+    }
 
     const entry = findEntryForState(statesData, stateName);
-    if (!entry || !Array.isArray(entry.lgas)) return;
+    if (!entry || !Array.isArray(entry.lgas)) {
+      // No lgas found for state; if server supplied previous, preserve it
+      if (previous) {
+        const opt = document.createElement('option');
+        opt.value = previous;
+        opt.textContent = previous;
+        lgaSelect.appendChild(opt);
+        lgaSelect.value = previous;
+      }
+      return;
+    }
 
+    // populate official LGAs
     entry.lgas.forEach((lga) => {
       const opt = document.createElement('option');
       opt.value = lga;
@@ -113,16 +113,30 @@
       lgaSelect.appendChild(opt);
     });
 
-    // restore previous selection if still present
+    // restore previous selection (case-insensitive compare, trim)
     if (previous) {
       const found = Array.from(lgaSelect.options).some(
-        (o) => o.value === previous
+        (o) => normalizeVal(o.value).toLowerCase() === previous.toLowerCase()
       );
-      if (found) lgaSelect.value = previous;
+      if (found) {
+        // set the option that matches (preserve original casing)
+        for (const o of lgaSelect.options) {
+          if (normalizeVal(o.value).toLowerCase() === previous.toLowerCase()) {
+            lgaSelect.value = o.value;
+            break;
+          }
+        }
+      } else {
+        // if previous not in list, append it so user sees stored value
+        const customOpt = document.createElement('option');
+        customOpt.value = previous;
+        customOpt.textContent = previous;
+        lgaSelect.appendChild(customOpt);
+        lgaSelect.value = previous;
+      }
     }
   }
 
-  // attach listeners to all state selects found by selectors
   function init() {
     const statesData = loadStates();
     if (!Array.isArray(statesData) || statesData.length === 0) {
@@ -136,17 +150,10 @@
       'select#vendor-state',
       'select#admin-region-state',
     ];
-    const stateSelectors = Array.from(
-      document.querySelectorAll(selectorList.join(','))
-    );
-
-    if (!stateSelectors.length) {
-      // maybe the page renders selects later (AJAX). Watch for added nodes once for a short time.
-      console.debug('location-picker: no state selects found on initial run.');
-    }
+    const stateSelectors = Array.from(document.querySelectorAll(selectorList.join(',')));
 
     stateSelectors.forEach((sel) => {
-      // populate immediately if state already selected (server-side sticky)
+      // populate immediately if server already set a state value
       if (sel.value) populateLgasFor(sel, statesData);
 
       sel.addEventListener('change', function () {
@@ -154,30 +161,25 @@
       });
     });
 
-    // Also support dynamically added state selects by observing the document for a short window
+    // observe for dynamically added selects (same as before)
     const observer = new MutationObserver((mutations, obs) => {
-      const newly = Array.from(
-        document.querySelectorAll(selectorList.join(','))
-      ).filter((s) => !stateSelectors.includes(s));
+      const newly = Array.from(document.querySelectorAll(selectorList.join(','))).filter((s) => !stateSelectors.includes(s));
       if (newly.length) {
         newly.forEach((sel) => {
           if (sel.value) populateLgasFor(sel, statesData);
-          sel.addEventListener('change', () =>
-            populateLgasFor(sel, statesData)
-          );
+          sel.addEventListener('change', () => populateLgasFor(sel, statesData));
           stateSelectors.push(sel);
         });
       }
-      // stop observing after 3s to avoid overhead
       setTimeout(() => obs.disconnect(), 3000);
     });
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
-  // run on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
-    init();
+    // small delay to allow server-inserted data/script to load before init
+    setTimeout(init, 0);
   }
 })();
