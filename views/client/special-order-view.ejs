@@ -1,4 +1,3 @@
-<!--//views/client/special-order-view.ejs-->
 <% /* Client weekly plan view (no inline script) */ %>
 <h2>
   Weekly Plan —
@@ -107,20 +106,28 @@
     "
   >
     <% if (messages && messages.length) { %>
-    <% messages.forEach(m => { %>
-    <div class="weekly-plan-msg">
-      <% // prefer display_name (provided by the message model), fallback to
-      sensible names: let senderName = m.display_name; if (!senderName) { if
-      (m.sender_type === 'client') senderName = plan.client_name || 'Customer';
-      else if (m.sender_type === 'admin') senderName = plan.assigned_admin_name
-      || 'Food Specialist'; else senderName = m.sender_type || 'Support'; } %>
-      <strong><%= senderName %></strong>:
-      <%= m.message %>
-      <div style="font-size: 0.8em; color: #666">
-        <%= new Date(m.created_at).toLocaleString() %>
-      </div>
-    </div>
-    <% }) %>
+      <% messages.forEach(function(m) { %>
+        <% 
+          // prefer display_name (provided by the message model), fallback to sensible names
+          var senderName = m.display_name;
+          if (!senderName) {
+            if (m.sender_type === 'client') {
+              senderName = plan.client_name || 'Customer';
+            } else if (m.sender_type === 'admin') {
+              senderName = plan.assigned_admin_name || 'Food Specialist';
+            } else {
+              senderName = m.sender_type || 'Support';
+            }
+          }
+        %>
+        <div class="weekly-plan-msg">
+          <strong><%= senderName %></strong>:
+          <%= m.message %>
+          <div style="font-size: 0.8em; color: #666">
+            <%= new Date(m.created_at).toLocaleString() %>
+          </div>
+        </div>
+      <% }); %>
     <% } else { %>
     <p>No messages yet.</p>
     <% } %>
@@ -134,8 +141,7 @@
     action="/client/special-order/<%= plan.id %>/update"
     style="display: inline"
   >
-    <% /* show modify button only when server allowed; server enforces window */
-    %>
+    <% /* show modify button only when server allowed; server enforces window */ %>
     <button type="submit" class="btn">Modify (if allowed)</button>
   </form>
   <% } %>
@@ -155,5 +161,3 @@
 </section>
 
 <%- include('../partials/chat-modal') %>
-
-<!-- load shared chat client which wires weekly-plan composer and joins the weekly_plan room -->
