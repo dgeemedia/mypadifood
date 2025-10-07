@@ -1,34 +1,15 @@
 // models/riderModel.js
 const { pool } = require('../database/database');
 
-// Strict UUID regex (36-character UUID with hyphens)
-const uuidRegex =
-  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
-/**
- * Insert new rider (initial status = 'pending').
- */
 async function createRider(data) {
   const {
-    full_name,
-    email,
-    phone,
-    state,
-    lga,
-    address,
-    vehicle_type,
-    vehicle_number,
-    bank_name,
-    account_number,
+    full_name, email, phone, state, lga, address,
+    vehicle_type, vehicle_number, bank_name, account_number,
     password_hash,
-    id_type,
-    id_number,
-    id_file,
-    next_of_kin,
-    base_fee = null,
-    latitude = null,
-    longitude = null,
-    location_source = 'manual',
+    id_type, id_number, id_file, next_of_kin, base_fee = null,
+    latitude = null, longitude = null, location_source = 'manual'
   } = data;
 
   const sql = `
@@ -46,36 +27,17 @@ async function createRider(data) {
     RETURNING id;
   `;
   const values = [
-    full_name,
-    email,
-    phone,
-    state,
-    lga,
-    address,
-    vehicle_type,
-    vehicle_number,
-    bank_name,
-    account_number,
-    password_hash,
-    id_type,
-    id_number,
-    id_file,
-    next_of_kin,
-    base_fee,
-    latitude,
-    longitude,
-    location_source,
+    full_name, email, phone, state, lga, address,
+    vehicle_type, vehicle_number, bank_name, account_number, password_hash,
+    id_type, id_number, id_file, next_of_kin, base_fee,
+    latitude, longitude, location_source
   ];
   const { rows } = await pool.query(sql, values);
   return rows[0].id;
 }
 
-/**
- * Get approved riders optionally filtered by state/lga
- */
 async function getApprovedRiders({ state = null, lga = null } = {}) {
-  let sql =
-    "SELECT id, full_name, phone, email, address, state, lga, vehicle_type, vehicle_number, bank_name, account_number, status, base_fee, id_file FROM riders WHERE status = 'approved'";
+  let sql = "SELECT id, full_name, phone, email, state, lga, address, vehicle_type, vehicle_number, bank_name, account_number, status, base_fee, id_file FROM riders WHERE status = 'approved'";
   const params = [];
   if (state) {
     params.push(state);
@@ -90,9 +52,6 @@ async function getApprovedRiders({ state = null, lga = null } = {}) {
   return rows;
 }
 
-/**
- * Get pending riders (for admin review)
- */
 async function getPendingRiders() {
   const { rows } = await pool.query(
     "SELECT * FROM riders WHERE status='pending' ORDER BY created_at DESC"
@@ -101,26 +60,31 @@ async function getPendingRiders() {
 }
 
 /**
- * Update rider status (approved/rejected)
+ * Update rider status and record reviewer + reason.
+ * reviewedBy should be an admin UUID string (optional)
  */
-async function updateStatus(riderId, status) {
+async function updateStatus(riderId, status, reviewedBy = null, reviewReason = null) {
   if (!riderId || typeof riderId !== 'string' || !uuidRegex.test(riderId)) {
     throw new Error('invalid riderId');
   }
-  await pool.query(
-    'UPDATE riders SET status=$1, updated_at = NOW() WHERE id=$2',
-    [status, riderId]
-  );
+  // Build dynamic query so reviewed_by/review_reason are nullable
+  const sql = `
+    UPDATE riders
+    SET status = $1,
+        reviewed_by = $2,
+        reviewed_at = now(),
+        review_reason = $3,
+        updated_at = now()
+    WHERE id = $4
+    RETURNING id;
+  `;
+  const values = [status, reviewedBy || null, reviewReason || null, riderId];
+  const { rows } = await pool.query(sql, values);
+  return rows[0] || null;
 }
 
-/**
- * Find rider by id (full record).
- * Defensive: validate UUID before sending to Postgres.
- */
 async function findById(id) {
-  if (!id || typeof id !== 'string' || !uuidRegex.test(id)) {
-    return null;
-  }
+  if (!id || typeof id !== 'string' || !uuidRegex.test(id)) return null;
   const { rows } = await pool.query('SELECT * FROM riders WHERE id=$1', [id]);
   return rows[0] || null;
 }

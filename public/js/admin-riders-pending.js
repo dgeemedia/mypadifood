@@ -2,13 +2,15 @@
 (function () {
   function qs(selector, ctx) { return (ctx || document).querySelector(selector); }
   function qsa(selector, ctx) { return Array.from((ctx || document).querySelectorAll(selector)); }
+
   function showTempMsg(container, msg, ok = true) {
     const el = document.createElement('div');
     el.className = ok ? 'flash flash-success' : 'flash flash-error';
     el.textContent = msg;
-    container.insertBefore(el, container.firstChild);
+    // insert at top of container (or body fallback)
+    (container || document.body).insertBefore(el, (container || document.body).firstChild);
     setTimeout(() => {
-      if (el && el.parentNode) el.parentNode.removeChild(el);
+      try { el.remove(); } catch (e) {}
     }, 4000);
   }
 
@@ -34,6 +36,17 @@
     const table = qs('table.resources-table');
     if (!table) return;
 
+    // Ensure buttons have data-rider-id set (backwards compatible with form-based markup)
+    qsa('form.rider-decision-form').forEach(form => {
+      const riderId = form.dataset && form.dataset.riderId ? form.dataset.riderId : (form.querySelector('input[name="riderId"]') ? form.querySelector('input[name="riderId"]').value : null);
+      const decision = form.querySelector('input[name="decision"]') ? form.querySelector('input[name="decision"]').value : null;
+      const btn = form.querySelector('button');
+      if (btn && riderId) {
+        btn.setAttribute('data-rider-id', riderId);
+        btn.setAttribute('data-action', decision || btn.getAttribute('data-action') || '');
+      }
+    });
+
     // Approve buttons
     qsa('button[data-action="approve"]').forEach(btn => {
       btn.addEventListener('click', async (ev) => {
@@ -47,12 +60,13 @@
         try {
           const resp = await postDecision(riderId, 'approve', '');
           if (!resp.ok) throw new Error('Server error');
-          const json = await resp.json();
+          const json = await resp.json().catch(() => null);
           if (json && json.ok) {
             // remove the row from table OR mark as approved
             const row = btn.closest('tr');
             if (row) {
-              row.parentNode.removeChild(row);
+              // prefer removing so resources list won't include pending rider
+              row.remove();
             }
             const container = document.querySelector('.account-page') || document.body;
             showTempMsg(container, 'Rider approved');
@@ -87,7 +101,7 @@
         try {
           const resp = await postDecision(riderId, 'reject', reason);
           if (!resp.ok) throw new Error('Server error');
-          const json = await resp.json();
+          const json = await resp.json().catch(() => null);
           if (json && json.ok) {
             // Mark row visually as rejected
             const r = btn.closest('tr');

@@ -816,36 +816,31 @@ exports.pendingRiders = async (req, res) => {
 };
 
 // Approve or reject a rider
-// Approve or reject a rider (updated to support AJAX + socket emit)
 exports.riderDecision = async (req, res) => {
   try {
-    const { riderId } = req.body;
-    // decision may come as 'approve' or 'reject' via button value
-    const decision = req.body.decision || req.body.action || null;
-    const reason = req.body.reason ? String(req.body.reason).trim() : null;
-
-    if (!riderId || !decision) {
-      if (req.xhr || req.headers.accept?.includes('application/json')) {
-        return res.status(400).json({ ok: false, error: 'Missing riderId or decision' });
-      }
-      req.session.error = 'Missing required fields';
+    const { riderId, decision, reason } = req.body;
+    if (!riderId) {
+      req.session.error = 'Missing riderId';
       return res.redirect('/admin/riders/pending');
     }
-
     const status = decision === 'approve' ? 'approved' : 'rejected';
 
-    // update DB
-    await riderModel.updateStatus(riderId, status);
+    // reviewer (admin) id if available
+    const reviewerId = req.session && req.session.user ? req.session.user.id : null;
 
-    // try to load rider for notification
+    // Update rider status and record reviewer + reason
+    await riderModel.updateStatus(riderId, status, reviewerId, reason || null);
+
+    // Fetch canonical rider record for notifications + response
     let rider = null;
     try {
       rider = await riderModel.findById(riderId);
     } catch (e) {
+      console.warn('Could not load rider after status update (non-fatal):', e);
       rider = null;
     }
 
-    // notify rider via email (best-effort)
+    // Notify rider via email (best-effort)
     try {
       if (rider && rider.email) {
         const subject =
@@ -857,37 +852,38 @@ exports.riderDecision = async (req, res) => {
             ? `<p>Hi ${rider.full_name || 'Rider'},</p><p>Good news — your rider application has been <strong>approved</strong>. We will contact you with onboarding details shortly.</p>`
             : `<p>Hi ${rider.full_name || 'Rider'},</p><p>We are sorry to inform you that your rider application was <strong>rejected</strong>.</p><p>Reason: ${reason ? String(reason) : 'No reason provided'}.</p>`;
         const text = html.replace(/<\/?[^>]+(>|$)/g, '');
-        await sendMail({ to: rider.email, subject, html, text });
+        await sendMail({ to: rider.email, subject, html, text }).catch((mailErr) => {
+          console.error('Failed to send rider notification email (non-fatal):', mailErr);
+        });
       }
     } catch (mailErr) {
       console.error('Failed to notify rider by email (non-fatal):', mailErr);
     }
 
-    // Emit socket event to admins for live update (server-side)
+    // Emit socket event for live admin dashboards
     try {
-      const io = socketUtil.get(); // socket util used elsewhere in your code
+      const io = socketUtil.get();
       if (io) {
-        io.to('admins').emit('resource_updated', {
+        const payload = {
           type: 'rider',
           id: riderId,
           status,
-          updated_at: new Date(),
-          payload: {
-            id: riderId,
-            full_name: rider ? rider.full_name : null,
-            phone: rider ? rider.phone : null,
-            email: rider ? rider.email : null,
-            state: rider ? rider.state : null,
-            lga: rider ? rider.lga : null
-          }
-        });
+          action: status === 'approved' ? 'approved' : 'rejected',
+          name: rider ? (rider.full_name || null) : null,
+          reviewed_by: reviewerId || null,
+          reviewed_at: new Date(),
+          review_reason: reason || null,
+          // include small payload for clients to use (optional)
+          payload: rider || {},
+        };
+        io.to('admins').emit('resource_updated', payload);
       }
     } catch (emitErr) {
-      console.warn('Socket emit failed for rider decision (non-fatal):', emitErr);
+      console.warn('Could not emit resource_updated (non-fatal):', emitErr);
     }
 
-    // Respond differently for AJAX vs classic form
-    if (req.xhr || req.headers.accept?.includes('application/json')) {
+    // If AJAX / fetch: return JSON, otherwise redirect
+    if (req.xhr || req.headers.accept?.includes('application/json') || req.query.format === 'json') {
       return res.json({ ok: true, riderId, status });
     }
 
@@ -895,8 +891,9 @@ exports.riderDecision = async (req, res) => {
     return res.redirect('/admin/riders/pending');
   } catch (err) {
     console.error('Error applying rider decision:', err);
-    if (req.xhr || req.headers.accept?.includes('application/json')) {
-      return res.status(500).json({ ok: false, error: 'Server error' });
+    // handle AJAX callers as well
+    if (req.xhr || req.headers.accept?.includes('application/json') || req.query.format === 'json') {
+      return res.status(500).json({ ok: false, error: 'Error applying decision' });
     }
     req.session.error = 'Error applying decision';
     return res.redirect('/admin/riders/pending');
