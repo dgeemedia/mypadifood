@@ -12,4 +12,5 @@ module.exports = {
   adminReset: require('./adminResetModel'),
   weeklyPlan: require('./weeklyPlanModel'),
   weeklyPlanMessages: require('./weeklyPlanMessageModel'),
+  rider: require('./riderModel'),
 };

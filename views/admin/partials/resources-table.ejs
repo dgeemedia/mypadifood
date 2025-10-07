@@ -1,0 +1,40 @@
+<!-- views/admin/partials/resources-table.ejs -->
+<div class="resources-table-wrap">
+  <% if (!rows || !rows.length) { %>
+    <div class="empty-resources"><%= emptyMessage || 'No results found.' %></div>
+  <% } else { %>
+    <table class="resources-table" role="table" aria-label="<%= type %> table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Name</th>
+          <th>Contact</th>
+          <th>State / LGA</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rows.forEach(r => { %>
+          <tr>
+            <td data-label="Type"><%= type === 'vendors' ? 'Vendor' : 'Rider' %></td>
+            <td data-label="Name"><strong><%= r.name || r.full_name %></strong></td>
+            <td data-label="Contact">
+              <div class="muted"><%= r.phone || r.contact || '' %></div>
+              <% if (r.email) { %><div class="muted small"><%= r.email %></div><% } %>
+            </td>
+            <td data-label="State/LGA"><%= r.state || '' %> / <%= r.lga || '' %></td>
+            <td data-label="Details">
+              <% if (type === 'vendors') { %>
+                <div>Address: <%= r.address || '—' %></div>
+                <div>Base price: <%= (r.base_price ? '₦' + r.base_price : '—') %></div>
+              <% } else { %>
+                <div>Vehicle: <%= r.vehicle_type || '—' %></div>
+                <div>Vehicle no: <%= r.vehicle_number || '—' %></div>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>

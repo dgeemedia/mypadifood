@@ -751,3 +751,38 @@ exports.completeWeeklyPlan = async (req, res) => {
     return res.redirect('/admin/food-orders');
   }
 };
+
+// GET /admin/resources
+exports.resourcesPage = async (req, res) => {
+  try {
+    const statesLGAs = loadStatesLGAs();
+    // Optionally provide initial data (empty)
+    return res.render('admin/resources', { statesLGAs });
+  } catch (e) {
+    console.error('Error rendering admin resources page', e);
+    req.session.error = 'Could not open resources page';
+    return res.redirect('/admin/dashboard');
+  }
+};
+
+// GET /admin/resources/data?type=vendors|riders&state=...&lga=...
+exports.resourcesData = async (req, res) => {
+  try {
+    const type = String(req.query.type || 'vendors');
+    const state = req.query.state ? String(req.query.state).trim() : null;
+    const lga = req.query.lga ? String(req.query.lga).trim() : null;
+
+    if (type === 'vendors') {
+      const rows = await vendorModel.getApprovedVendors({ state, lga, q: null });
+      return res.json({ ok: true, type: 'vendors', rows });
+    } else if (type === 'riders') {
+      const rows = await riderModel.getApprovedRiders({ state, lga });
+      return res.json({ ok: true, type: 'riders', rows });
+    } else {
+      return res.status(400).json({ ok: false, error: 'Invalid type' });
+    }
+  } catch (err) {
+    console.error('Error loading resources data', err);
+    return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+};
