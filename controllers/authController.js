@@ -58,12 +58,10 @@ exports.login = async (req, res) => {
 
     if (!normalizedEmail || !password) {
       console.debug('[auth.login] missing email or password');
-      return res
-        .status(400)
-        .render('auth/login', {
-          title: 'Sign in',
-          error: 'Missing credentials',
-        });
+      return res.status(400).render('auth/login', {
+        title: 'Sign in',
+        error: 'Missing credentials',
+      });
     }
 
     if (!adminModel || !clientModel) {
@@ -119,12 +117,10 @@ exports.login = async (req, res) => {
           const result = await verifyAndLogin(client, 'client');
           if (result.ok) return res.redirect('/client/dashboard');
           if (result.err === 'Invalid credentials')
-            return res
-              .status(401)
-              .render('auth/login', {
-                title: 'Sign in',
-                error: 'Invalid credentials',
-              });
+            return res.status(401).render('auth/login', {
+              title: 'Sign in',
+              error: 'Invalid credentials',
+            });
         }
       } catch (e) {
         console.error('[auth.login] clientModel.findByEmail error', e);
@@ -139,23 +135,19 @@ exports.login = async (req, res) => {
           const result = await verifyAndLogin(admin, 'admin');
           if (result.ok) return res.redirect('/admin/dashboard');
           if (result.err === 'Invalid credentials')
-            return res
-              .status(401)
-              .render('auth/login', {
-                title: 'Sign in',
-                error: 'Invalid credentials',
-              });
+            return res.status(401).render('auth/login', {
+              title: 'Sign in',
+              error: 'Invalid credentials',
+            });
         }
       } catch (e) {
         console.error('[auth.login] adminModel.findByEmail error', e);
       }
 
-      return res
-        .status(401)
-        .render('auth/login', {
-          title: 'Sign in',
-          error: 'Invalid credentials',
-        });
+      return res.status(401).render('auth/login', {
+        title: 'Sign in',
+        error: 'Invalid credentials',
+      });
     }
 
     if (preferAdmin && !preferClient) {
@@ -168,12 +160,10 @@ exports.login = async (req, res) => {
           const result = await verifyAndLogin(admin, 'admin');
           if (result.ok) return res.redirect('/admin/dashboard');
           if (result.err === 'Invalid credentials')
-            return res
-              .status(401)
-              .render('auth/login', {
-                title: 'Sign in',
-                error: 'Invalid credentials',
-              });
+            return res.status(401).render('auth/login', {
+              title: 'Sign in',
+              error: 'Invalid credentials',
+            });
         }
       } catch (e) {
         console.error('[auth.login] adminModel.findByEmail error', e);
@@ -188,23 +178,19 @@ exports.login = async (req, res) => {
           const result = await verifyAndLogin(client, 'client');
           if (result.ok) return res.redirect('/client/dashboard');
           if (result.err === 'Invalid credentials')
-            return res
-              .status(401)
-              .render('auth/login', {
-                title: 'Sign in',
-                error: 'Invalid credentials',
-              });
+            return res.status(401).render('auth/login', {
+              title: 'Sign in',
+              error: 'Invalid credentials',
+            });
         }
       } catch (e) {
         console.error('[auth.login] clientModel.findByEmail error', e);
       }
 
-      return res
-        .status(401)
-        .render('auth/login', {
-          title: 'Sign in',
-          error: 'Invalid credentials',
-        });
+      return res.status(401).render('auth/login', {
+        title: 'Sign in',
+        error: 'Invalid credentials',
+      });
     }
 
     // Default: current behaviour (admin first, then client)
@@ -217,12 +203,10 @@ exports.login = async (req, res) => {
         const result = await verifyAndLogin(admin, 'admin');
         if (result.ok) return res.redirect('/admin/dashboard');
         if (result.err === 'Invalid credentials')
-          return res
-            .status(401)
-            .render('auth/login', {
-              title: 'Sign in',
-              error: 'Invalid credentials',
-            });
+          return res.status(401).render('auth/login', {
+            title: 'Sign in',
+            error: 'Invalid credentials',
+          });
       }
     } catch (e) {
       console.error('[auth.login] adminModel.findByEmail error', e);
@@ -237,12 +221,10 @@ exports.login = async (req, res) => {
         const result = await verifyAndLogin(client, 'client');
         if (result.ok) return res.redirect('/client/dashboard');
         if (result.err === 'Invalid credentials')
-          return res
-            .status(401)
-            .render('auth/login', {
-              title: 'Sign in',
-              error: 'Invalid credentials',
-            });
+          return res.status(401).render('auth/login', {
+            title: 'Sign in',
+            error: 'Invalid credentials',
+          });
       }
     } catch (e) {
       console.error('[auth.login] clientModel.findByEmail error', e);

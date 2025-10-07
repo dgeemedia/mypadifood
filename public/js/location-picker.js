@@ -13,7 +13,9 @@
         .replace(/&#39;/g, "'");
       const trimmed = unescaped.trim();
       const stripped =
-        trimmed.length > 1 && trimmed[0] === "'" && trimmed[trimmed.length - 1] === "'"
+        trimmed.length > 1 &&
+        trimmed[0] === "'" &&
+        trimmed[trimmed.length - 1] === "'"
           ? trimmed.slice(1, -1)
           : trimmed;
       return JSON.parse(stripped);
@@ -53,13 +55,20 @@
       const elem = document.getElementById(idMap[stateSelect.id]);
       if (elem) return elem;
     }
-    return document.querySelector('select[name="region_lga"], select[name="lga"]');
+    return document.querySelector(
+      'select[name="region_lga"], select[name="lga"]'
+    );
   }
 
   function findEntryForState(statesData, stateName) {
     if (!stateName) return null;
     const normalized = String(stateName).trim().toLowerCase();
-    return statesData.find((s) => String(s.state || '').trim().toLowerCase() === normalized);
+    return statesData.find(
+      (s) =>
+        String(s.state || '')
+          .trim()
+          .toLowerCase() === normalized
+    );
   }
 
   function normalizeVal(v) {
@@ -75,9 +84,12 @@
     }
 
     // get previous selection (value attr) OR data-selected HTML attr (server-supplied)
-    const previousRaw = normalizeVal(lgaSelect.value) ||
-                        normalizeVal(lgaSelect.dataset && lgaSelect.dataset.selected) ||
-                        normalizeVal(lgaSelect.getAttribute && lgaSelect.getAttribute('data-selected'));
+    const previousRaw =
+      normalizeVal(lgaSelect.value) ||
+      normalizeVal(lgaSelect.dataset && lgaSelect.dataset.selected) ||
+      normalizeVal(
+        lgaSelect.getAttribute && lgaSelect.getAttribute('data-selected')
+      );
     const previous = previousRaw;
 
     // clear options
@@ -150,7 +162,9 @@
       'select#vendor-state',
       'select#admin-region-state',
     ];
-    const stateSelectors = Array.from(document.querySelectorAll(selectorList.join(',')));
+    const stateSelectors = Array.from(
+      document.querySelectorAll(selectorList.join(','))
+    );
 
     stateSelectors.forEach((sel) => {
       // populate immediately if server already set a state value
@@ -163,11 +177,15 @@
 
     // observe for dynamically added selects (same as before)
     const observer = new MutationObserver((mutations, obs) => {
-      const newly = Array.from(document.querySelectorAll(selectorList.join(','))).filter((s) => !stateSelectors.includes(s));
+      const newly = Array.from(
+        document.querySelectorAll(selectorList.join(','))
+      ).filter((s) => !stateSelectors.includes(s));
       if (newly.length) {
         newly.forEach((sel) => {
           if (sel.value) populateLgasFor(sel, statesData);
-          sel.addEventListener('change', () => populateLgasFor(sel, statesData));
+          sel.addEventListener('change', () =>
+            populateLgasFor(sel, statesData)
+          );
           stateSelectors.push(sel);
         });
       }

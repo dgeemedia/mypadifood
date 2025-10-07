@@ -6,7 +6,13 @@
 <form id="phoneForm" class="account-edit-form" novalidate>
   <div class="form-row">
     <label for="phone">Phone</label>
-    <input id="phone" name="phone" type="text" value="<%= currentUser ? currentUser.phone : '' %>" required />
+    <input
+      id="phone"
+      name="phone"
+      type="text"
+      value="<%= currentUser ? currentUser.phone : '' %>"
+      required
+    />
   </div>
 
   <div class="form-row">

@@ -77,10 +77,14 @@
 
     <div class="form-row">
       <label for="client-lga">LGA</label>
-      <select id="client-lga" name="lga" data-selected="<%= (locals && locals.lga) ? locals.lga : '' %>" required>
-  <option value="">Select LGA</option>
-</select>
-
+      <select
+        id="client-lga"
+        name="lga"
+        data-selected="<%= (locals && locals.lga) ? locals.lga : '' %>"
+        required
+      >
+        <option value="">Select LGA</option>
+      </select>
     </div>
 
     <div class="form-row">

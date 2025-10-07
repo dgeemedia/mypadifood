@@ -51,3 +51,12 @@ FOR EACH ROW
 EXECUTE PROCEDURE trigger_set_timestamp();
 
 ALTER TABLE riders ALTER COLUMN password_hash DROP NOT NULL;
+
+-- Add review audit columns to riders
+ALTER TABLE riders
+  ADD COLUMN IF NOT EXISTS reviewed_by uuid,
+  ADD COLUMN IF NOT EXISTS reviewed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS review_reason text;
+
+-- Optional index to filter by reviewer quickly
+CREATE INDEX IF NOT EXISTS idx_riders_reviewed_by ON riders(reviewed_by);

@@ -34,13 +34,20 @@ router.post(
 
 // pending riders + decision
 router.get('/riders/pending', auth.requireAdmin, adminController.pendingRiders);
-router.post('/riders/decision', auth.requireAdmin, adminController.riderDecision);
+router.post(
+  '/riders/decision',
+  auth.requireAdmin,
+  adminController.riderDecision
+);
 
 // resources listing + JSON data + CSV export
 router.get('/resources', auth.requireAdmin, adminController.resourcesPage);
 router.get('/resources/data', auth.requireAdmin, adminController.resourcesData);
-router.get('/resources/export', auth.requireAdmin, adminController.resourcesExport);
-
+router.get(
+  '/resources/export',
+  auth.requireAdmin,
+  adminController.resourcesExport
+);
 
 // Admin creation (form + handler). Route-level middleware will restrict access.
 router.get('/create', auth.requireAdmin, adminController.showCreateForm);

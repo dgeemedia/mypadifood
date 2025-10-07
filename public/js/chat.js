@@ -1,4 +1,4 @@
-//public/js/chat.js
+// public/js/chat.js
 // Socket-enabled chat client for MyPadiFood
 // Supports two modes:
 // 1) server-rendered page with window.ORDER_ID set (auto-join room immediately)
@@ -58,13 +58,10 @@
     });
 
     // Weekly-plan messages (clients & admins)
-    // Improved handler: prefers server-provided display_name, falls back to sensible names,
-    // escapes HTML, appends to container and bumps notif badge.
     socket.on('weekly_plan_message', (msg) => {
       try {
         const messagesContainer = document.getElementById('weeklyPlanMessages');
 
-        // Determine current plan id on page (if any)
         const currentPlanIdEl = document.getElementById('currentWeeklyPlanId');
         const curPlanId = currentPlanIdEl
           ? String(currentPlanIdEl.value)
@@ -77,15 +74,8 @@
             ''
         );
 
-        // If this page shows a particular plan, only append messages for that plan
         if (!curPlanId || curPlanId === mPlanId) {
           if (messagesContainer && msg) {
-            // Compose display name with fallbacks:
-            // 1) msg.display_name (server-provided)
-            // 2) msg.sender_name / msg.senderName
-            // 3) msg.client_name / msg.clientName (if client)
-            // 4) msg.assigned_admin_name (if admin)
-            // 5) fallback to 'Customer' / 'Food Specialist' / sender_type / 'Support'
             const rawDisplay =
               msg.display_name ||
               msg.displayName ||
@@ -93,7 +83,6 @@
               msg.senderName ||
               msg.client_name ||
               msg.clientName ||
-              (msg.sender_type === 'client' ? null : null) ||
               msg.assigned_admin_name ||
               msg.assignedAdminName ||
               null;
@@ -128,7 +117,6 @@
           }
         }
 
-        // increment notification badge globally
         const badge = document.getElementById('notifBadge');
         if (badge) {
           const current = parseInt(badge.textContent || '0', 10) || 0;
@@ -148,7 +136,6 @@
           badge.textContent = String(current + 1);
         }
 
-        // If admin page has a pending weekly plans area, show it
         const pendingPanel = document.getElementById('pendingWeeklyPlansPanel');
         const pendingList = document.getElementById('pendingWeeklyPlans');
         if (pendingList) {
@@ -179,7 +166,6 @@
 
     socket.on('joined_order', (payload) => {
       // optional debug or UI reaction
-      // console.debug('joined_order', payload);
     });
 
     socket.on('order_opened', (payload) => {
@@ -267,6 +253,32 @@
         }
       } catch (e) {
         console.warn('order_completed handler', e);
+      }
+    });
+
+    // NEW: resource_updated - used when resources (vendors/riders) change
+    socket.on('resource_updated', (payload) => {
+      try {
+        // payload: { type:'rider'|'vendor', id, status, updated_at, payload: {...} }
+        console.info('resource_updated', payload);
+
+        // bump notification badge for admins
+        const badge = document.getElementById('notifBadge');
+        if (badge) {
+          const current = parseInt(badge.textContent || '0', 10) || 0;
+          badge.textContent = String(current + 1);
+        }
+
+        // If resources page has a fetchAndRender function, call it to refresh table
+        if (typeof fetchAndRender === 'function') {
+          try {
+            fetchAndRender();
+          } catch (e) {
+            console.warn('fetchAndRender threw:', e);
+          }
+        }
+      } catch (e) {
+        console.warn('resource_updated handler error', e);
       }
     });
 

@@ -1151,36 +1151,59 @@ exports.viewWeeklyPlan = async (req, res) => {
 
 exports.showAccountMenu = (req, res) => {
   // res.locals.currentUser already set by authJwt.checkJWTToken
-  return res.render('client/account-menu', { currentUser: res.locals.currentUser });
+  return res.render('client/account-menu', {
+    currentUser: res.locals.currentUser,
+  });
 };
 
 exports.showPhoneForm = (req, res) => {
-  return res.render('client/account-phone', { currentUser: res.locals.currentUser });
+  return res.render('client/account-phone', {
+    currentUser: res.locals.currentUser,
+  });
 };
 
 exports.showAddressForm = (req, res) => {
-  return res.render('client/account-address', { currentUser: res.locals.currentUser, statesLGAs: loadStatesLGAs() });
+  return res.render('client/account-address', {
+    currentUser: res.locals.currentUser,
+    statesLGAs: loadStatesLGAs(),
+  });
 };
 
 exports.showPasswordForm = (req, res) => {
-  return res.render('client/account-password', { currentUser: res.locals.currentUser });
+  return res.render('client/account-password', {
+    currentUser: res.locals.currentUser,
+  });
 };
 
 // AJAX handlers
 exports.updatePhone = async (req, res) => {
   try {
-    const clientId = (req.user && req.user.id) || (req.session && req.session.user && req.session.user.id);
-    if (!clientId) return res.status(401).json({ success: false, error: 'Not authenticated' });
+    const clientId =
+      (req.user && req.user.id) ||
+      (req.session && req.session.user && req.session.user.id);
+    if (!clientId)
+      return res
+        .status(401)
+        .json({ success: false, error: 'Not authenticated' });
 
     const newPhone = String((req.body && req.body.phone) || '').trim();
     if (!newPhone || newPhone.length < 6) {
-      return res.status(400).json({ success: false, error: 'Please provide a valid phone number.' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          error: 'Please provide a valid phone number.',
+        });
     }
 
     const updated = await clientModel.updatePhone(clientId, newPhone);
     // Sync session user display phone if present
     if (req.session && req.session.user) req.session.user.phone = updated.phone;
-    return res.json({ success: true, message: 'Phone updated', phone: updated.phone });
+    return res.json({
+      success: true,
+      message: 'Phone updated',
+      phone: updated.phone,
+    });
   } catch (err) {
     console.error('updatePhone error', err);
     return res.status(500).json({ success: false, error: 'Server error' });
@@ -1189,18 +1212,30 @@ exports.updatePhone = async (req, res) => {
 
 exports.updateAddress = async (req, res) => {
   try {
-    const clientId = (req.user && req.user.id) || (req.session && req.session.user && req.session.user.id);
-    if (!clientId) return res.status(401).json({ success: false, error: 'Not authenticated' });
+    const clientId =
+      (req.user && req.user.id) ||
+      (req.session && req.session.user && req.session.user.id);
+    if (!clientId)
+      return res
+        .status(401)
+        .json({ success: false, error: 'Not authenticated' });
 
     const newAddress = String((req.body && req.body.address) || '').trim();
     if (!newAddress) {
-      return res.status(400).json({ success: false, error: 'Address cannot be empty.' });
+      return res
+        .status(400)
+        .json({ success: false, error: 'Address cannot be empty.' });
     }
 
     // optional: validate state/lga if provided
     const updated = await clientModel.updateAddress(clientId, newAddress);
-    if (req.session && req.session.user) req.session.user.address = updated.address;
-    return res.json({ success: true, message: 'Address updated', address: updated.address });
+    if (req.session && req.session.user)
+      req.session.user.address = updated.address;
+    return res.json({
+      success: true,
+      message: 'Address updated',
+      address: updated.address,
+    });
   } catch (err) {
     console.error('updateAddress error', err);
     return res.status(500).json({ success: false, error: 'Server error' });
@@ -1209,33 +1244,54 @@ exports.updateAddress = async (req, res) => {
 
 exports.updatePassword = async (req, res) => {
   try {
-    const clientId = (req.user && req.user.id) || (req.session && req.session.user && req.session.user.id);
-    if (!clientId) return res.status(401).json({ success: false, error: 'Not authenticated' });
+    const clientId =
+      (req.user && req.user.id) ||
+      (req.session && req.session.user && req.session.user.id);
+    if (!clientId)
+      return res
+        .status(401)
+        .json({ success: false, error: 'Not authenticated' });
 
     const { current_password, new_password, confirm_password } = req.body || {};
 
     if (!current_password || !new_password || !confirm_password) {
-      return res.status(400).json({ success: false, error: 'All password fields are required.' });
+      return res
+        .status(400)
+        .json({ success: false, error: 'All password fields are required.' });
     }
     if (new_password !== confirm_password) {
-      return res.status(400).json({ success: false, error: 'New passwords do not match.' });
+      return res
+        .status(400)
+        .json({ success: false, error: 'New passwords do not match.' });
     }
     // optional: enforce strength policy server-side
     if (String(new_password).length < 8) {
-      return res.status(400).json({ success: false, error: 'New password must be at least 8 characters.' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          error: 'New password must be at least 8 characters.',
+        });
     }
 
     const user = await clientModel.findById(clientId);
-    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+    if (!user)
+      return res.status(404).json({ success: false, error: 'User not found' });
 
     const match = await bcrypt.compare(current_password, user.password_hash);
     if (!match) {
-      return res.status(400).json({ success: false, error: 'Current password is incorrect.' });
+      return res
+        .status(400)
+        .json({ success: false, error: 'Current password is incorrect.' });
     }
 
     const hash = await bcrypt.hash(new_password, SALT_ROUNDS);
     await clientModel.updatePassword(clientId, hash);
-    return res.json({ success: true, message: 'Password updated. Please use the new password next time you log in.' });
+    return res.json({
+      success: true,
+      message:
+        'Password updated. Please use the new password next time you log in.',
+    });
   } catch (err) {
     console.error('updatePassword error', err);
     return res.status(500).json({ success: false, error: 'Server error' });

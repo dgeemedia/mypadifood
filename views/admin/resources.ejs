@@ -15,7 +15,7 @@
     <select id="resource-state">
       <option value="">All states</option>
       <% if (Array.isArray(statesLGAs)) statesLGAs.forEach(s => { %>
-        <option value="<%= s.state %>"><%= s.state %></option>
+      <option value="<%= s.state %>"><%= s.state %></option>
       <% }) %>
     </select>
   </label>
@@ -28,14 +28,21 @@
   </label>
 
   <button id="resource-refresh" class="btn">Refresh</button>
-<button id="resource-export" class="btn">Export CSV</button>
+  <button id="resource-export" class="btn">Export CSV</button>
 </div>
 
-<div id="resource-list" style="margin-top:12px"></div>
+<div id="resource-list" style="margin-top: 12px"></div>
 
 <!-- Include client-side script to fetch and render -->
 <script src="/js/admin-resources.js"></script>
 
 <!-- Provide states dataset for populating LGA select -->
-<div id="states-data" data-states="<%- JSON.stringify(statesLGAs || []) %>" style="display:none" aria-hidden="true"></div>
-<script>window.STATE_DATA = <%- JSON.stringify(statesLGAs || []) %>;</script>
+<div
+  id="states-data"
+  data-states="<%- JSON.stringify(statesLGAs || []) %>"
+  style="display: none"
+  aria-hidden="true"
+></div>
+<script>
+  window.STATE_DATA = <%- JSON.stringify(statesLGAs || []) %>;
+</script>

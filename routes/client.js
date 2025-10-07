@@ -38,15 +38,34 @@ router.post('/book', auth.requireClient, clientController.bookVendor);
 router.get('/account', auth.requireClient, clientController.showAccountMenu);
 
 // Edit pages (render forms)
-router.get('/account/phone', auth.requireClient, clientController.showPhoneForm);
-router.get('/account/address', auth.requireClient, clientController.showAddressForm);
-router.get('/account/password', auth.requireClient, clientController.showPasswordForm);
+router.get(
+  '/account/phone',
+  auth.requireClient,
+  clientController.showPhoneForm
+);
+router.get(
+  '/account/address',
+  auth.requireClient,
+  clientController.showAddressForm
+);
+router.get(
+  '/account/password',
+  auth.requireClient,
+  clientController.showPasswordForm
+);
 
 // API endpoints (AJAX) - return JSON
 router.post('/account/phone', auth.requireClient, clientController.updatePhone);
-router.post('/account/address', auth.requireClient, clientController.updateAddress);
-router.post('/account/password', auth.requireClient, clientController.updatePassword);
-
+router.post(
+  '/account/address',
+  auth.requireClient,
+  clientController.updateAddress
+);
+router.post(
+  '/account/password',
+  auth.requireClient,
+  clientController.updatePassword
+);
 
 router.post(
   '/order/:orderId/menu',

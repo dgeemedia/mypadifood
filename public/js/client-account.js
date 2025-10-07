@@ -68,7 +68,11 @@
           new_password,
           confirm_password,
         });
-        showResult('password-form-result', resp.message || 'Password updated', false);
+        showResult(
+          'password-form-result',
+          resp.message || 'Password updated',
+          false
+        );
         passwordForm.current_password.value = '';
         passwordForm.new_password.value = '';
         passwordForm.confirm_password.value = '';

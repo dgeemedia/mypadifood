@@ -56,10 +56,14 @@
       <label for="vendor-lga"
         >LGA <span class="required" aria-hidden="true">*</span></label
       >
-      <select id="vendor-lga" name="lga" data-selected="<%= (locals && locals.lga) ? locals.lga : '' %>" required>
-  <option value="">Select LGA</option>
-</select>
-
+      <select
+        id="vendor-lga"
+        name="lga"
+        data-selected="<%= (locals && locals.lga) ? locals.lga : '' %>"
+        required
+      >
+        <option value="">Select LGA</option>
+      </select>
     </div>
 
     <div class="form-row">

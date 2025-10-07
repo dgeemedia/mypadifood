@@ -18,11 +18,12 @@
     </thead>
     <tbody>
       <% riders.forEach(r => { %>
-        <tr>
+        <tr id="rider-<%= r.id %>">
           <td><strong><%= r.full_name %></strong></td>
           <td><div><%= r.phone %></div><div class="muted small"><%= r.email %></div></td>
           <td><%= r.state %> / <%= r.lga %></td>
           <td>
+            <div>Address: <%= r.address || '—' %></div>
             <div>Vehicle: <%= r.vehicle_type || '—' %></div>
             <div>Vehicle no: <%= r.vehicle_number || '—' %></div>
             <div>Bank: <%= r.bank_name || '—' %> • <%= r.account_number || '—' %></div>
@@ -31,21 +32,37 @@
             <% } %>
           </td>
           <td>
-            <form method="post" action="/admin/resources/riders/decision" style="display:inline">
-              <input type="hidden" name="riderId" value="<%= r.id %>">
-              <input type="hidden" name="decision" value="approve">
-              <button type="submit" class="btn btn-primary">Approve</button>
-            </form>
+            <!-- JS-first buttons (AJAX). data-rider-id used by the client JS -->
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <button type="button" class="btn btn-primary" data-action="approve" data-rider-id="<%= r.id %>">Approve</button>
 
-            <form method="post" action="/admin/resources/riders/decision" style="display:inline; margin-top:6px;">
-              <input type="hidden" name="riderId" value="<%= r.id %>">
-              <input type="hidden" name="decision" value="reject">
-              <input type="text" name="reason" placeholder="Optional reason" />
-              <button type="submit" class="btn btn-danger">Reject</button>
-            </form>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <input type="text" name="reason" placeholder="Optional reason" style="flex:1;padding:6px;font-size:0.9em" />
+                <button type="button" class="btn btn-danger" data-action="reject" data-rider-id="<%= r.id %>">Reject</button>
+              </div>
+            </div>
+
+            <!-- Non-JS fallback: keep classic forms but hide visually (for browsers without JS) -->
+            <noscript>
+              <form method="post" action="/admin/resources/riders/decision" style="display:block;margin-top:6px">
+                <input type="hidden" name="riderId" value="<%= r.id %>">
+                <input type="hidden" name="decision" value="approve">
+                <button type="submit" class="btn btn-primary">Approve</button>
+              </form>
+
+              <form method="post" action="/admin/resources/riders/decision" style="display:block;margin-top:6px;">
+                <input type="hidden" name="riderId" value="<%= r.id %>">
+                <input type="hidden" name="decision" value="reject">
+                <input type="text" name="reason" placeholder="Optional reason" />
+                <button type="submit" class="btn btn-danger">Reject</button>
+              </form>
+            </noscript>
           </td>
         </tr>
       <% }) %>
     </tbody>
   </table>
 <% } %>
+
+<!-- include the new client-side handler -->
+<script src="/js/admin-riders-pending.js"></script>

@@ -30,13 +30,11 @@ exports.requireAdminOrAgent = (req, res, next) => {
   if (
     req.session &&
     req.session.user &&
-    (
-      req.session.user.type === 'admin' ||
+    (req.session.user.type === 'admin' ||
       req.session.user.type === 'agent' ||
       req.session.user.type === 'super' ||
       req.session.user.type === 'food_specialist' ||
-      req.session.user.type === 'specialist'
-    )
+      req.session.user.type === 'specialist')
   ) {
     return next();
   }

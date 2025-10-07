@@ -7,7 +7,12 @@ const riderModel = models.rider;
 
 function loadStatesLGAs() {
   try {
-    const file = path.join(__dirname, '..', 'locations', 'Nigeria-State-Lga.json');
+    const file = path.join(
+      __dirname,
+      '..',
+      'locations',
+      'Nigeria-State-Lga.json'
+    );
     if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch (e) {
     console.error('Could not load statesLGAs:', e);
@@ -31,11 +36,24 @@ exports.showRegisterForm = (req, res) => {
 exports.register = async (req, res) => {
   try {
     const {
-      full_name, email, phone, state, lga, address,
-      vehicle_type, vehicle_number, bank_name, account_number,
+      full_name,
+      email,
+      phone,
+      state,
+      lga,
+      address,
+      vehicle_type,
+      vehicle_number,
+      bank_name,
+      account_number,
       // password removed
-      id_type, id_number, next_of_kin, base_fee,
-      latitude, longitude, location_source
+      id_type,
+      id_number,
+      next_of_kin,
+      base_fee,
+      latitude,
+      longitude,
+      location_source,
     } = req.body;
 
     // multer supplied file (if any)
@@ -49,14 +67,25 @@ exports.register = async (req, res) => {
     const password_hash = null;
 
     const riderId = await riderModel.createRider({
-      full_name, email, phone, state, lga, address,
-      vehicle_type, vehicle_number, bank_name, account_number,
+      full_name,
+      email,
+      phone,
+      state,
+      lga,
+      address,
+      vehicle_type,
+      vehicle_number,
+      bank_name,
+      account_number,
       password_hash,
-      id_type, id_number, id_file: idFilePath, next_of_kin,
+      id_type,
+      id_number,
+      id_file: idFilePath,
+      next_of_kin,
       base_fee: base_fee ? Number(base_fee) : null,
       latitude: latitude || null,
       longitude: longitude || null,
-      location_source: location_source || 'manual'
+      location_source: location_source || 'manual',
     });
 
     req.session.rider_thanks_id = riderId;
@@ -85,15 +114,19 @@ exports.thanksPage = async (req, res) => {
     try {
       rider = await riderModel.findById(riderId);
     } catch (e) {
-      console.warn('Could not load rider for thanks page (non-fatal):', e && e.message ? e.message : e);
+      console.warn(
+        'Could not load rider for thanks page (non-fatal):',
+        e && e.message ? e.message : e
+      );
       rider = null;
     }
 
     if (!rider) {
       // fallback minimal experience if DB read failed
-      req.session.success = 'Rider registration submitted. Await admin approval.';
+      req.session.success =
+        'Rider registration submitted. Await admin approval.';
       return res.render('rider/thanks', {
-        rider: { id: riderId, full_name: 'Rider', status: 'pending' }
+        rider: { id: riderId, full_name: 'Rider', status: 'pending' },
       });
     }
 

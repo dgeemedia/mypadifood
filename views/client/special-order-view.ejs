@@ -106,7 +106,8 @@
       padding: 8px;
     "
   >
-    <% if (messages && messages.length) { %> <% messages.forEach(m => { %>
+    <% if (messages && messages.length) { %>
+    <% messages.forEach(m => { %>
     <div class="weekly-plan-msg">
       <% // prefer display_name (provided by the message model), fallback to
       sensible names: let senderName = m.display_name; if (!senderName) { if

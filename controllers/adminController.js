@@ -785,7 +785,11 @@ exports.resourcesData = async (req, res) => {
     const lga = req.query.lga ? String(req.query.lga).trim() : null;
 
     if (type === 'vendors') {
-      const rows = await vendorModel.getApprovedVendors({ state, lga, q: null });
+      const rows = await vendorModel.getApprovedVendors({
+        state,
+        lga,
+        q: null,
+      });
       return res.json({ ok: true, type: 'vendors', rows });
     } else if (type === 'riders') {
       const rows = await riderModel.getApprovedRiders({ state, lga });
@@ -812,15 +816,37 @@ exports.pendingRiders = async (req, res) => {
 };
 
 // Approve or reject a rider
+// Approve or reject a rider (updated to support AJAX + socket emit)
 exports.riderDecision = async (req, res) => {
   try {
-    const { riderId, decision, reason } = req.body;
+    const { riderId } = req.body;
+    // decision may come as 'approve' or 'reject' via button value
+    const decision = req.body.decision || req.body.action || null;
+    const reason = req.body.reason ? String(req.body.reason).trim() : null;
+
+    if (!riderId || !decision) {
+      if (req.xhr || req.headers.accept?.includes('application/json')) {
+        return res.status(400).json({ ok: false, error: 'Missing riderId or decision' });
+      }
+      req.session.error = 'Missing required fields';
+      return res.redirect('/admin/riders/pending');
+    }
+
     const status = decision === 'approve' ? 'approved' : 'rejected';
 
+    // update DB
     await riderModel.updateStatus(riderId, status);
 
+    // try to load rider for notification
+    let rider = null;
     try {
-      const rider = await riderModel.findById(riderId);
+      rider = await riderModel.findById(riderId);
+    } catch (e) {
+      rider = null;
+    }
+
+    // notify rider via email (best-effort)
+    try {
       if (rider && rider.email) {
         const subject =
           status === 'approved'
@@ -837,10 +863,41 @@ exports.riderDecision = async (req, res) => {
       console.error('Failed to notify rider by email (non-fatal):', mailErr);
     }
 
+    // Emit socket event to admins for live update (server-side)
+    try {
+      const io = socketUtil.get(); // socket util used elsewhere in your code
+      if (io) {
+        io.to('admins').emit('resource_updated', {
+          type: 'rider',
+          id: riderId,
+          status,
+          updated_at: new Date(),
+          payload: {
+            id: riderId,
+            full_name: rider ? rider.full_name : null,
+            phone: rider ? rider.phone : null,
+            email: rider ? rider.email : null,
+            state: rider ? rider.state : null,
+            lga: rider ? rider.lga : null
+          }
+        });
+      }
+    } catch (emitErr) {
+      console.warn('Socket emit failed for rider decision (non-fatal):', emitErr);
+    }
+
+    // Respond differently for AJAX vs classic form
+    if (req.xhr || req.headers.accept?.includes('application/json')) {
+      return res.json({ ok: true, riderId, status });
+    }
+
     req.session.success = `Rider ${status}`;
     return res.redirect('/admin/riders/pending');
   } catch (err) {
     console.error('Error applying rider decision:', err);
+    if (req.xhr || req.headers.accept?.includes('application/json')) {
+      return res.status(500).json({ ok: false, error: 'Server error' });
+    }
     req.session.error = 'Error applying decision';
     return res.redirect('/admin/riders/pending');
   }
@@ -856,51 +913,79 @@ exports.resourcesExport = async (req, res) => {
     let rows = [];
     if (type === 'vendors') {
       rows = await vendorModel.getApprovedVendors({ state, lga, q: null });
-      const cols = ['Type','Name','Address','Phone','Email','State','LGA','Base Price','Food Item'];
-      const safe = v => (v == null ? '' : `"${String(v).replace(/"/g, '""')}"`);
-      const csvLines = [
-        cols.map(c => safe(c)).join(',')
-      ].concat(rows.map(r => {
-        return [
-          safe('Vendor'),
-          safe(r.name),
-          safe(r.address),
-          safe(r.phone),
-          safe(r.email),
-          safe(r.state),
-          safe(r.lga),
-          safe(r.base_price),
-          safe(r.food_item)
-        ].join(',');
-      }));
+      const cols = [
+        'Type',
+        'Name',
+        'Address',
+        'Phone',
+        'Email',
+        'State',
+        'LGA',
+        'Base Price',
+        'Food Item',
+      ];
+      const safe = (v) =>
+        v == null ? '' : `"${String(v).replace(/"/g, '""')}"`;
+      const csvLines = [cols.map((c) => safe(c)).join(',')].concat(
+        rows.map((r) => {
+          return [
+            safe('Vendor'),
+            safe(r.name),
+            safe(r.address),
+            safe(r.phone),
+            safe(r.email),
+            safe(r.state),
+            safe(r.lga),
+            safe(r.base_price),
+            safe(r.food_item),
+          ].join(',');
+        })
+      );
       const csv = csvLines.join('\r\n');
-      const fileName = `vendors_${state ? state.replace(/\s+/g,'_') : 'all'}_${lga ? lga.replace(/\s+/g,'_') : 'all'}.csv`;
+      const fileName = `vendors_${state ? state.replace(/\s+/g, '_') : 'all'}_${lga ? lga.replace(/\s+/g, '_') : 'all'}.csv`;
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${fileName}"`
+      );
       return res.send(csv);
     } else if (type === 'riders') {
       rows = await riderModel.getApprovedRiders({ state, lga });
-      const cols = ['Type','Name','Address','Phone','Email','State','LGA','Vehicle Type','Vehicle Number'];
-      const safe = v => (v == null ? '' : `"${String(v).replace(/"/g, '""')}"`);
-      const csvLines = [
-        cols.map(c => safe(c)).join(',')
-      ].concat(rows.map(r => {
-        return [
-          safe('Rider'),
-          safe(r.full_name),
-          safe(r.address),
-          safe(r.phone),
-          safe(r.email),
-          safe(r.state),
-          safe(r.lga),
-          safe(r.vehicle_type),
-          safe(r.vehicle_number)
-        ].join(',');
-      }));
+      const cols = [
+        'Type',
+        'Name',
+        'Address',
+        'Phone',
+        'Email',
+        'State',
+        'LGA',
+        'Vehicle Type',
+        'Vehicle Number',
+      ];
+      const safe = (v) =>
+        v == null ? '' : `"${String(v).replace(/"/g, '""')}"`;
+      const csvLines = [cols.map((c) => safe(c)).join(',')].concat(
+        rows.map((r) => {
+          return [
+            safe('Rider'),
+            safe(r.full_name),
+            safe(r.address),
+            safe(r.phone),
+            safe(r.email),
+            safe(r.state),
+            safe(r.lga),
+            safe(r.vehicle_type),
+            safe(r.vehicle_number),
+          ].join(',');
+        })
+      );
       const csv = csvLines.join('\r\n');
-      const fileName = `riders_${state ? state.replace(/\s+/g,'_') : 'all'}_${lga ? lga.replace(/\s+/g,'_') : 'all'}.csv`;
+      const fileName = `riders_${state ? state.replace(/\s+/g, '_') : 'all'}_${lga ? lga.replace(/\s+/g, '_') : 'all'}.csv`;
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${fileName}"`
+      );
       return res.send(csv);
     } else {
       return res.status(400).send('Invalid type');
