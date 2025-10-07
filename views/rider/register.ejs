@@ -1,4 +1,3 @@
-<!-- views/rider/register.ejs -->
 <div class="account-page">
   <h1 class="account-title">Register as a Rider</h1>
 
@@ -71,8 +70,8 @@
     </div>
 
     <div class="form-row">
-      <label for="vehicle_number">Vehicle number <span class="required">*</span></label>
-      <input id="vehicle_number" name="vehicle_number" type="text" required
+      <label for="vehicle_number">Vehicle number <span class="required" id="vehicle-number-required-marker">*</span></label>
+      <input id="vehicle_number" name="vehicle_number" type="text"
              value="<%= (locals && locals.vehicle_number) ? locals.vehicle_number : '' %>" />
     </div>
 
@@ -96,6 +95,7 @@
         <option value="driver_license" <%= locals && locals.id_type==='driver_license' ? 'selected' : '' %>>Driver's License</option>
         <option value="nin" <%= locals && locals.id_type==='nin' ? 'selected' : '' %>>NIN</option>
         <option value="international_passport" <%= locals && locals.id_type==='international_passport' ? 'selected' : '' %>>International Passport</option>
+        <option value="voter_card" <%= locals && locals.id_type==='voter_card' ? 'selected' : '' %>>Voter Card</option>
       </select>
     </div>
 
@@ -122,10 +122,7 @@
       <input id="rider-id-file" name="id_file" type="file" accept="image/*" />
     </div>
 
-    <div class="form-row">
-      <label for="rider-password">Password <span class="required">*</span></label>
-      <input id="rider-password" name="password" type="password" required />
-    </div>
+    <!-- password removed from registration per your request -->
 
     <input type="hidden" id="rider-latitude" name="latitude" value="<%= (locals && locals.latitude) ? locals.latitude : '' %>">
     <input type="hidden" id="rider-longitude" name="longitude" value="<%= (locals && locals.longitude) ? locals.longitude : '' %>">
@@ -147,7 +144,15 @@
 
   <p class="register-link" style="width:100%;max-width:460px">Returning user? <a href="/">Go back to home</a></p>
 
-  <!-- States data for location-picker -->
-  <div id="states-data" data-states="<%- JSON.stringify(statesLGAs || []) %>" style="display:none" aria-hidden="true"></div>
-  <script>window.STATE_DATA = <%- JSON.stringify(statesLGAs || []) %>;</script>
+  <!-- Server-provided states data (no inline JS). location-picker.js reads this element. -->
+  <div
+    id="states-data"
+    data-states="<%- JSON.stringify(statesLGAs || []) %>"
+    style="display: none"
+    aria-hidden="true"
+  ></div>
 </div>
+<script>
+  // Expose statesLGAs as a JS object so location-picker doesn't need to parse attributes.
+  window.STATE_DATA = <%- JSON.stringify(statesLGAs || []) %>;
+</script>

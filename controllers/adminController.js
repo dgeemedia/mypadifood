@@ -9,6 +9,7 @@ const adminResetModel = require('../models').adminReset;
 const models = require('../models'); // { client, vendor, admin, order, verification, message, ... }
 const adminModel = models.admin;
 const vendorModel = models.vendor;
+const riderModel = models.rider;
 const orderModel = models.order;
 const messageModel = models.message;
 const notificationModel = models.notification || null;
@@ -784,5 +785,92 @@ exports.resourcesData = async (req, res) => {
   } catch (err) {
     console.error('Error loading resources data', err);
     return res.status(500).json({ ok: false, error: 'Server error' });
+  }
+};
+
+
+
+// List pending riders for review
+exports.pendingRiders = async (req, res) => {
+  try {
+    const riders = await riderModel.getPendingRiders();
+    return res.render('admin/riders-pending', { riders });
+  } catch (err) {
+    console.error('Error loading pending riders:', err);
+    req.session.error = 'Error loading rider requests';
+    return res.redirect('/admin/dashboard');
+  }
+};
+
+// Approve or reject a rider
+exports.riderDecision = async (req, res) => {
+  try {
+    const { riderId, decision, reason } = req.body;
+    const status = decision === 'approve' ? 'approved' : 'rejected';
+
+    await riderModel.updateStatus(riderId, status);
+
+    try {
+      const rider = await riderModel.findById(riderId);
+      if (rider && rider.email) {
+        const subject =
+          status === 'approved'
+            ? 'Your MyPadiFood rider application has been approved'
+            : 'Your MyPadiFood rider application has been declined';
+        const html =
+          status === 'approved'
+            ? `<p>Hi ${rider.full_name || 'Rider'},</p><p>Good news — your rider application has been <strong>approved</strong>. We will contact you with onboarding details shortly.</p>`
+            : `<p>Hi ${rider.full_name || 'Rider'},</p><p>We are sorry to inform you that your rider application was <strong>rejected</strong>.</p><p>Reason: ${reason ? String(reason) : 'No reason provided'}.</p>`;
+        const text = html.replace(/<\/?[^>]+(>|$)/g, '');
+        await sendMail({ to: rider.email, subject, html, text });
+      }
+    } catch (mailErr) {
+      console.error('Failed to notify rider by email (non-fatal):', mailErr);
+    }
+
+    req.session.success = `Rider ${status}`;
+    return res.redirect('/admin/riders/pending');
+  } catch (err) {
+    console.error('Error applying rider decision:', err);
+    req.session.error = 'Error applying decision';
+    return res.redirect('/admin/riders/pending');
+  }
+};
+
+// GET /admin/resources/export?type=vendors|riders&state=...&lga=...
+exports.resourcesExport = async (req, res) => {
+  try {
+    const type = String(req.query.type || 'vendors');
+    const state = req.query.state ? String(req.query.state).trim() : null;
+    const lga = req.query.lga ? String(req.query.lga).trim() : null;
+
+    let rows = [];
+    if (type === 'vendors') {
+      rows = await vendorModel.getApprovedVendors({ state, lga, q: null });
+      // CSV headers for vendors
+      const cols = ['Name', 'Address', 'Phone', 'Email', 'State', 'LGA', 'Base Price'];
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="vendors_${state||'all'}_${lga||'all'}.csv"`);
+      const out = [cols.join(',')].concat(rows.map(r => {
+        const safe = v => (v == null ? '' : `"${String(v).replace(/"/g, '""')}"`);
+        return [safe(r.name), safe(r.address), safe(r.phone), safe(r.email), safe(r.state), safe(r.lga), safe(r.base_price)].join(',');
+      })).join('\r\n');
+      return res.send(out);
+    } else if (type === 'riders') {
+      rows = await riderModel.getApprovedRiders({ state, lga });
+      const cols = ['Name', 'Address', 'Phone', 'Email', 'State', 'LGA', 'Vehicle Type', 'Vehicle Number'];
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="riders_${state||'all'}_${lga||'all'}.csv"`);
+      const out = [cols.join(',')].concat(rows.map(r => {
+        const safe = v => (v == null ? '' : `"${String(v).replace(/"/g, '""')}"`);
+        return [safe(r.full_name), safe(r.address), safe(r.phone), safe(r.email), safe(r.state), safe(r.lga), safe(r.vehicle_type), safe(r.vehicle_number)].join(',');
+      })).join('\r\n');
+      return res.send(out);
+    } else {
+      return res.status(400).send('Invalid type');
+    }
+  } catch (err) {
+    console.error('Error exporting resources CSV', err);
+    return res.status(500).send('Server error');
   }
 };

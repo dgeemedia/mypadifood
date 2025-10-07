@@ -93,6 +93,19 @@
     }
     if (refresh) refresh.addEventListener('click', fetchAndRender);
 
+    // Export button handler (uses same filters)
+    const exportBtn = $id('resource-export');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        const type = $id('resource-type').value;
+        const state = $id('resource-state').value;
+        const lga = $id('resource-lga').value;
+        const params = new URLSearchParams({ type, state, lga });
+        // trigger download
+        window.location = '/admin/resources/export?' + params.toString();
+      });
+    }
+
     // Load initial data (vendors by default)
     fetchAndRender();
   });

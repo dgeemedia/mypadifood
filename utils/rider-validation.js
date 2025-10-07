@@ -10,15 +10,24 @@ const registrationRules = () => {
     body('lga').trim().notEmpty().withMessage('LGA is required.'),
     body('address').trim().notEmpty().withMessage('Address is required.').isLength({ min: 5 }).withMessage('Address looks too short.'),
     body('vehicle_type').trim().notEmpty().withMessage('Vehicle type is required.'),
-    body('vehicle_number').trim().notEmpty().withMessage('Vehicle number is required.'),
+    // vehicle_number is required only for car or motorcycle
+    body('vehicle_number').custom((val, { req }) => {
+      const vt = (req.body.vehicle_type || '').toLowerCase();
+      if (vt === 'bicycle') {
+        // ok even if empty
+        return true;
+      }
+      if (!val || String(val).trim() === '') {
+        throw new Error('Vehicle number is required for motorcycles and cars.');
+      }
+      return true;
+    }),
     body('bank_name').trim().notEmpty().withMessage('Bank name is required.'),
     body('account_number').trim().notEmpty().withMessage('Account number is required.'),
     body('id_type').trim().notEmpty().withMessage('ID type is required.'),
     body('id_number').trim().notEmpty().withMessage('ID number is required.'),
-    body('base_fee').optional({ checkFalsy: true }).isFloat({ min: 0 }).withMessage('Base fee must be a positive number.'),
-    body('password').notEmpty().withMessage('Password is required.').isStrongPassword({
-      minLength: 8, minLowercase: 1, minUppercase: 1, minNumbers: 1, minSymbols: 1
-    }).withMessage('Password must be at least 8 chars, include uppercase, lowercase, number and symbol.')
+    body('base_fee').optional({ checkFalsy: true }).isFloat({ min: 0 }).withMessage('Base fee must be a positive number.')
+    // password validation removed
   ];
 };
 

@@ -1,4 +1,4 @@
-<!-- views/admin/dashboard.ejs -->
+<!--views/admin/dashboard.ejs-->
 <h2>Admin Dashboard</h2>
 <p>Pending vendors: <%= vendorsCount %></p>
 <p>Pending orders: <%= ordersCount %></p>
@@ -12,8 +12,10 @@
   <% if (currentUser && currentUser.type === 'super') { %>
   | <a href="/admin/create">Create Admin</a>
   <% } %>
+  | <a href="/admin/resources">Resources</a>
+  | <a href="/admin/resources/riders/pending">Review Rider Applications</a>
   | <a href="#" id="nav-pending-orders">Pending Orders (live)</a> |
-  <a href="#" id="nav-completed-orders">Completed Orders</a> | |
+  <a href="#" id="nav-completed-orders">Completed Orders</a> |
   <a href="/admin/food-orders">Weekly Plans</a> |
   <a href="#" id="nav-notifications"
     >Notifications

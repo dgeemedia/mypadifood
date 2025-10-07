@@ -1,8 +1,13 @@
 // models/riderModel.js
 const { pool } = require('../database/database');
 
-const uuidRegex = /^[0-9a-fA-F-]{36}$/;
+// Strict UUID regex (36-character UUID with hyphens)
+const uuidRegex =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
+/**
+ * Insert new rider (initial status = 'pending').
+ */
 async function createRider(data) {
   const {
     full_name, email, phone, state, lga, address,
@@ -36,8 +41,11 @@ async function createRider(data) {
   return rows[0].id;
 }
 
+/**
+ * Get approved riders optionally filtered by state/lga
+ */
 async function getApprovedRiders({ state = null, lga = null } = {}) {
-  let sql = "SELECT id, full_name, phone, email, state, lga, vehicle_type, vehicle_number, bank_name, account_number, status, base_fee, id_file FROM riders WHERE status = 'approved'";
+  let sql = "SELECT id, full_name, phone, email, state, lga, vehicle_type, vehicle_number, bank_name, account_number, status, base_fee, id_file, address FROM riders WHERE status = 'approved'";
   const params = [];
   if (state) {
     params.push(state);
@@ -52,8 +60,37 @@ async function getApprovedRiders({ state = null, lga = null } = {}) {
   return rows;
 }
 
+/**
+ * Get pending riders (for admin review)
+ */
+async function getPendingRiders() {
+  const { rows } = await pool.query(
+    "SELECT * FROM riders WHERE status='pending' ORDER BY created_at DESC"
+  );
+  return rows;
+}
+
+/**
+ * Update rider status (approved/rejected)
+ */
+async function updateStatus(riderId, status) {
+  if (!riderId || typeof riderId !== 'string' || !uuidRegex.test(riderId)) {
+    throw new Error('invalid riderId');
+  }
+  await pool.query('UPDATE riders SET status=$1, updated_at = NOW() WHERE id=$2', [
+    status,
+    riderId,
+  ]);
+}
+
+/**
+ * Find rider by id (full record).
+ * Defensive: validate UUID before sending to Postgres.
+ */
 async function findById(id) {
-  if (!id || typeof id !== 'string') return null;
+  if (!id || typeof id !== 'string' || !uuidRegex.test(id)) {
+    return null;
+  }
   const { rows } = await pool.query('SELECT * FROM riders WHERE id=$1', [id]);
   return rows[0] || null;
 }
@@ -61,5 +98,7 @@ async function findById(id) {
 module.exports = {
   createRider,
   getApprovedRiders,
+  getPendingRiders,
+  updateStatus,
   findById,
 };

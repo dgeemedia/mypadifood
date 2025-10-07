@@ -581,7 +581,7 @@ CREATE TABLE IF NOT EXISTS riders (
   vehicle_number text,
   bank_name text,
   account_number text,
-  password_hash text NOT NULL,
+  password_hash text,           -- changed to nullable (riders registered without password)
   -- ID verification fields
   id_type text,
   id_number text,
@@ -616,3 +616,5 @@ CREATE TRIGGER trg_set_timestamp
 BEFORE UPDATE ON riders
 FOR EACH ROW
 EXECUTE PROCEDURE trigger_set_timestamp();
+
+ALTER TABLE riders ALTER COLUMN password_hash DROP NOT NULL;

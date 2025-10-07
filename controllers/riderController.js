@@ -1,8 +1,6 @@
 // controllers/riderController.js
 const path = require('path');
 const fs = require('fs');
-const bcrypt = require('bcryptjs');
-const SALT_ROUNDS = 10;
 
 const models = require('../models');
 const riderModel = models.rider;
@@ -35,7 +33,8 @@ exports.register = async (req, res) => {
     const {
       full_name, email, phone, state, lga, address,
       vehicle_type, vehicle_number, bank_name, account_number,
-      password, id_type, id_number, next_of_kin, base_fee,
+      // password removed
+      id_type, id_number, next_of_kin, base_fee,
       latitude, longitude, location_source
     } = req.body;
 
@@ -46,12 +45,13 @@ exports.register = async (req, res) => {
       idFilePath = path.relative(path.join(__dirname, '..'), req.file.path);
     }
 
-    const hash = await bcrypt.hash(password, SALT_ROUNDS);
+    // No password hashing: leave password_hash null (rider sign-up without password)
+    const password_hash = null;
 
     const riderId = await riderModel.createRider({
       full_name, email, phone, state, lga, address,
       vehicle_type, vehicle_number, bank_name, account_number,
-      password_hash: hash,
+      password_hash,
       id_type, id_number, id_file: idFilePath, next_of_kin,
       base_fee: base_fee ? Number(base_fee) : null,
       latitude: latitude || null,
@@ -76,13 +76,27 @@ exports.thanksPage = async (req, res) => {
       req.session.error = 'Unable to show confirmation page.';
       return res.redirect('/rider/register');
     }
+
+    // consume one-time session token so page can't be re-opened repeatedly
     delete req.session.rider_thanks_id;
+
+    // try to load canonical rider record
     let rider = null;
-    try { rider = await riderModel.findById(riderId); } catch (e) { rider = null; }
-    if (!rider) {
-      req.session.success = 'Rider registration submitted. Await admin approval.';
-      return res.render('rider/thanks', { rider: { id: riderId, full_name: 'Rider', status: 'pending' } });
+    try {
+      rider = await riderModel.findById(riderId);
+    } catch (e) {
+      console.warn('Could not load rider for thanks page (non-fatal):', e && e.message ? e.message : e);
+      rider = null;
     }
+
+    if (!rider) {
+      // fallback minimal experience if DB read failed
+      req.session.success = 'Rider registration submitted. Await admin approval.';
+      return res.render('rider/thanks', {
+        rider: { id: riderId, full_name: 'Rider', status: 'pending' }
+      });
+    }
+
     req.session.success = 'Rider registration submitted. Await admin approval.';
     return res.render('rider/thanks', { rider });
   } catch (err) {
