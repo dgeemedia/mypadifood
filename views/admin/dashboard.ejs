@@ -1,6 +1,7 @@
 <!--views/admin/dashboard.ejs-->
 <h2>Admin Dashboard</h2>
 <p>Pending vendors: <%= vendorsCount %></p>
+<p>Pending riders: <%= typeof ridersCount !== 'undefined' ? ridersCount : 0 %></p>
 <p>Pending orders: <%= ordersCount %></p>
 <p>
   Pending weekly plans: <%= typeof weeklyPlansCount !== 'undefined' ?

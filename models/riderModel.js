@@ -45,7 +45,7 @@ async function createRider(data) {
  * Get approved riders optionally filtered by state/lga
  */
 async function getApprovedRiders({ state = null, lga = null } = {}) {
-  let sql = "SELECT id, full_name, phone, email, state, lga, vehicle_type, vehicle_number, bank_name, account_number, status, base_fee, id_file, address FROM riders WHERE status = 'approved'";
+  let sql = "SELECT id, full_name, phone, email, address, state, lga, vehicle_type, vehicle_number, bank_name, account_number, status, base_fee, id_file FROM riders WHERE status = 'approved'";
   const params = [];
   if (state) {
     params.push(state);

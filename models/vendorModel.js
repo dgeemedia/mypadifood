@@ -51,7 +51,7 @@ async function createVendor(data) {
  */
 async function getApprovedVendors({ state = null, lga = null, q = null } = {}) {
   let sql =
-    "SELECT id,name,food_item,base_price,address,state,lga,status FROM vendors WHERE status='approved'";
+    "SELECT id,name,food_item,base_price,address,phone,email,state,lga,status FROM vendors WHERE status='approved'";
   const params = [];
   if (state) {
     params.push(state);

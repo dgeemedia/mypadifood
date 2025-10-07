@@ -24,14 +24,16 @@
             </td>
             <td data-label="State/LGA"><%= r.state || '' %> / <%= r.lga || '' %></td>
             <td data-label="Details">
-              <% if (type === 'vendors') { %>
-                <div>Address: <%= r.address || '—' %></div>
-                <div>Base price: <%= (r.base_price ? '₦' + r.base_price : '—') %></div>
-              <% } else { %>
-                <div>Vehicle: <%= r.vehicle_type || '—' %></div>
-                <div>Vehicle no: <%= r.vehicle_number || '—' %></div>
-              <% } %>
-            </td>
+  <% if (type === 'vendors') { %>
+    <div>Address: <%= r.address || '—' %></div>
+    <div>Base price: <%= (r.base_price ? '₦' + r.base_price : '—') %></div>
+  <% } else { %>
+    <div>Address: <%= r.address || '—' %></div>
+    <div>Vehicle: <%= r.vehicle_type || '—' %></div>
+    <div>Vehicle no: <%= r.vehicle_number || '—' %></div>
+  <% } %>
+</td>
+
           </tr>
         <% }) %>
       </tbody>

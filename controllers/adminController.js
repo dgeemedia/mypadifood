@@ -252,11 +252,21 @@ exports.reset = async (req, res) => {
   }
 };
 
-// Admin dashboard: simple counters for pending vendors/orders + weeklyPlansCount
+// Admin dashboard: simple counters for pending vendors/orders + weeklyPlansCount + pending riders
 exports.dashboard = async (req, res) => {
   try {
     const vendorsCount = await adminModel.countPendingVendors();
     const ordersCount = await adminModel.countPendingOrders();
+
+    // pending riders count
+    let ridersCount = 0;
+    try {
+      if (typeof adminModel.countPendingRiders === 'function') {
+        ridersCount = await adminModel.countPendingRiders();
+      }
+    } catch (e) {
+      console.warn('Could not compute ridersCount', e);
+    }
 
     // compute weekly plans pending count (best-effort)
     let weeklyPlansCount = 0;
@@ -272,6 +282,7 @@ exports.dashboard = async (req, res) => {
       vendorsCount,
       ordersCount,
       weeklyPlansCount,
+      ridersCount,
     });
   } catch (err) {
     console.error('Error loading admin dashboard:', err);
@@ -788,8 +799,6 @@ exports.resourcesData = async (req, res) => {
   }
 };
 
-
-
 // List pending riders for review
 exports.pendingRiders = async (req, res) => {
   try {
@@ -847,25 +856,52 @@ exports.resourcesExport = async (req, res) => {
     let rows = [];
     if (type === 'vendors') {
       rows = await vendorModel.getApprovedVendors({ state, lga, q: null });
-      // CSV headers for vendors
-      const cols = ['Name', 'Address', 'Phone', 'Email', 'State', 'LGA', 'Base Price'];
+      const cols = ['Type','Name','Address','Phone','Email','State','LGA','Base Price','Food Item'];
+      const safe = v => (v == null ? '' : `"${String(v).replace(/"/g, '""')}"`);
+      const csvLines = [
+        cols.map(c => safe(c)).join(',')
+      ].concat(rows.map(r => {
+        return [
+          safe('Vendor'),
+          safe(r.name),
+          safe(r.address),
+          safe(r.phone),
+          safe(r.email),
+          safe(r.state),
+          safe(r.lga),
+          safe(r.base_price),
+          safe(r.food_item)
+        ].join(',');
+      }));
+      const csv = csvLines.join('\r\n');
+      const fileName = `vendors_${state ? state.replace(/\s+/g,'_') : 'all'}_${lga ? lga.replace(/\s+/g,'_') : 'all'}.csv`;
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="vendors_${state||'all'}_${lga||'all'}.csv"`);
-      const out = [cols.join(',')].concat(rows.map(r => {
-        const safe = v => (v == null ? '' : `"${String(v).replace(/"/g, '""')}"`);
-        return [safe(r.name), safe(r.address), safe(r.phone), safe(r.email), safe(r.state), safe(r.lga), safe(r.base_price)].join(',');
-      })).join('\r\n');
-      return res.send(out);
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      return res.send(csv);
     } else if (type === 'riders') {
       rows = await riderModel.getApprovedRiders({ state, lga });
-      const cols = ['Name', 'Address', 'Phone', 'Email', 'State', 'LGA', 'Vehicle Type', 'Vehicle Number'];
+      const cols = ['Type','Name','Address','Phone','Email','State','LGA','Vehicle Type','Vehicle Number'];
+      const safe = v => (v == null ? '' : `"${String(v).replace(/"/g, '""')}"`);
+      const csvLines = [
+        cols.map(c => safe(c)).join(',')
+      ].concat(rows.map(r => {
+        return [
+          safe('Rider'),
+          safe(r.full_name),
+          safe(r.address),
+          safe(r.phone),
+          safe(r.email),
+          safe(r.state),
+          safe(r.lga),
+          safe(r.vehicle_type),
+          safe(r.vehicle_number)
+        ].join(',');
+      }));
+      const csv = csvLines.join('\r\n');
+      const fileName = `riders_${state ? state.replace(/\s+/g,'_') : 'all'}_${lga ? lga.replace(/\s+/g,'_') : 'all'}.csv`;
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="riders_${state||'all'}_${lga||'all'}.csv"`);
-      const out = [cols.join(',')].concat(rows.map(r => {
-        const safe = v => (v == null ? '' : `"${String(v).replace(/"/g, '""')}"`);
-        return [safe(r.full_name), safe(r.address), safe(r.phone), safe(r.email), safe(r.state), safe(r.lga), safe(r.vehicle_type), safe(r.vehicle_number)].join(',');
-      })).join('\r\n');
-      return res.send(out);
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      return res.send(csv);
     } else {
       return res.status(400).send('Invalid type');
     }

@@ -4,25 +4,19 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const auth = require('../middleware/auth');
 
-// Resources UI (render HTML) - accessible to admin/agent/food_specialist
+// Resources UI (render HTML)
 router.get('/', auth.requireAdminOrAgent, adminController.resourcesPage);
 
-// AJAX data endpoint - accessible to admin/agent/food_specialist
+// AJAX data endpoint
 router.get('/data', auth.requireAdminOrAgent, adminController.resourcesData);
 
-// CSV export - accessible to admin/agent/food_specialist
+// CSV export
 router.get('/export', auth.requireAdminOrAgent, adminController.resourcesExport);
 
-/*
- * Admin-only riders review endpoints (same pattern as vendors)
- * - index of pending riders for review
- * - approve/reject action (POST)
- *
- * These are intentionally protected with requireAdmin (agents and super)
- * to match your existing vendors flow. If you want agents to be able to
- * approve/reject riders as well, change middleware to auth.requireAdminOrAgent.
- */
-router.get('/riders/pending', auth.requireAdmin, adminController.pendingRiders);
-router.post('/riders/decision', auth.requireAdmin, adminController.riderDecision);
+// Pending rider applications (HTML page), review list
+router.get('/riders/pending', auth.requireAdminOrAgent, adminController.pendingRiders);
+
+// Approve / Reject rider (form POST)
+router.post('/riders/decision', auth.requireAdminOrAgent, adminController.riderDecision);
 
 module.exports = router;
