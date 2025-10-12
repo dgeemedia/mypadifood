@@ -618,3 +618,39 @@ FOR EACH ROW
 EXECUTE PROCEDURE trigger_set_timestamp();
 
 ALTER TABLE riders ALTER COLUMN password_hash DROP NOT NULL;
+
+-- migrations/2025xx_create_wallets.sql
+BEGIN;
+
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+CREATE TABLE IF NOT EXISTS wallets (
+  client_id uuid PRIMARY KEY REFERENCES clients(id) ON DELETE CASCADE,
+  balance numeric(12,2) NOT NULL DEFAULT 0,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS wallet_transactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id uuid NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  amount numeric(12,2) NOT NULL,
+  -- type = credit or debit for arithmetic; reason provides more detail
+  type text NOT NULL CHECK (type IN ('credit','debit')),
+  reason text,                 -- e.g. 'topup', 'purchase', 'refund'
+  provider text,               -- 'paystack'|'flutterwave'|'wallet'|'internal'
+  provider_reference text,     -- provider-specific id (for idempotency)
+  order_id uuid NULL,          -- FK to orders if applicable
+  note text,
+  raw jsonb DEFAULT '{}'::jsonb,-- full provider payload for auditing
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Optional: prevent double-processing of the same provider event
+CREATE UNIQUE INDEX IF NOT EXISTS wallet_provider_ref_uniq
+  ON wallet_transactions (provider, provider_reference)
+  WHERE provider IS NOT NULL AND provider_reference IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS wallet_tx_client_idx
+  ON wallet_transactions (client_id, created_at DESC);
+
+COMMIT;
