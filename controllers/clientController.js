@@ -419,6 +419,9 @@ exports.dashboard = async (req, res) => {
     const recentOrderId = req.session.recent_order_id || null;
     if (req.session.recent_order_id) delete req.session.recent_order_id;
 
+    const recentWeeklyPlanId = req.session.recent_weekly_plan_id || null;
+    if (req.session.recent_weekly_plan_id) delete req.session.recent_weekly_plan_id;
+
     // also fetch weekly plans to show in dashboard if desired
     let weeklyPlans = [];
     try {
@@ -432,6 +435,7 @@ exports.dashboard = async (req, res) => {
       vendors,
       orders,
       recentOrderId,
+      recentWeeklyPlanId,
       weeklyPlans,
     });
   } catch (err) {
@@ -845,8 +849,10 @@ exports.postSpecialOrder = async (req, res) => {
       items,
     });
 
+       // Persist the recent weekly plan id so the dashboard can auto-open weekly plans view
+    req.session.recent_weekly_plan_id = created.id;
+
     // create persistent notification if available
-    // create persistent notification for weekly plan (guarded; non-fatal)
     try {
       if (
         notificationModel &&

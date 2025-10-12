@@ -1,134 +1,180 @@
-<!--views/client/dashboard.ejs-->
-<h2>
-  Welcome,
-  <%= currentUser ? currentUser.name : 'Client' %>
-</h2>
+<!-- views/client/dashboard.ejs -->
+<div class="dashboard-app container">
+  <nav class="app-nav" role="navigation" aria-label="Client dashboard">
+    <ul>
+      <li>
+        <button class="nav-item" data-target="section-account" aria-current="true" title="Manage account">
+          <span class="nav-icon" aria-hidden="true"><i class="fa fa-user"></i></span>
+          <span class="nav-label">Manage account</span>
+        </button>
+      </li>
 
-<section>
-  <h3>Your account</h3>
-  <p>
-    <a href="/client/account" class="btn">Manage account</a>
-  </p>
-</section>
+      <li>
+        <button class="nav-item" data-target="section-weekly" title="Weekly plan">
+          <span class="nav-icon" aria-hidden="true"><i class="fa fa-calendar-alt"></i></span>
+          <span class="nav-label">Weekly plan</span>
+        </button>
+      </li>
 
-<section>
-  <h3>Special Weekly Booking</h3>
-  <p>
-    Subscribe to a weekly meal plan for busy professionals.
-    <a href="/client/special-order" class="btn">Create Weekly Plan</a>
-  </p>
+      <li>
+        <button class="nav-item" data-target="section-orders" title="Place order">
+          <span class="nav-icon" aria-hidden="true"><i class="fa fa-shopping-basket"></i></span>
+          <span class="nav-label">Place order</span>
+        </button>
+      </li>
 
-  <% if (!weeklyPlans || !weeklyPlans.length) { %>
-  <p>You have no weekly plans yet.</p>
-  <% } else { %>
-  <table>
-    <thead>
-      <tr>
-        <th>Week (Mon)</th>
-        <th>Plan</th>
-        <th>Price (₦)</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% weeklyPlans.forEach(p => { %>
-      <tr>
-        <td>
-          <%= p.week_of ? (p.week_of.toISOString ? p.week_of.toISOString().slice(0,10) : p.week_of) : '—' %>
-        </td>
-        <td><%= p.plan_type %></td>
-        <td>₦<%= p.total_price %></td>
-        <td><%= p.status %></td>
-        <td>
-          <a href="/client/special-order/<%= p.id %>">View</a>
-          <% /* offer update link only if current time within mod window (server enforces) */ %>
-          <% if (p.modifiable_from && p.modifiable_until) { %>
-          <form
-            method="post"
-            action="/client/special-order/<%= p.id %>/update"
-            style="display: inline"
-          >
-            <button type="submit" class="btn">Modify</button>
-          </form>
-          <% } %>
-        </td>
-      </tr>
-      <% }) %>
-    </tbody>
-  </table>
-  <% } %>
-</section>
+      <li>
+        <button class="nav-item" data-target="section-vendors" title="Find local vendor">
+          <span class="nav-icon" aria-hidden="true"><i class="fa fa-store"></i></span>
+          <span class="nav-label">Find local vendor</span>
+        </button>
+      </li>
+    </ul>
+  </nav>
 
-<section>
-  <h3>Your Orders</h3>
-  <% if (!orders || !orders.length) { %>
-  <p>No orders yet.</p>
-  <% } else { %>
-  <table>
-    <thead>
-      <tr>
-        <th>Item</th>
-        <th>Vendor</th>
-        <th>Status</th>
-        <th>Amount</th>
-        <th>Chat</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% orders.forEach(o => { %>
-      <tr>
-        <td><%= o.item %></td>
-        <td><%= o.vendor_name ? o.vendor_name : o.vendor_id %></td>
-        <td><%= o.status %></td>
-        <td>₦<%= o.total_amount %></td>
-        <td>
-          <button class="btn btn-view-chat" data-order-id="<%= o.id %>">
-            View Chat
-          </button>
-          <button class="btn btn-add-menu" data-order-id="<%= o.id %>">
-            Add / Update Menu
-          </button>
-        </td>
-      </tr>
-      <% }) %>
-    </tbody>
-  </table>
-  <% } %>
-</section>
+  <main class="app-main">
+    <!-- ACCOUNT -->
+    <section id="section-account" class="app-section" data-title="Manage account">
+      <!-- heading kept for screen readers only -->
+      <h2 class="sr-only">Manage account</h2>
 
-<%- include('../partials/chat-modal') %>
+      <section>
+        <h3>Your account</h3>
+        <p>
+          <a href="/client/account" class="btn">Manage account</a>
+        </p>
+      </section>
+    </section>
 
-<section>
-  <h3>Local Vendors</h3>
-  <% if (!vendors || !vendors.length) { %>
-  <p>No local vendors available.</p>
-  <% } else { %>
-  <% vendors.forEach(v => { %>
-  <div class="vendor">
-    <h4>
-      <%= v.name %>
-      - ₦<%= v.base_price %>
-    </h4>
-    <p><%= v.food_item %></p>
-    <form method="post" action="/client/book">
-      <input type="hidden" name="vendorId" value="<%= v.id %>" />
-      <input type="text" name="item" placeholder="Special request" />
-      <select name="payment_method">
-        <option value="cod">Pay on delivery</option>
-        <option value="paystack">Pay online (Paystack)</option>
-        <option value="flutterwave">Pay online (Flutterwave)</option>
-      </select>
-      <button type="submit" class="btn">Book</button>
-    </form>
-  </div>
-  <% }) %>
-  <% } %>
-</section>
+    <!-- WEEKLY PLAN -->
+    <section id="section-weekly" class="app-section app-section-hidden" data-title="Weekly plan">
+      <h2 class="sr-only">Weekly plan</h2>
+
+      <section>
+        <h3>Special Weekly Booking</h3>
+        <p>
+          Subscribe to a weekly meal plan for busy professionals.
+          <a href="/client/special-order" class="btn">Create Weekly Plan</a>
+        </p>
+
+        <% if (!weeklyPlans || !weeklyPlans.length) { %>
+          <p>You have no weekly plans yet.</p>
+        <% } else { %>
+          <table>
+            <thead>
+              <tr>
+                <th>Week (Mon)</th>
+                <th>Plan</th>
+                <th>Price (₦)</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% weeklyPlans.forEach(p => { %>
+                <tr>
+                  <td>
+                    <%= p.week_of ? (p.week_of.toISOString ? p.week_of.toISOString().slice(0,10) : p.week_of) : '—' %>
+                  </td>
+                  <td><%= p.plan_type %></td>
+                  <td>₦<%= p.total_price %></td>
+                  <td><%= p.status %></td>
+                  <td>
+                    <a href="/client/special-order/<%= p.id %>">View</a>
+                    <% if (p.modifiable_from && p.modifiable_until) { %>
+                      <form method="post" action="/client/special-order/<%= p.id %>/update" style="display: inline">
+                        <button type="submit" class="btn">Modify</button>
+                      </form>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </section>
+    </section>
+
+    <!-- ORDERS -->
+    <section id="section-orders" class="app-section app-section-hidden" data-title="Place order">
+      <h2 class="sr-only">Place order</h2>
+
+      <section>
+        <h3>Your Orders</h3>
+        <% if (!orders || !orders.length) { %>
+          <p>No orders yet.</p>
+        <% } else { %>
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Vendor</th>
+                <th>Status</th>
+                <th>Amount</th>
+                <th>Chat</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% orders.forEach(o => { %>
+                <tr>
+                  <td><%= o.item %></td>
+                  <td><%= o.vendor_name ? o.vendor_name : o.vendor_id %></td>
+                  <td><%= o.status %></td>
+                  <td>₦<%= o.total_amount %></td>
+                  <td>
+                    <button class="btn btn-view-chat" data-order-id="<%= o.id %>">View Chat</button>
+                    <button class="btn btn-add-menu" data-order-id="<%= o.id %>">Add / Update Menu</button>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </section>
+    </section>
+
+    <!-- VENDORS -->
+    <section id="section-vendors" class="app-section app-section-hidden" data-title="Find local vendor">
+      <h2 class="sr-only">Find local vendor</h2>
+
+      <section>
+        <h3>Local Vendors</h3>
+        <% if (!vendors || !vendors.length) { %>
+          <p>No local vendors available.</p>
+        <% } else { %>
+          <% vendors.forEach(v => { %>
+            <div class="vendor">
+              <h4><%= v.name %> - ₦<%= v.base_price %></h4>
+              <p><%= v.food_item %></p>
+              <form method="post" action="/client/book">
+                <input type="hidden" name="vendorId" value="<%= v.id %>" />
+                <input type="text" name="item" placeholder="Special request" />
+                <select name="payment_method">
+                  <option value="cod">Pay on delivery</option>
+                  <option value="paystack">Pay online (Paystack)</option>
+                  <option value="flutterwave">Pay online (Flutterwave)</option>
+                </select>
+                <button type="submit" class="btn">Book</button>
+              </form>
+            </div>
+          <% }) %>
+        <% } %>
+      </section>
+    </section>
+
+    <%- include('../partials/chat-modal') %>
+  </main>
+</div>
+
+<script src="/js/client-dashboard.js" defer></script>
 
 <script>
   <% if (typeof recentOrderId !== 'undefined' && recentOrderId) { %>
     window.ORDER_ID = "<%= recentOrderId %>";
-    // open chat automatically after DOM ready (chat.js supports window.ORDER_ID)
+  <% } %>
+
+  <% if (typeof recentWeeklyPlanId !== 'undefined' && recentWeeklyPlanId) { %>
+    window.WEEKLY_PLAN_ID = "<%= recentWeeklyPlanId %>";
   <% } %>
 </script>
+
