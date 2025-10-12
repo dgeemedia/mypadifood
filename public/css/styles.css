@@ -1729,6 +1729,10 @@ table tbody td {
   .nav-label { font-size: 0.66rem; margin-top: 2px; }
 }
 
+/* hide dashboard content until JS picks the right tab (prevents FOUC) */
+.app-main { visibility: hidden; }
+.js-ready .app-main { visibility: visible; }
+
 
 /* Accessible: visually hidden but available to screen readers */
 .sr-only {

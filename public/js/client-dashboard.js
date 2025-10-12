@@ -148,10 +148,38 @@
       });
   }
 
+  // wire clear button for vendor search (place inside the IIFE, and will be called from DOMContentLoaded)
+  function wireVendorClear() {
+    const clearBtn = document.getElementById('vendor-search-clear');
+    const form = document.querySelector('.vendor-search-form');
+    if (!clearBtn || !form) return;
+
+    clearBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+
+      // Clear the named inputs
+      form.querySelectorAll('input[name="q"], input[name="state"], input[name="lga"]').forEach(i => {
+        i.value = '';
+        // fire input event so datalist/LGA logic can react and clear dependent lists
+        try { i.dispatchEvent(new Event('input', { bubbles: true })); } catch (err) {}
+      });
+
+      // Ensure we land on the vendors tab after reload
+      // Put the hash into the action so the browser navigates to /client/dashboard#section-vendors
+      form.action = '/client/dashboard#section-vendors';
+
+      // submit the cleared form to reload results (default: shows vendors near user)
+      form.submit();
+    });
+  }
+
   // On load: determine initial section (state -> hash -> default)
   document.addEventListener('DOMContentLoaded', () => {
     // initialize autocomplete (non-blocking)
     try { initStateLgaAutocomplete(); } catch (e) { console.warn('initStateLgaAutocomplete failed', e); }
+
+    // wire clear button
+    try { wireVendorClear(); } catch (e) { console.warn('wireVendorClear failed', e); }
 
     const initial = (history.state && history.state.section) || (location.hash ? location.hash.replace('#','') : 'section-account');
 
@@ -214,6 +242,9 @@
       };
       setTimeout(tryOpenWeekly, 40);
     }
+
+    // reveal the UI once JS has selected the correct panel (prevents FOUC)
+    document.documentElement.classList.add('js-ready');
 
     // Hash change support
     window.addEventListener('hashchange', () => {
