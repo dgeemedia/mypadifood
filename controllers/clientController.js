@@ -12,6 +12,8 @@ const orderModel = models.order;
 const messageModel = models.message;
 const notificationModel = models.notification;
 const paymentsUtil = require('../utils/payments');
+const walletModel = models.wallet;
+const paymentModel = models.payment;
 
 const weeklyPlanModel =
   models.weeklyPlan || require('../models/weeklyPlanModel');
@@ -409,33 +411,38 @@ exports.dashboard = async (req, res) => {
       return res.redirect('/');
     }
 
-// --- NEW: read optional search filters from query string ---
-  const filters = {
-    q: req.query.q ? String(req.query.q).trim() : null,
-    state: req.query.state ? String(req.query.state).trim() : null,
-    lga: req.query.lga ? String(req.query.lga).trim() : null,
-  };
+    // --- NEW: read optional search filters from query string ---
+    const filters = {
+      q: req.query.q ? String(req.query.q).trim() : null,
+      state: req.query.state ? String(req.query.state).trim() : null,
+      lga: req.query.lga ? String(req.query.lga).trim() : null,
+    };
 
-  // If user didn't supply any filters, default to client's location (old behavior)
-  const vendorFilter = {};
-  if (filters.q) vendorFilter.q = filters.q;
-  if (filters.state) vendorFilter.state = filters.state;
-  if (filters.lga) vendorFilter.lga = filters.lga;
+    // If user didn't supply any filters, default to client's location (old behavior)
+    const vendorFilter = {};
+    if (filters.q) vendorFilter.q = filters.q;
+    if (filters.state) vendorFilter.state = filters.state;
+    if (filters.lga) vendorFilter.lga = filters.lga;
 
-  if (!vendorFilter.q && !vendorFilter.state && !vendorFilter.lga) {
-    vendorFilter.state = client.state;
-    vendorFilter.lga = client.lga;
-  }
+    if (!vendorFilter.q && !vendorFilter.state && !vendorFilter.lga) {
+      vendorFilter.state = client.state;
+      vendorFilter.lga = client.lga;
+    }
 
-  const vendors = await vendorModel.getApprovedVendors(vendorFilter);
-  const orders = await orderModel.getOrdersByClient(clientId);
+    const vendors = await vendorModel.getApprovedVendors(vendorFilter);
+    const orders = await orderModel.getOrdersByClient(clientId);
 
     // Pull recent order id from session (set at booking time) — then remove it so it only triggers once
     const recentOrderId = req.session.recent_order_id || null;
     if (req.session.recent_order_id) delete req.session.recent_order_id;
 
+    // Pull recent weekly plan id (same pattern)
     const recentWeeklyPlanId = req.session.recent_weekly_plan_id || null;
     if (req.session.recent_weekly_plan_id) delete req.session.recent_weekly_plan_id;
+
+    // NEW: Pull recent wallet tx id (set after a successful wallet top-up)
+    const recentWalletTxId = req.session.recent_wallet_tx_id || null;
+    if (req.session.recent_wallet_tx_id) delete req.session.recent_wallet_tx_id;
 
     // also fetch weekly plans to show in dashboard if desired
     let weeklyPlans = [];
@@ -446,13 +453,25 @@ exports.dashboard = async (req, res) => {
       console.warn('Could not load weekly plans for dashboard', e);
     }
 
+    // Get wallet balance (safe: use models.wallet if exported, otherwise require fallback)
+    let balance = null;
+    try {
+      const walletModel = (models && models.wallet) ? models.wallet : require('../models/walletModel');
+      balance = await walletModel.getBalance(clientId);
+    } catch (e) {
+      console.warn('Could not read wallet balance:', e);
+      balance = null;
+    }
+
     return res.render('client/dashboard', {
       vendors,
       orders,
       recentOrderId,
       recentWeeklyPlanId,
+      recentWalletTxId, // passed to EJS so client JS can open wallet panel
       weeklyPlans,
       filters,
+      balance,
     });
   } catch (err) {
     console.error('Error loading client dashboard:', err);
@@ -460,6 +479,7 @@ exports.dashboard = async (req, res) => {
     return res.redirect('/');
   }
 };
+
 
 // Client posts menu/update to an existing order (so admin sees it)
 exports.postOrderMenu = async (req, res) => {
@@ -541,7 +561,7 @@ exports.postOrderMenu = async (req, res) => {
   }
 };
 
-// Book a vendor (updated: creates persistent admin notification + emits it)
+// Book a vendor (updated: supports wallet payments, creates persistent admin notification + emits it)
 exports.bookVendor = async (req, res) => {
   try {
     if (
@@ -654,6 +674,62 @@ exports.bookVendor = async (req, res) => {
       }
     }
 
+    // --- Wallet payment handling ---
+    if (payment_method === 'wallet') {
+      try {
+        // attempt to debit atomically (returns { success, balance, txId } on success)
+        const debitRes = await walletModel.debitIfEnough(clientId, price, {
+          orderId,
+          note: `Payment for order ${orderId}`,
+        });
+
+        if (!debitRes || !debitRes.success) {
+          // insufficient funds: mark order (if you have such a helper) and redirect user to wallet
+          if (orderModel && typeof orderModel.updatePaymentStatus === 'function') {
+            try {
+              await orderModel.updatePaymentStatus(orderId, 'insufficient_wallet');
+            } catch (e) {
+              // non-fatal if method not implemented
+            }
+          }
+          req.session.error =
+            'Insufficient wallet balance. Please fund your wallet or choose another payment method.';
+          return res.redirect('/client/dashboard#section-wallet');
+        }
+
+        // Record wallet payment for audit (optional)
+        if (paymentModel && typeof paymentModel.createPayment === 'function') {
+          try {
+            await paymentModel.createPayment({
+              orderId,
+              provider: 'wallet',
+              event: 'payment',
+              providerReference: debitRes.txId || `wallet_tx_${Date.now()}`,
+              amount: price,
+              currency: 'NGN',
+              status: 'success',
+              raw: { tx: debitRes },
+            });
+          } catch (e) {
+            console.warn('Failed to persist wallet payment audit (non-fatal):', e);
+          }
+        }
+
+        // mark order as paid by wallet
+        if (orderModel && typeof orderModel.markPaid === 'function') {
+          await orderModel.markPaid(orderId, 'wallet', debitRes.txId || `wallet_tx_${Date.now()}`);
+        }
+
+        req.session.success = 'Booking created and paid from wallet.';
+        return res.redirect('/client/dashboard#section-orders');
+      } catch (walletErr) {
+        console.error('Wallet payment error:', walletErr);
+        req.session.error = 'Could not complete wallet payment. Please try again.';
+        return res.redirect('/client/dashboard');
+      }
+    }
+
+    // --- External payment flows (paystack / flutterwave) ---
     if (payment_method === 'paystack' || payment_method === 'flutterwave') {
       try {
         if (payment_method === 'paystack') {
@@ -699,6 +775,7 @@ exports.bookVendor = async (req, res) => {
       }
     }
 
+    // Default: booking created (e.g. COD)
     req.session.success =
       'Booking request created. Check your dashboard for chat options to add a modification (if any).';
     return res.redirect('/client/dashboard');
@@ -1317,5 +1394,100 @@ exports.updatePassword = async (req, res) => {
   } catch (err) {
     console.error('updatePassword error', err);
     return res.status(500).json({ success: false, error: 'Server error' });
+  }
+};
+
+// Show wallet UI (balance)
+exports.showWallet = async (req, res) => {
+  if (!req.session || !req.session.user || req.session.user.type !== 'client') {
+    req.session.error = 'Please log in';
+    return res.redirect('/client/login');
+  }
+  try {
+    const clientId = req.session.user.id;
+    const balance = await walletModel.getBalance(clientId);
+    return res.render('client/wallet', { balance });
+  } catch (err) {
+    console.error('showWallet error', err);
+    req.session.error = 'Could not load wallet';
+    return res.redirect('/client/dashboard');
+  }
+};
+
+// Post: initiate wallet funding (redirects to provider)
+exports.postFundWallet = async (req, res) => {
+  if (!req.session || !req.session.user || req.session.user.type !== 'client') {
+    req.session.error = 'Please log in';
+    return res.redirect('/client/login');
+  }
+
+  const clientId = req.session.user.id;
+  const amount = Number(req.body.amount);
+  const provider = String(req.body.provider || '').toLowerCase();
+
+  if (!amount || amount <= 0) {
+    req.session.error = 'Invalid amount';
+    return res.redirect('/client/dashboard#section-wallet');
+  }
+
+  try {
+    // create an init payment record for audit (optional)
+    // Use metadata so provider returns clientId & wallet_topup flag
+    const metadata = { wallet_topup: true, clientId };
+
+    if (provider === 'paystack') {
+      const init = await require('../utils/payments').initPaystack({ email: req.session.user.email, amount, metadata }, null);
+      // store initial payment (init) for traceability
+      await paymentModel.createPayment({
+        orderId: null,
+        provider: 'paystack',
+        event: 'init',
+        providerReference: init.reference,
+        amount,
+        currency: 'NGN',
+        status: 'init',
+        raw: init.raw,
+      });
+
+      // redirect user to paystack
+      return res.redirect(init.authorization_url);
+    }
+
+    if (provider === 'flutterwave') {
+      const init = await require('../utils/payments').initFlutterwave(
+        {
+          amount,
+          currency: 'NGN',
+          customer: {
+            email: req.session.user.email,
+            phonenumber: req.session.user.phone,
+            name: req.session.user.name,
+          },
+          // pass meta
+          meta: metadata,
+        },
+        null
+      );
+
+      await paymentModel.createPayment({
+        orderId: null,
+        provider: 'flutterwave',
+        event: 'init',
+        providerReference: init.tx_ref,
+        amount,
+        currency: 'NGN',
+        status: 'init',
+        raw: init.raw,
+      });
+
+      return res.redirect(init.payment_link);
+    }
+
+    req.session.error = 'Unknown provider';
+    return res.redirect('/client/dashboard#section-wallet');
+  } catch (err) {
+    console.error('postFundWallet error', err);
+    req.session.error = 'Could not start funding. Try again later.';
+    return res.redirect('/client/dashboard#section-wallet');
   }
 };

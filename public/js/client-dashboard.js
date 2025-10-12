@@ -187,19 +187,37 @@
     const urlParams = new URLSearchParams(location.search);
     const hasVendorSearch = urlParams.has('q') || urlParams.has('state') || urlParams.has('lga');
 
-    if (document.getElementById(initial)) {
-      // if default account AND vendor search params present, show vendors instead
-      if ((initial === 'section-account' || initial === null) && hasVendorSearch) {
-        showTarget('section-vendors', { push: false });
-      } else {
-        showTarget(initial, { push: false });
-      }
+    // helper: decide which panel to open on load.
+    // Priority (highest -> lowest):
+    // 1. explicit hash (handled earlier by initial variable)
+    // 2. ORDER_ID (open orders)
+    // 3. WEEKLY_PLAN_ID (open weekly)
+    // 4. WALLET_TX_ID (open wallet)
+    // 5. vendor search params present (open vendors)
+    // 6. fallback to initial (usually account)
+    let finalPanel = initial;
+
+    // If history/hash pointed to account but we have a higher-priority server flag, honor it
+    if ((initial === 'section-account' || initial === null)) {
+      if (window.ORDER_ID) finalPanel = 'section-orders';
+      else if (window.WEEKLY_PLAN_ID) finalPanel = 'section-weekly';
+      else if (window.WALLET_TX_ID) finalPanel = 'section-wallet';
+      else if (hasVendorSearch) finalPanel = 'section-vendors';
+    } else {
+      // if hash explicitly points to a panel, keep it (finalPanel already set)
+      // special-case: if hash is 'section-account' but search params indicate vendors, prefer vendors
+      if ((initial === 'section-account') && hasVendorSearch) finalPanel = 'section-vendors';
+    }
+
+    // finally, show the decided panel
+    if (document.getElementById(finalPanel)) {
+      showTarget(finalPanel, { push: false });
     } else {
       showTarget('section-account', { push: false });
     }
 
     // If server flagged a recent order open Orders & focus/open its chat button.
-    if (window.ORDER_ID && (initial === 'section-account' || initial === null || hasVendorSearch)) {
+    if (window.ORDER_ID && (finalPanel === 'section-orders' || finalPanel === 'section-account' || finalPanel === null)) {
       if (document.getElementById('section-orders')) showTarget('section-orders', { push: false });
 
       const tryOpenChat = () => {
@@ -220,7 +238,7 @@
     }
 
     // If server flagged a recent weekly plan, open Weekly Plan & focus the plan's View link.
-    if (window.WEEKLY_PLAN_ID && (initial === 'section-account' || initial === null || hasVendorSearch)) {
+    if (window.WEEKLY_PLAN_ID && (finalPanel === 'section-weekly' || finalPanel === 'section-account' || finalPanel === null)) {
       if (document.getElementById('section-weekly')) showTarget('section-weekly', { push: false });
 
       const tryOpenWeekly = () => {
@@ -241,6 +259,41 @@
         }
       };
       setTimeout(tryOpenWeekly, 40);
+    }
+
+    // If server flagged a wallet top-up transaction, open Wallet section & focus balance or top-up form.
+    if (window.WALLET_TX_ID && (finalPanel === 'section-wallet' || finalPanel === 'section-account' || finalPanel === null)) {
+      if (document.getElementById('section-wallet')) showTarget('section-wallet', { push: false });
+
+      const tryFocusWallet = () => {
+        // prefer focusing balance element, then top-up input, then withdraw button
+        const candidates = [
+          document.getElementById('wallet-balance'),
+          document.querySelector('#section-wallet input[name="amount"], #section-wallet input[type="number"]'),
+          document.querySelector('#section-wallet button, #section-wallet a.btn')
+        ];
+        for (const el of candidates) {
+          if (el) {
+            try { el.focus({ preventScroll: true }); } catch (e) {}
+            return;
+          }
+        }
+
+        // retry logic in case DOM renders late
+        let retries = 0;
+        const id = setInterval(() => {
+          retries++;
+          const el = document.getElementById('wallet-balance') || document.querySelector('#section-wallet input[name="amount"], #section-wallet input[type="number"]') || document.querySelector('#section-wallet button, #section-wallet a.btn');
+          if (el) {
+            try { el.focus({ preventScroll: true }); } catch (e) {}
+            clearInterval(id);
+          } else if (retries > 12) {
+            clearInterval(id);
+          }
+        }, 80);
+      };
+
+      setTimeout(tryFocusWallet, 40);
     }
 
     // reveal the UI once JS has selected the correct panel (prevents FOUC)

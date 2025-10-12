@@ -6,6 +6,7 @@ const paymentsUtil = require('../utils/payments');
 const models = require('../models');
 const orderModel = models.order;
 const paymentModel = models.payment; // ensure you've added to models/index.js
+const walletModel = models.wallet; // new: wallet model
 
 // ---------- Paystack verification redirect (GET) ----------
 router.get('/paystack/verify', async (req, res) => {
@@ -18,6 +19,7 @@ router.get('/paystack/verify', async (req, res) => {
   try {
     // server-to-server verify using Paystack API helper (existing)
     const result = await paymentsUtil.verifyPaystack(reference);
+
     // persist raw verification response for audit
     await paymentModel.createPayment({
       orderId:
@@ -36,6 +38,48 @@ router.get('/paystack/verify', async (req, res) => {
       raw: result,
     });
 
+    // --- wallet top-up handling (Paystack) ---
+    // metadata format expected: { wallet_topup: true, clientId: "<uuid>" }
+    const metadata = (result.data && result.data.metadata) || {};
+    const amountNGN =
+      result.data && result.data.amount ? Number(result.data.amount) / 100 : null;
+
+    if (metadata && metadata.wallet_topup && metadata.clientId && amountNGN) {
+      try {
+        // idempotently credit wallet using provider+reference
+        await walletModel.creditFromProvider(metadata.clientId, amountNGN, {
+          provider: 'paystack',
+          providerReference: reference,
+          orderId: null,
+          note: 'wallet top-up via paystack',
+          raw: result,
+        });
+
+        // record a wallet_topup event for audit/separation of concerns
+        await paymentModel.createPayment({
+          orderId: null,
+          provider: 'paystack',
+          event: 'wallet_topup',
+          providerReference: reference,
+          amount: amountNGN,
+          currency: result.data && result.data.currency,
+          status: result.data && result.data.status,
+          raw: result,
+        });
+
+        req.session && (req.session.success = 'Wallet funded successfully.');
+        return res.redirect('/client/dashboard#section-wallet');
+      } catch (e) {
+        console.error('Error crediting wallet (paystack verify):', e);
+        // fall through to regular order flow - but we surface a helpful message
+        req.session &&
+          (req.session.error =
+            'Payment verified but could not credit wallet. Contact support.');
+        return res.redirect('/client/dashboard');
+      }
+    }
+
+    // existing order flow (unchanged)
     if (result && result.success) {
       const orderId =
         result.data && result.data.metadata && result.data.metadata.orderId;
@@ -45,8 +89,7 @@ router.get('/paystack/verify', async (req, res) => {
         return res.redirect('/client/dashboard');
       } else {
         // try to find order by stored payment_reference
-        const existing = await require('../models').order; // existing model
-        // fall through and show success
+        // (this block left intentionally minimal)
         req.session &&
           (req.session.success =
             'Payment successful (no matching order found).');
@@ -75,7 +118,7 @@ router.get('/flutterwave/callback', async (req, res) => {
       verification = await paymentsUtil.verifyFlutterwave(transaction_id);
     } else {
       verification = {
-        success: status === 'successful' || status === 'successful',
+        success: status === 'successful' || status === 'success',
         data: { tx_ref, status },
       };
     }
@@ -109,6 +152,51 @@ router.get('/flutterwave/callback', async (req, res) => {
       raw: verification,
     });
 
+    // --- wallet top-up handling (Flutterwave) ---
+    // Flutterwave may include meta: { wallet_topup: true, clientId: "<uuid>" }
+    const meta = (verification.data && verification.data.meta) || {};
+    const fwAmount =
+      verification.data && verification.data.amount
+        ? Number(verification.data.amount)
+        : null;
+    const fwRef =
+      verification.data && (verification.data.id || verification.data.tx_ref)
+        ? verification.data.id || verification.data.tx_ref
+        : tx_ref;
+
+    if (verification && verification.success && meta.wallet_topup && meta.clientId && fwAmount) {
+      try {
+        await walletModel.creditFromProvider(meta.clientId, fwAmount, {
+          provider: 'flutterwave',
+          providerReference: fwRef,
+          orderId: null,
+          note: 'wallet top-up via flutterwave',
+          raw: verification,
+        });
+
+        await paymentModel.createPayment({
+          orderId: null,
+          provider: 'flutterwave',
+          event: 'wallet_topup',
+          providerReference: fwRef,
+          amount: fwAmount,
+          currency: verification.data && verification.data.currency,
+          status: verification.data && verification.data.status,
+          raw: verification,
+        });
+
+        req.session && (req.session.success = 'Wallet funded successfully.');
+        return res.redirect('/client/dashboard#section-wallet');
+      } catch (e) {
+        console.error('Error crediting wallet (flutterwave verify):', e);
+        req.session &&
+          (req.session.error =
+            'Payment verified but could not credit wallet. Contact support.');
+        return res.redirect('/client/dashboard');
+      }
+    }
+
+    // existing order flow
     if (verification && verification.success) {
       const metaOrderId =
         verification.data &&
@@ -195,7 +283,51 @@ router.post('/webhook/paystack', async (req, res) => {
       raw: payload,
     });
 
-    // If successful charge, mark order paid
+    // --- wallet top-up handling (Paystack webhook) ---
+    // metadata expected: data.metadata.wallet_topup and data.metadata.clientId
+    const meta = (data && data.metadata) || {};
+    if (
+      (data &&
+        (data.status === 'success' ||
+          data.status === 'successful' ||
+          payload.event === 'charge.success')) &&
+      meta &&
+      meta.wallet_topup &&
+      meta.clientId &&
+      amount
+    ) {
+      try {
+        // idempotent credit
+        await walletModel.creditFromProvider(meta.clientId, amount, {
+          provider: 'paystack',
+          providerReference: reference,
+          orderId: null,
+          note: 'wallet top-up via paystack (webhook)',
+          raw: payload,
+        });
+
+        // record wallet_topup event too (optional duplicate but useful)
+        await paymentModel.createPayment({
+          orderId: null,
+          provider: 'paystack',
+          event: 'wallet_topup',
+          providerReference: reference,
+          amount,
+          currency,
+          status,
+          raw: payload,
+        });
+
+        // acknowledge
+        return res.status(200).send('ok');
+      } catch (e) {
+        console.error('Error crediting wallet (paystack webhook):', e);
+        // still ack so provider doesn't retry excessively; but you may prefer to return 500 if you want retries
+        return res.status(200).send('ok');
+      }
+    }
+
+    // If successful charge, mark order paid (existing behavior)
     if (
       data &&
       (data.status === 'success' ||
@@ -256,6 +388,37 @@ router.post('/webhook/flutterwave', async (req, res) => {
       status,
       raw: payload,
     });
+
+    // --- wallet top-up handling (Flutterwave webhook) ---
+    const meta = (data && data.meta) || {};
+    const fwRef = transaction_id || tx_ref;
+    if ((status === 'successful' || status === 'completed') && meta && meta.wallet_topup && meta.clientId && amount) {
+      try {
+        await walletModel.creditFromProvider(meta.clientId, amount, {
+          provider: 'flutterwave',
+          providerReference: fwRef,
+          orderId: null,
+          note: 'wallet top-up via flutterwave (webhook)',
+          raw: payload,
+        });
+
+        await paymentModel.createPayment({
+          orderId: null,
+          provider: 'flutterwave',
+          event: 'wallet_topup',
+          providerReference: fwRef,
+          amount,
+          currency,
+          status,
+          raw: payload,
+        });
+
+        return res.status(200).send('ok');
+      } catch (e) {
+        console.error('Error crediting wallet (flutterwave webhook):', e);
+        return res.status(200).send('ok');
+      }
+    }
 
     // If successful, mark order paid
     if (status === 'successful' || status === 'completed') {

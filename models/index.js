@@ -13,4 +13,5 @@ module.exports = {
   weeklyPlan: require('./weeklyPlanModel'),
   weeklyPlanMessages: require('./weeklyPlanMessageModel'),
   rider: require('./riderModel'),
+  wallet: require('./walletModel'),
 };

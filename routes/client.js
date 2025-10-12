@@ -107,4 +107,8 @@ router.get(
   clientController.viewWeeklyPlan
 );
 
+// wallet routes
+router.get('/wallet', auth.requireClient, clientController.showWallet);
+router.post('/wallet/fund', auth.requireClient, clientController.postFundWallet);
+
 module.exports = router;

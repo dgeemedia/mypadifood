@@ -29,6 +29,14 @@
           <span class="nav-label">Find local vendor</span>
         </button>
       </li>
+
+      <li>
+        <button class="nav-item" data-target="section-wallet" title="Wallet">
+          <span class="nav-icon" aria-hidden="true"><i class="fa fa-wallet"></i></span>
+          <span class="nav-label">Wallet</span>
+        </button>
+      </li>
+
     </ul>
   </nav>
 
@@ -45,6 +53,28 @@
         </p>
       </section>
     </section>
+
+    <!--WALLET-->
+    <section id="section-wallet" class="app-section app-section-hidden" data-title="Wallet">
+  <h2 class="sr-only">Wallet</h2>
+  <section>
+    <h3>Your Wallet</h3>
+    <p>Balance: ₦<span id="wallet-balance"><%= (typeof balance !== 'undefined' ? Number(balance).toFixed(2) : '0.00') %></span></p>
+
+    <h4>Fund wallet</h4>
+    <form method="post" action="/client/wallet/fund" id="wallet-fund-form">
+      <input type="number" name="amount" step="0.01" min="50" placeholder="Amount (₦)" required />
+      <select name="provider" required>
+        <option value="paystack">Paystack</option>
+        <option value="flutterwave">Flutterwave</option>
+      </select>
+      <button type="submit" class="btn">Fund wallet</button>
+    </form>
+
+    <p class="muted">Top up your wallet and use it to pay for orders.</p>
+  </section>
+</section>
+
 
     <!-- WEEKLY PLAN -->
     <section id="section-weekly" class="app-section app-section-hidden" data-title="Weekly plan">
@@ -226,6 +256,10 @@
 
   <% if (typeof recentWeeklyPlanId !== 'undefined' && recentWeeklyPlanId) { %>
     window.WEEKLY_PLAN_ID = "<%= recentWeeklyPlanId %>";
+  <% } %>
+
+    <% if (typeof recentWalletTxId !== 'undefined' && recentWalletTxId) { %>
+    window.WALLET_TX_ID = "<%= recentWalletTxId %>";
   <% } %>
 </script>
 
