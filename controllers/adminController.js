@@ -13,6 +13,8 @@ const riderModel = models.rider;
 const orderModel = models.order;
 const messageModel = models.message;
 const notificationModel = models.notification || null;
+const withdrawalModel = models.withdrawal || require('../models/withdrawalModel');
+const walletModel = models.wallet || require('../models/walletModel');
 
 // weekly plan models (prefer models/index exports but fall back to direct require)
 const weeklyPlanModel =
@@ -990,5 +992,152 @@ exports.resourcesExport = async (req, res) => {
   } catch (err) {
     console.error('Error exporting resources CSV', err);
     return res.status(500).send('Server error');
+  }
+};
+
+// -----------------------------
+// Withdrawals handlers (moved into adminController)
+// -----------------------------
+
+/**
+ * GET /admin/withdrawals
+ * List pending withdrawal requests
+ */
+exports.listPendingWithdrawals = async (req, res) => {
+  try {
+    const pending = await withdrawalModel.getPendingRequests();
+    return res.render('admin/withdrawals-list', { withdrawals: pending });
+  } catch (e) {
+    console.error('listPendingWithdrawals error', e);
+    req.session.error = 'Could not load withdrawal requests';
+    return res.redirect('/admin/dashboard');
+  }
+};
+
+/**
+ * POST /admin/withdrawals/:id/approve
+ * Approve a withdrawal. Two main modes:
+ *  - markPaid === true (admin already performed external payout): mark approved+paid (may or may not debit depending on model implementation)
+ *  - markPaid === false: perform debit here (markApproved does debit atomically) and set status accordingly.
+ *
+ * This handler expects withdrawalModel.markApproved to return { success, txId, status }.
+ */
+exports.approveWithdrawal = async (req, res) => {
+  try {
+    if (!req.session || !req.session.user) {
+      req.session.error = 'Not authorized';
+      return res.redirect('/admin/login');
+    }
+    const adminId = req.session.user.id;
+    const id = req.params.id;
+    const markPaid = !!req.body.markPaid;
+    const provider = req.body.provider || null;
+    const providerReference = req.body.provider_reference || null;
+    const note = req.body.note || null;
+
+    const wr = await withdrawalModel.findById(id);
+    if (!wr) {
+      req.session.error = 'Withdrawal request not found';
+      return res.redirect('/admin/withdrawals');
+    }
+
+    // If admin supplied markPaid (already paid externally), call markPaid OR markApproved with markPaid true.
+    if (markPaid && provider && providerReference) {
+      // Use markPaid so the system can handle provider idempotency
+      const resu = await withdrawalModel.markPaid(id, adminId, { provider, providerReference, raw: { adminNote: note } });
+      if (!resu || !resu.success) {
+        req.session.error = 'Could not mark withdrawal as paid';
+        return res.redirect('/admin/withdrawals');
+      }
+
+      // emit + notify
+      const io = require('../utils/socket').get();
+      if (io) io.to('admins').emit('withdrawal_processed', { id, result: resu });
+
+      if (notificationModel && typeof notificationModel.createNotification === 'function') {
+        await notificationModel.createNotification({
+          order_id: null,
+          type: 'withdrawal_processed',
+          payload: { withdrawal_id: id, admin_id: adminId, result: resu },
+          user_id: wr.client_id, // optional: link to client so they see it
+        });
+      }
+
+      req.session.success = 'Withdrawal marked as paid.';
+      return res.redirect('/admin/withdrawals');
+    }
+
+    // Default: call markApproved which will debit wallet atomically and set status to 'approved' (or 'paid' if markPaid true)
+    const resu = await withdrawalModel.markApproved(id, adminId, {
+      note,
+      markPaid: !!markPaid,
+      provider,
+      providerReference,
+    });
+
+    if (!resu || !resu.success) {
+      const msg =
+        resu && resu.message === 'insufficient_funds'
+          ? 'Client has insufficient wallet balance'
+          : 'Could not approve withdrawal';
+      req.session.error = msg;
+      return res.redirect('/admin/withdrawals');
+    }
+
+    // Emit socket event & create persistent notification (best-effort)
+    const io = require('../utils/socket').get();
+    if (io) io.to('admins').emit('withdrawal_processed', { id, result: resu });
+    if (notificationModel && typeof notificationModel.createNotification === 'function') {
+      await notificationModel.createNotification({
+        order_id: null,
+        type: 'withdrawal_processed',
+        payload: { withdrawal_id: id, admin_id: adminId, result: resu },
+        user_id: wr.client_id,
+      });
+    }
+
+    req.session.success = resu.status === 'paid' ? 'Withdrawal approved and marked paid.' : 'Withdrawal approved (debited).';
+    return res.redirect('/admin/withdrawals');
+  } catch (err) {
+    console.error('approve withdrawal error', err);
+    req.session.error = 'Could not approve withdrawal';
+    return res.redirect('/admin/withdrawals');
+  }
+};
+
+/**
+ * POST /admin/withdrawals/:id/decline
+ */
+exports.declineWithdrawal = async (req, res) => {
+  try {
+    if (!req.session || !req.session.user) {
+      req.session.error = 'Not authorized';
+      return res.redirect('/admin/login');
+    }
+    const adminId = req.session.user.id;
+    const id = req.params.id;
+    const note = req.body.note || null;
+
+    const row = await withdrawalModel.markDeclined(id, adminId, { note });
+
+    // notify admins + client
+    const io = require('../utils/socket').get();
+    if (io) io.to('admins').emit('withdrawal_declined', { id, row });
+
+    if (notificationModel && typeof notificationModel.createNotification === 'function') {
+      await notificationModel.createNotification({
+        order_id: null,
+        type: 'withdrawal_declined',
+        payload: { withdrawal_id: id, admin_id: adminId, note },
+        user_id: row ? row.client_id : null,
+      });
+    }
+
+    req.session.success = 'Withdrawal declined.';
+    return res.redirect('/admin/withdrawals');
+  } catch (err) {
+    console.error('decline withdrawal error', err);
+    req.session.error = 'Could not decline withdrawal';
+    return res.redirect('/admin/withdrawals');
   }
 };

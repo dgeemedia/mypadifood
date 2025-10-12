@@ -1,0 +1,27 @@
+/* public/css/admin-withdrawals.css */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal[aria-hidden="true"] { display: none; }
+
+.modal-inner {
+  background: #fff;
+  padding: 1rem;
+  max-width: 720px;
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.25);
+}
+
+.modal-actions { margin-top: 1rem; display:flex; gap:.5rem; justify-content:flex-end; }
+.form-row { margin-top: 0.5rem; }
+.muted { color: #666; font-size: .9rem; }
+.table { width:100%; border-collapse:collapse; }
+.table th, .table td { padding:.5rem; border-bottom:1px solid #eee; vertical-align:top; }

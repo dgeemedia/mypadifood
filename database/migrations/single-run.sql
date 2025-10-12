@@ -677,3 +677,7 @@ CREATE INDEX IF NOT EXISTS withdrawals_client_idx ON withdrawal_requests (client
 CREATE INDEX IF NOT EXISTS withdrawals_status_idx ON withdrawal_requests (status, created_at DESC);
 
 COMMIT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS withdrawal_provider_ref_uniq
+  ON withdrawal_requests (provider, provider_reference)
+  WHERE provider IS NOT NULL AND provider_reference IS NOT NULL;

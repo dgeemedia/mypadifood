@@ -71,6 +71,16 @@
       <button type="submit" class="btn">Fund wallet</button>
     </form>
 
+    <form method="post" action="/client/wallet/withdraw" id="wallet-withdraw-form">
+      <input type="number" name="amount" step="0.01" min="50" placeholder="Amount (₦)" required />
+      <!-- optional destination fields (or keep bank details in profile) -->
+      <input type="text" name="bank_name" placeholder="Bank name" />
+      <input type="text" name="account_number" placeholder="Account number" />
+      <input type="text" name="account_name" placeholder="Account name" />
+      <button type="submit" class="btn">Request withdrawal</button>
+    </form>
+
+
     <p class="muted">Top up your wallet and use it to pay for orders.</p>
   </section>
 </section>

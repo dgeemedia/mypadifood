@@ -14,6 +14,7 @@ const notificationModel = models.notification;
 const paymentsUtil = require('../utils/payments');
 const walletModel = models.wallet;
 const paymentModel = models.payment;
+const withdrawalModel = models.withdrawal;
 
 const weeklyPlanModel =
   models.weeklyPlan || require('../models/weeklyPlanModel');
@@ -1488,6 +1489,160 @@ exports.postFundWallet = async (req, res) => {
   } catch (err) {
     console.error('postFundWallet error', err);
     req.session.error = 'Could not start funding. Try again later.';
+    return res.redirect('/client/dashboard#section-wallet');
+  }
+};
+
+// postWithdrawalRequest
+exports.postWithdrawalRequest = async (req, res) => {
+  if (!req.session || !req.session.user || req.session.user.type !== 'client') {
+    req.session.error = 'Please log in';
+    return res.redirect('/client/login');
+  }
+
+  try {
+    const clientId = req.session.user.id;
+    const amount = Number(req.body.amount);
+    const method = req.body.method || 'bank';
+
+    // Parse destination: accept JSON string or object fields
+    let destination = {};
+    if (req.body.destination) {
+      try {
+        destination =
+          typeof req.body.destination === 'string'
+            ? JSON.parse(req.body.destination)
+            : req.body.destination;
+      } catch (e) {
+        destination = req.body.destination_obj || {};
+      }
+    } else {
+      destination = req.body.destination_obj || {};
+    }
+
+    if (!amount || amount <= 0) {
+      req.session.error = 'Invalid amount';
+      return res.redirect('/client/dashboard#section-wallet');
+    }
+
+    // Minimum / KYC / limits configuration (env-vars with fallbacks)
+    const MIN_WITHDRAWAL = Number(process.env.MIN_WITHDRAWAL_AMOUNT || 500); // NGN
+    const DAILY_LIMIT = Number(process.env.DAILY_WITHDRAWAL_LIMIT || 200000); // NGN
+
+    if (amount < MIN_WITHDRAWAL) {
+      req.session.error = `Minimum withdrawal is ₦${MIN_WITHDRAWAL.toLocaleString()}`;
+      return res.redirect('/client/dashboard#section-wallet');
+    }
+
+    // Load client for KYC & other checks
+    const client = await clientModel.findById(clientId);
+    if (!client) {
+      req.session.error = 'Client not found';
+      return res.redirect('/client/dashboard#section-wallet');
+    }
+
+    // KYC check — adapt to your client schema (try common field names)
+    const kycVerified =
+      client.kyc_verified === true ||
+      String(client.kyc_status || '').toLowerCase() === 'verified' ||
+      client.is_kyc_verified === true;
+
+    // If above threshold and not KYC verified -> reject
+    const KYC_THRESHOLD = Number(process.env.KYC_THRESHOLD || 50000); // require KYC for withdrawals > this
+    if (amount > KYC_THRESHOLD && !kycVerified) {
+      req.session.error =
+        'Withdrawals above ₦' +
+        KYC_THRESHOLD.toLocaleString() +
+        ' require KYC verification. Please complete KYC first.';
+      return res.redirect('/client/dashboard#section-wallet');
+    }
+
+    // Check daily withdrawals (sum of today's amounts). Uses withdrawalModel.sumClientWithdrawals
+    const sinceToday = new Date();
+    sinceToday.setHours(0, 0, 0, 0);
+    let dailyTotal = 0;
+    try {
+      dailyTotal = await withdrawalModel.sumClientWithdrawals(clientId, { since: sinceToday });
+    } catch (e) {
+      // if that helper not present, fall back to 0
+      dailyTotal = 0;
+    }
+
+    if (dailyTotal + amount > DAILY_LIMIT) {
+      req.session.error = `Daily withdrawal limit exceeded (₦${DAILY_LIMIT.toLocaleString()}). You have already requested ₦${Number(dailyTotal).toLocaleString()}.`;
+      return res.redirect('/client/dashboard#section-wallet');
+    }
+
+    // Optional: check wallet balance first (friendly UX). Keep actual debit on admin approval.
+    const balance = await walletModel.getBalance(clientId);
+    if (balance < amount) {
+      req.session.error = 'Insufficient wallet balance';
+      return res.redirect('/client/dashboard#section-wallet');
+    }
+
+    // Create request (model handles insertion)
+    const created = await withdrawalModel.createRequest({
+      clientId,
+      amount,
+      method,
+      destination,
+    });
+
+    // notify admins via socket (real-time) with a friendly payload
+    const io = require('../utils/socket').get();
+    if (io) {
+      io.to('admins').emit('new_withdrawal', {
+        id: created.id,
+        client_id: created.client_id,
+        client_name: client.full_name || req.session.user.full_name || null,
+        client_email: client.email || req.session.user.email || null,
+        client_phone: client.phone || req.session.user.phone || null,
+        amount: created.amount,
+        destination: created.destination,
+        created_at: created.created_at,
+        note: created.admin_note || null,
+      });
+    }
+
+    // persistent notification (best-effort)
+    if (notificationModel && typeof notificationModel.createNotification === 'function') {
+      try {
+        await notificationModel.createNotification({
+          order_id: null,
+          type: 'withdrawal_request',
+          payload: {
+            withdrawal_id: created.id,
+            client_id: clientId,
+            amount: created.amount,
+            created_at: created.created_at,
+          },
+        });
+      } catch (e) {
+        console.warn('Could not create withdrawal notification', e);
+      }
+    }
+
+    req.session.success = 'Withdrawal request submitted. Admin will review.';
+    return res.redirect('/client/dashboard#section-wallet');
+  } catch (err) {
+    console.error('postWithdrawalRequest error', err);
+    req.session.error = err.message || 'Could not submit withdrawal request';
+    return res.redirect('/client/dashboard#section-wallet');
+  }
+};
+
+// Client: list own requests (optional route)
+exports.listMyWithdrawals = async (req, res) => {
+  if (!req.session || !req.session.user || req.session.user.type !== 'client') {
+    req.session.error = 'Please log in';
+    return res.redirect('/client/login');
+  }
+  try {
+    const clientId = req.session.user.id;
+    const rows = await withdrawalModel.getRequestsByClient(clientId);
+    return res.render('client/wallet-requests', { requests: rows });
+  } catch (e) {
+    req.session.error = 'Could not load withdrawal requests';
     return res.redirect('/client/dashboard#section-wallet');
   }
 };

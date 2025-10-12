@@ -90,4 +90,9 @@ router.post(
   adminController.completeWeeklyPlan
 );
 
+// withdrawls
+router.get('/withdrawals', adminController.listPendingWithdrawals);
+router.post('/withdrawals/:id/approve', adminController.approveWithdrawal);
+router.post('/withdrawals/:id/decline', adminController.declineWithdrawal);
+
 module.exports = router;
