@@ -133,7 +133,7 @@
       </section>
     </section>
 
-    <!-- VENDORS -->
+<!-- VENDORS -->
 <section id="section-vendors" class="app-section app-section-hidden" data-title="Find local vendor">
   <h2 class="sr-only">Find local vendor</h2>
 
@@ -142,29 +142,46 @@
     <section class="hero" aria-hidden="false">
       <% const f = (typeof filters !== 'undefined' && filters) ? filters : {}; %>
       <h3>Local Food Vendors</h3>
-      <form method="get" action="/client/dashboard" class="vendor-search-form">
+
+      <form method="get" action="/client/dashboard" class="vendor-search-form" aria-label="Vendor search">
         <input
           type="text"
           name="q"
           placeholder="Search vendor or food item"
           value="<%= f.q ? f.q : '' %>"
+          aria-label="Search vendor or food item"
         />
+
+        <!-- state input uses datalist -->
         <input
           type="text"
           name="state"
+          id="vendor-search-state"
+          list="states-datalist"
           placeholder="State (optional)"
           value="<%= f.state ? f.state : '' %>"
+          autocomplete="off"
+          aria-label="State"
         />
+        <datalist id="states-datalist"></datalist>
+
+        <!-- lga input uses datalist that will be populated based on selected state -->
         <input
           type="text"
           name="lga"
+          id="vendor-search-lga"
+          list="lgas-datalist"
           placeholder="LGA (optional)"
           value="<%= f.lga ? f.lga : '' %>"
+          autocomplete="off"
+          aria-label="Local government area"
         />
+        <datalist id="lgas-datalist"></datalist>
+
         <button type="submit" class="btn">Search</button>
-        <!-- optional: a 'Clear' link to return to default (client local) -->
         <a href="/client/dashboard" class="btn btn-link">Clear</a>
       </form>
+
       <p class="muted">Search anywhere by vendor name, food item, state or LGA. Leave filters empty to show vendors near you.</p>
     </section>
 
@@ -195,7 +212,6 @@
     <% } %>
   </section>
 </section>
-
 
     <%- include('../partials/chat-modal') %>
   </main>

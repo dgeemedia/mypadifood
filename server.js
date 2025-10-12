@@ -78,6 +78,7 @@ app.use(require('./middleware/flash'));
 // Static assets
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/locations', express.static(path.join(__dirname, 'locations')));
 
 // Routes
 // Mount auth routes early so /login etc are handled by the new controller

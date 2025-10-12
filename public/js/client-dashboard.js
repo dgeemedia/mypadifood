@@ -13,20 +13,14 @@
   function hideFlash() {
     try {
       $all('.flash, .flash-messages, .form-errors, #flash, .alert, .alert-success, .alert-danger, .flash-success, .flash-error').forEach(el => {
-        // prefer removing child alerts inside wrapper containers
         if (el.classList && el.classList.contains('flash-messages') && el.children.length) {
-          Array.from(el.children).forEach(child => {
-            if (child && child.remove) child.remove();
-          });
+          Array.from(el.children).forEach(child => { if (child && child.remove) child.remove(); });
           if (!el.children.length) el.remove();
         } else {
-          // remove element entirely so it doesn't persist in DOM
-          if (el && el.remove) el.remove();
-          else el.style.display = 'none';
+          if (el && el.remove) el.remove(); else if (el) el.style.display = 'none';
         }
       });
 
-      // any other transient status regions e.g. role=status or aria-live containers
       $all('[role="status"], [aria-live]').forEach(el => {
         if (el && el.textContent && el.textContent.trim()) {
           el.textContent = '';
@@ -39,31 +33,24 @@
   }
 
   function showTarget(id, opts = {}) {
-    // Toggle visibility
     sections.forEach(s => s.classList.toggle('app-section-hidden', s.id !== id));
-    // Update aria-current on nav buttons
     navButtons.forEach(btn => btn.setAttribute('aria-current', btn.dataset.target === id ? 'true' : 'false'));
-    // Update document title (keep base)
     const labelEl = document.querySelector(`.nav-item[data-target="${id}"] .nav-label`);
     const label = labelEl ? labelEl.textContent : null;
     if (label) document.title = `${label} — Dashboard`;
 
-    // Hide any flash messages when user navigates away
     hideFlash();
 
-    // Update history if requested
     if (opts.push !== false) {
       const url = new URL(location.href);
       url.hash = id;
       try {
         history.pushState({ section: id }, '', url);
       } catch (e) {
-        // fallback: set hash
         location.hash = id;
       }
     }
 
-    // move focus to first focusable element inside the shown section for accessibility
     const section = document.getElementById(id);
     if (section) {
       const focusable = section.querySelector('a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
@@ -79,7 +66,6 @@
       if (!target) return;
       showTarget(target, { push: true });
     });
-    // keyboard activation (Enter or Space)
     btn.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -88,118 +74,148 @@
     });
   });
 
-  // Also hide flash if user clicks anywhere on nav (covers cases where nav uses links)
+  // Also hide flash if user clicks anywhere on nav
   document.addEventListener('click', (e) => {
     const ancestor = e.target.closest && e.target.closest('.app-nav');
-    if (ancestor) {
-      // user clicked the nav area — hide flashes immediately (but let the nav click handler handle showTarget)
-      hideFlash();
-    }
+    if (ancestor) hideFlash();
   });
 
   // Handle popstate (back/forward)
   window.addEventListener('popstate', e => {
-    // Prefer state.section, fallback to hash
     const id = (e.state && e.state.section) || (location.hash ? location.hash.replace('#','') : null) || 'section-account';
-    if (document.getElementById(id)) {
-      showTarget(id, { push: false });
-    }
+    if (document.getElementById(id)) showTarget(id, { push: false });
   });
+
+  /* ----------------------------
+     State / LGA datalist autocomplete
+     expects /locations/Nigeria-State-Lga.json to be served
+     supports formats:
+       - [{ state: "Lagos", lgas: ["Ikeja", ...] }, ...]
+       - { "Lagos": ["Ikeja", ...], ... }
+     ---------------------------- */
+  function initStateLgaAutocomplete() {
+    const STATES_URL = '/locations/Nigeria-State-Lga.json';
+    const stateInput = document.getElementById('vendor-search-state');
+    const lgaInput = document.getElementById('vendor-search-lga');
+    const statesDatalist = document.getElementById('states-datalist');
+    const lgasDatalist = document.getElementById('lgas-datalist');
+
+    if (!statesDatalist || !lgasDatalist || !stateInput) return;
+
+    fetch(STATES_URL, { cache: 'force-cache' })
+      .then(res => {
+        if (!res.ok) throw new Error('Could not load states/LGAs');
+        return res.json();
+      })
+      .then(data => {
+        const lookup = {};
+        const stateNames = [];
+
+        if (Array.isArray(data)) {
+          data.forEach(item => {
+            const s = item.state || item.name || null;
+            const lgas = Array.isArray(item.lgas) ? item.lgas : item.lga || [];
+            if (s) {
+              lookup[s] = lgas;
+              stateNames.push(s);
+            }
+          });
+        } else if (typeof data === 'object' && data !== null) {
+          Object.keys(data).forEach(k => {
+            lookup[k] = Array.isArray(data[k]) ? data[k] : [];
+            stateNames.push(k);
+          });
+        }
+
+        statesDatalist.innerHTML = stateNames.map(s => `<option value="${s}"></option>`).join('');
+
+        const initialState = stateInput.value && stateInput.value.trim();
+        if (initialState && lookup[initialState]) {
+          lgasDatalist.innerHTML = lookup[initialState].map(l => `<option value="${l}"></option>`).join('');
+        }
+
+        stateInput.addEventListener('input', () => {
+          const s = stateInput.value && stateInput.value.trim();
+          const lgas = s && lookup[s] ? lookup[s] : [];
+          lgasDatalist.innerHTML = lgas.map(l => `<option value="${l}"></option>`).join('');
+          if (lgaInput && lgaInput.value && lgas.indexOf(lgaInput.value) === -1) {
+            lgaInput.value = '';
+          }
+        });
+      })
+      .catch(err => {
+        console.warn('State/LGA autocomplete unavailable:', err);
+      });
+  }
 
   // On load: determine initial section (state -> hash -> default)
   document.addEventListener('DOMContentLoaded', () => {
+    // initialize autocomplete (non-blocking)
+    try { initStateLgaAutocomplete(); } catch (e) { console.warn('initStateLgaAutocomplete failed', e); }
+
     const initial = (history.state && history.state.section) || (location.hash ? location.hash.replace('#','') : 'section-account');
 
+    // If the URL contains search params for vendors, prefer showing vendors (fixes landing on Account after search)
+    const urlParams = new URLSearchParams(location.search);
+    const hasVendorSearch = urlParams.has('q') || urlParams.has('state') || urlParams.has('lga');
+
     if (document.getElementById(initial)) {
-      showTarget(initial, { push: false });
+      // if default account AND vendor search params present, show vendors instead
+      if ((initial === 'section-account' || initial === null) && hasVendorSearch) {
+        showTarget('section-vendors', { push: false });
+      } else {
+        showTarget(initial, { push: false });
+      }
     } else {
       showTarget('section-account', { push: false });
     }
 
-    // If server flagged a recent order (booking just created), open Orders & focus/open its chat button.
-    // We only override the default account landing when the page would otherwise land on the default 'section-account'.
-    if (window.ORDER_ID && (initial === 'section-account' || initial === null)) {
-      if (document.getElementById('section-orders')) {
-        // show orders section (do not push a new history entry)
-        showTarget('section-orders', { push: false });
-      }
+    // If server flagged a recent order open Orders & focus/open its chat button.
+    if (window.ORDER_ID && (initial === 'section-account' || initial === null || hasVendorSearch)) {
+      if (document.getElementById('section-orders')) showTarget('section-orders', { push: false });
 
-      // Try to focus / open the chat for that order after a short tick so other listeners have attached.
       const tryOpenChat = () => {
         const chatBtn = document.querySelector(`.btn-view-chat[data-order-id="${window.ORDER_ID}"]`);
         if (chatBtn) {
-          try {
-            // Focus first for accessibility
-            chatBtn.focus({ preventScroll: true });
-            // If you want the chat modal opened automatically, uncomment the next line.
-            // setTimeout(() => chatBtn.click(), 60);
-          } catch (e) {
-            // ignore focus errors
-          }
+          try { chatBtn.focus({ preventScroll: true }); /* setTimeout(() => chatBtn.click(), 60); */ } catch (e) {}
         } else {
-          // If the button isn't present yet (e.g. slow render), retry a couple times
           let retries = 0;
           const id = setInterval(() => {
             retries++;
             const btn = document.querySelector(`.btn-view-chat[data-order-id="${window.ORDER_ID}"]`);
-            if (btn) {
-              try {
-                btn.focus({ preventScroll: true });
-                // setTimeout(() => btn.click(), 60); // auto-open if desired
-              } catch (e) {}
-              clearInterval(id);
-            } else if (retries > 10) {
-              clearInterval(id);
-            }
+            if (btn) { try { btn.focus({ preventScroll: true }); } catch (e) {} clearInterval(id); }
+            else if (retries > 10) clearInterval(id);
           }, 80);
         }
       };
-
-      // run on next tick
       setTimeout(tryOpenChat, 40);
     }
 
-        // If server flagged a recent weekly plan, open Weekly Plan & focus the plan's View link.
-    if (window.WEEKLY_PLAN_ID && (initial === 'section-account' || initial === null)) {
-      if (document.getElementById('section-weekly')) {
-        showTarget('section-weekly', { push: false });
-      }
+    // If server flagged a recent weekly plan, open Weekly Plan & focus the plan's View link.
+    if (window.WEEKLY_PLAN_ID && (initial === 'section-account' || initial === null || hasVendorSearch)) {
+      if (document.getElementById('section-weekly')) showTarget('section-weekly', { push: false });
 
       const tryOpenWeekly = () => {
-        // try to find the View URL anchor for that plan (anchors are: /client/special-order/<id>)
         const selector = `a[href$="/client/special-order/${window.WEEKLY_PLAN_ID}"], a[href*="/client/special-order/${window.WEEKLY_PLAN_ID}"]`;
         const viewLink = document.querySelector(selector);
-
         if (viewLink) {
-          try {
-            viewLink.focus({ preventScroll: true });
-            // If you want to auto-open the view page in the same tab, uncomment:
-            // setTimeout(() => { viewLink.click(); }, 60);
-          } catch (e) {}
+          try { viewLink.focus({ preventScroll: true }); /* setTimeout(() => { viewLink.click(); }, 60); */ } catch (e) {}
         } else {
-          // fallback: focus create button in weekly section
           const createBtn = document.querySelector('#section-weekly a.btn, #section-weekly button.btn');
           if (createBtn) createBtn.focus({ preventScroll: true });
-
-          // retry a few times in case rows render late
           let retries = 0;
           const id = setInterval(() => {
             retries++;
             const btn = document.querySelector(selector);
-            if (btn) {
-              try { btn.focus({ preventScroll: true }); } catch (e) {}
-              clearInterval(id);
-            } else if (retries > 10) {
-              clearInterval(id);
-            }
+            if (btn) { try { btn.focus({ preventScroll: true }); } catch (e) {} clearInterval(id); }
+            else if (retries > 10) clearInterval(id);
           }, 80);
         }
       };
-
       setTimeout(tryOpenWeekly, 40);
     }
 
-    // Optional: support deep-link by listening for hashchange if some code sets hash directly
+    // Hash change support
     window.addEventListener('hashchange', () => {
       const id = location.hash.replace('#','');
       if (document.getElementById(id)) showTarget(id, { push: false });
