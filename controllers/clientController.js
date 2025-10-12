@@ -409,11 +409,26 @@ exports.dashboard = async (req, res) => {
       return res.redirect('/');
     }
 
-    const vendors = await vendorModel.getApprovedVendors({
-      state: client.state,
-      lga: client.lga,
-    });
-    const orders = await orderModel.getOrdersByClient(clientId);
+// --- NEW: read optional search filters from query string ---
+  const filters = {
+    q: req.query.q ? String(req.query.q).trim() : null,
+    state: req.query.state ? String(req.query.state).trim() : null,
+    lga: req.query.lga ? String(req.query.lga).trim() : null,
+  };
+
+  // If user didn't supply any filters, default to client's location (old behavior)
+  const vendorFilter = {};
+  if (filters.q) vendorFilter.q = filters.q;
+  if (filters.state) vendorFilter.state = filters.state;
+  if (filters.lga) vendorFilter.lga = filters.lga;
+
+  if (!vendorFilter.q && !vendorFilter.state && !vendorFilter.lga) {
+    vendorFilter.state = client.state;
+    vendorFilter.lga = client.lga;
+  }
+
+  const vendors = await vendorModel.getApprovedVendors(vendorFilter);
+  const orders = await orderModel.getOrdersByClient(clientId);
 
     // Pull recent order id from session (set at booking time) — then remove it so it only triggers once
     const recentOrderId = req.session.recent_order_id || null;
@@ -437,6 +452,7 @@ exports.dashboard = async (req, res) => {
       recentOrderId,
       recentWeeklyPlanId,
       weeklyPlans,
+      filters,
     });
   } catch (err) {
     console.error('Error loading client dashboard:', err);
