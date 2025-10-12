@@ -654,3 +654,26 @@ CREATE INDEX IF NOT EXISTS wallet_tx_client_idx
   ON wallet_transactions (client_id, created_at DESC);
 
 COMMIT;
+
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS withdrawal_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id uuid NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  amount numeric(12,2) NOT NULL,
+  currency text NOT NULL DEFAULT 'NGN',
+  method text NOT NULL,              -- e.g. 'bank_transfer','bank','manual'
+  destination jsonb DEFAULT '{}'::jsonb, -- bank details or payout target
+  status text NOT NULL DEFAULT 'pending', -- pending | approved | declined | paid | cancelled
+  admin_id uuid NULL,                -- admin who processed
+  admin_note text NULL,
+  provider text NULL,                -- optional provider used to pay out (if integrated)
+  provider_reference text NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS withdrawals_client_idx ON withdrawal_requests (client_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS withdrawals_status_idx ON withdrawal_requests (status, created_at DESC);
+
+COMMIT;
