@@ -122,6 +122,44 @@
       </div>
     </section>
 
+    <!-- Inline account-edit wrapper (hidden by default) -->
+<section id="section-account-edit" class="app-section app-section-hidden" data-title="Edit account">
+  <div class="card">
+    <nav class="subnav">
+      <button class="subnav-item" data-target="section-account-edit-phone">Phone</button>
+      <button class="subnav-item" data-target="section-account-edit-address">Address</button>
+      <button class="subnav-item" data-target="section-account-edit-password">Password</button>
+      <button class="btn btn-link" data-target="section-account">Close</button>
+    </nav>
+
+    <div id="edit-panels">
+      
+      <section id="section-account-edit-phone" class="edit-panel" aria-hidden="true" style="display:none;">
+  <%- include('./account-phone', {
+    currentUser: (currentUser || user || {})
+  }) %>
+</section>
+
+<section id="section-account-edit-address" class="edit-panel" aria-hidden="true" style="display:none;">
+  <%- include('./account-address', {
+    currentUser: (typeof currentUser !== 'undefined' ? currentUser : (typeof user !== 'undefined' ? user : {})),
+    statesLGAs: (typeof statesLGAs !== 'undefined' ? statesLGAs : [])
+  }) %>
+</section>
+
+
+<section id="section-account-edit-password" class="edit-panel" aria-hidden="true" style="display:none;">
+  <%- include('./account-password', {
+    currentUser: (currentUser || user || {})
+  }) %>
+</section>
+
+      
+    </div>
+  </div>
+</section>
+
+
     <!-- SECTION 2: Icons / Actions -->
     <section id="section-actions" class="app-section app-section-hidden" data-title="Quick actions">
       <div class="icons-grid card">

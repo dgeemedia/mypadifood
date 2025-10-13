@@ -1,4 +1,4 @@
-// public/js/client-dashboard.js
+//public/js/client-dashboard.js
 (function () {
   'use strict';
 
@@ -9,7 +9,6 @@
   const sections = $all('.app-section');
 
   // Hide flash / alert elements that may persist across sections.
-  // Targets common patterns used in your templates: .flash, .flash-messages, .alert, .form-errors, #flash, [role="status"]
   function hideFlash() {
     try {
       $all('.flash, .flash-messages, .form-errors, #flash, .alert, .alert-success, .alert-danger, .flash-success, .flash-error').forEach(el => {
@@ -58,7 +57,51 @@
     }
   }
 
-  // Attach click handlers
+  /* ----------------------------
+     Helper: show an inner edit panel inside section-account-edit
+     - shows the parent section, reveals the correct inner panel,
+       focuses first input, and initializes account forms.
+     ---------------------------- */
+  function showInnerPanel(innerId, opts = {}) {
+    const wrapper = document.getElementById('section-account-edit');
+    if (!wrapper) return;
+
+    // show the wrapper (don't push -- we'll handle state below)
+    showTarget('section-account-edit', { push: opts.push !== false });
+
+    // hide all edit panels
+    document.querySelectorAll('#edit-panels .edit-panel').forEach(p => {
+      p.style.display = 'none';
+      p.setAttribute('aria-hidden', 'true');
+    });
+
+    const inner = document.getElementById(innerId);
+    if (!inner) return;
+
+    inner.style.display = '';
+    inner.setAttribute('aria-hidden', 'false');
+
+    // focus first meaningful input/button
+    const focusEl = inner.querySelector('input:not([type="hidden"]), select, textarea, button');
+    if (focusEl) {
+      try { focusEl.focus({ preventScroll: true }); } catch (e) {}
+    }
+
+    // initialize account form handlers if available (for AJAX-loaded panels or to re-bind)
+    if (window.initAccountFormHandlers && typeof window.initAccountFormHandlers === 'function') {
+      try { window.initAccountFormHandlers(); } catch (e) { console.warn('initAccountFormHandlers failed', e); }
+    }
+
+    // Update history/state so back/forward works.
+    // store the sub-panel in state but use a stable hash (we'll set hash to innerId for readability)
+    try {
+      history.pushState({ section: 'section-account-edit', sub: innerId }, '', `#${innerId}`);
+    } catch (e) {
+      location.hash = innerId;
+    }
+  }
+
+  // Attach click handlers to main nav buttons (top-level)
   navButtons.forEach(btn => {
     btn.addEventListener('click', e => {
       e.preventDefault();
@@ -74,25 +117,80 @@
     });
   });
 
+  // wire account edit toggles (account-menu buttons, subnavs, any data-target attributes that reference account sections)
+  function wireAccountEditToggles() {
+    // select anything that will toggle account edit areas:
+    // - .account-edit-toggle (account menu)
+    // - .subnav-item (subnav inside edit wrapper)
+    // - any element with data-target that starts with "section-account"
+    document.querySelectorAll('.account-edit-toggle, .subnav-item, [data-target^="section-account"]').forEach(btn => {
+      // avoid double-binding
+      if (btn.__acctToggleBound) return;
+      btn.__acctToggleBound = true;
+
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = btn.dataset.target;
+        if (!target) return;
+
+        // If this is an inner-edit panel (e.g. section-account-edit-phone)
+        if (target.startsWith('section-account-edit')) {
+          showInnerPanel(target);
+          return;
+        }
+
+        // Otherwise, it's a top-level section (return to dashboard, etc.)
+        showTarget(target, { push: true });
+      });
+
+      // keyboard activate
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          btn.click();
+        }
+      });
+    });
+  }
+
   // Also hide flash if user clicks anywhere on nav
   document.addEventListener('click', (e) => {
     const ancestor = e.target.closest && e.target.closest('.app-nav');
     if (ancestor) hideFlash();
   });
 
-  // Handle popstate (back/forward)
+  // Handle popstate (back/forward) — support inner sub-panel restore
   window.addEventListener('popstate', e => {
-    const id = (e.state && e.state.section) || (location.hash ? location.hash.replace('#','') : null) || 'section-account';
-    if (document.getElementById(id)) showTarget(id, { push: false });
+    const state = e.state || {};
+    // If state explicitly points to an edit sub-panel, restore it
+    if (state.section === 'section-account-edit' && state.sub) {
+      // show parent without pushing history
+      showInnerPanel(state.sub, { push: false });
+      return;
+    }
+
+    // fallback: if state.section is a top-level panel, show it
+    const id = state.section || (location.hash ? location.hash.replace('#','') : null) || 'section-account';
+    if (document.getElementById(id)) {
+      showTarget(id, { push: false });
+      return;
+    }
+
+    // if hash looks like an inner panel id (e.g. #section-account-edit-phone), handle it
+    const hash = location.hash ? location.hash.replace('#','') : null;
+    if (hash && hash.startsWith('section-account-edit')) {
+      showInnerPanel(hash, { push: false });
+      return;
+    }
+
+    // final fallback
+    if (document.getElementById('section-account')) showTarget('section-account', { push: false });
   });
 
   /* ----------------------------
      State / LGA datalist autocomplete
-     expects /locations/Nigeria-State-Lga.json to be served
-     supports formats:
-       - [{ state: "Lagos", lgas: ["Ikeja", ...] }, ...]
-       - { "Lagos": ["Ikeja", ...], ... }
-     ---------------------------- */
+     ... (unchanged)
+  ---------------------------- */
   function initStateLgaAutocomplete() {
     const STATES_URL = '/locations/Nigeria-State-Lga.json';
     const stateInput = document.getElementById('vendor-search-state');
@@ -148,7 +246,6 @@
       });
   }
 
-  // wire clear button for vendor search (place inside the IIFE, and will be called from DOMContentLoaded)
   function wireVendorClear() {
     const clearBtn = document.getElementById('vendor-search-clear');
     const form = document.querySelector('.vendor-search-form');
@@ -157,73 +254,62 @@
     clearBtn.addEventListener('click', (e) => {
       e.preventDefault();
 
-      // Clear the named inputs
       form.querySelectorAll('input[name="q"], input[name="state"], input[name="lga"]').forEach(i => {
         i.value = '';
-        // fire input event so datalist/LGA logic can react and clear dependent lists
         try { i.dispatchEvent(new Event('input', { bubbles: true })); } catch (err) {}
       });
 
-      // Ensure we land on the vendors tab after reload
-      // Put the hash into the action so the browser navigates to /client/dashboard#section-vendors
       form.action = '/client/dashboard#section-vendors';
-
-      // submit the cleared form to reload results (default: shows vendors near user)
       form.submit();
     });
   }
 
   // On load: determine initial section (state -> hash -> default)
   document.addEventListener('DOMContentLoaded', () => {
-    // initialize autocomplete (non-blocking)
     try { initStateLgaAutocomplete(); } catch (e) { console.warn('initStateLgaAutocomplete failed', e); }
-
-    // wire clear button
     try { wireVendorClear(); } catch (e) { console.warn('wireVendorClear failed', e); }
+
+    // wire account edit toggles AFTER DOM ready
+    try { wireAccountEditToggles(); } catch (e) { console.warn('wireAccountEditToggles failed', e); }
 
     const initial = (history.state && history.state.section) || (location.hash ? location.hash.replace('#','') : 'section-account');
 
-    // If the URL contains search params for vendors, prefer showing vendors (fixes landing on Account after search)
     const urlParams = new URLSearchParams(location.search);
     const hasVendorSearch = urlParams.has('q') || urlParams.has('state') || urlParams.has('lga');
 
-    // helper: decide which panel to open on load.
-    // Priority (highest -> lowest):
-    // 1. explicit hash (handled earlier by initial variable)
-    // 2. ORDER_ID (open orders)
-    // 3. WEEKLY_PLAN_ID (open weekly)
-    // 4. WALLET_TX_ID (open wallet)
-    // 5. vendor search params present (open vendors)
-    // 6. fallback to initial (usually account)
     let finalPanel = initial;
 
-    // If history/hash pointed to account but we have a higher-priority server flag, honor it
     if ((initial === 'section-account' || initial === null)) {
       if (window.ORDER_ID) finalPanel = 'section-orders';
       else if (window.WEEKLY_PLAN_ID) finalPanel = 'section-weekly';
       else if (window.WALLET_TX_ID) finalPanel = 'section-wallet';
       else if (hasVendorSearch) finalPanel = 'section-vendors';
     } else {
-      // if hash explicitly points to a panel, keep it (finalPanel already set)
-      // special-case: if hash is 'section-account' but search params indicate vendors, prefer vendors
       if ((initial === 'section-account') && hasVendorSearch) finalPanel = 'section-vendors';
     }
 
-    // finally, show the decided panel
-    if (document.getElementById(finalPanel)) {
+    // If hash is an inner panel (e.g. #section-account-edit-phone) prefer showing it.
+    const hash = location.hash ? location.hash.replace('#','') : null;
+    if (hash && hash.startsWith('section-account-edit')) {
+      if (document.getElementById(hash)) {
+        showInnerPanel(hash, { push: false });
+      } else {
+        showTarget(finalPanel, { push: false });
+      }
+    } else if (document.getElementById(finalPanel)) {
       showTarget(finalPanel, { push: false });
     } else {
       showTarget('section-account', { push: false });
     }
 
-    // If server flagged a recent order open Orders & focus/open its chat button.
+    // existing server-flag handlers (orders, weekly plans, wallet) remain unchanged...
     if (window.ORDER_ID && (finalPanel === 'section-orders' || finalPanel === 'section-account' || finalPanel === null)) {
       if (document.getElementById('section-orders')) showTarget('section-orders', { push: false });
 
       const tryOpenChat = () => {
         const chatBtn = document.querySelector(`.btn-view-chat[data-order-id="${window.ORDER_ID}"]`);
         if (chatBtn) {
-          try { chatBtn.focus({ preventScroll: true }); /* setTimeout(() => chatBtn.click(), 60); */ } catch (e) {}
+          try { chatBtn.focus({ preventScroll: true }); } catch (e) {}
         } else {
           let retries = 0;
           const id = setInterval(() => {
@@ -237,7 +323,6 @@
       setTimeout(tryOpenChat, 40);
     }
 
-    // If server flagged a recent weekly plan, open Weekly Plan & focus the plan's View link.
     if (window.WEEKLY_PLAN_ID && (finalPanel === 'section-weekly' || finalPanel === 'section-account' || finalPanel === null)) {
       if (document.getElementById('section-weekly')) showTarget('section-weekly', { push: false });
 
@@ -245,7 +330,7 @@
         const selector = `a[href$="/client/special-order/${window.WEEKLY_PLAN_ID}"], a[href*="/client/special-order/${window.WEEKLY_PLAN_ID}"]`;
         const viewLink = document.querySelector(selector);
         if (viewLink) {
-          try { viewLink.focus({ preventScroll: true }); /* setTimeout(() => { viewLink.click(); }, 60); */ } catch (e) {}
+          try { viewLink.focus({ preventScroll: true }); } catch (e) {}
         } else {
           const createBtn = document.querySelector('#section-weekly a.btn, #section-weekly button.btn');
           if (createBtn) createBtn.focus({ preventScroll: true });
@@ -261,12 +346,10 @@
       setTimeout(tryOpenWeekly, 40);
     }
 
-    // If server flagged a wallet top-up transaction, open Wallet section & focus balance or top-up form.
     if (window.WALLET_TX_ID && (finalPanel === 'section-wallet' || finalPanel === 'section-account' || finalPanel === null)) {
       if (document.getElementById('section-wallet')) showTarget('section-wallet', { push: false });
 
       const tryFocusWallet = () => {
-        // prefer focusing balance element, then top-up input, then withdraw button
         const candidates = [
           document.getElementById('wallet-balance'),
           document.querySelector('#section-wallet input[name="amount"], #section-wallet input[type="number"]'),
@@ -279,7 +362,6 @@
           }
         }
 
-        // retry logic in case DOM renders late
         let retries = 0;
         const id = setInterval(() => {
           retries++;
@@ -296,13 +378,17 @@
       setTimeout(tryFocusWallet, 40);
     }
 
-    // reveal the UI once JS has selected the correct panel (prevents FOUC)
     document.documentElement.classList.add('js-ready');
 
-    // Hash change support
+    // Hash change support (handle inner-panel hashes too)
     window.addEventListener('hashchange', () => {
       const id = location.hash.replace('#','');
-      if (document.getElementById(id)) showTarget(id, { push: false });
+      if (!id) return;
+      if (id.startsWith('section-account-edit') && document.getElementById(id)) {
+        showInnerPanel(id, { push: false });
+      } else if (document.getElementById(id)) {
+        showTarget(id, { push: false });
+      }
     });
   });
 })();
