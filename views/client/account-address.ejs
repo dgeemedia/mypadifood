@@ -6,31 +6,26 @@
 <form id="addressForm" class="account-form" novalidate>
   <div class="form-row">
     <label for="client-state">State</label>
-    <select id="client-state" name="state" required>
-      <option value="">Select state</option>
-      <% if (Array.isArray(statesLGAs) && statesLGAs.length) { %>
-      <% statesLGAs.forEach(s => { %>
-      <% if (currentUser && String(currentUser.state || '') === String(s.state)) { %>
-      <option value="<%= s.state %>" selected><%= s.state %></option>
-      <% } else { %>
-      <option value="<%= s.state %>"><%= s.state %></option>
-      <% } %>
-      <% }) %>
-      <% } %>
-    </select>
+    <select id="client-state" name="state" required data-selected="<%= currentUser && currentUser.state ? currentUser.state : '' %>">
+  <option value="">Select state</option>
+  <% if (Array.isArray(statesLGAs) && statesLGAs.length) { %>
+    <% statesLGAs.forEach(s => { %>
+      <option value="<%= s.state %>" <%= (currentUser && String(currentUser.state || '') === String(s.state)) ? 'selected' : '' %>><%= s.state %></option>
+    <% }) %>
+  <% } %>
+</select>
+
   </div>
 
   <div class="form-row">
     <label for="client-lga">LGA</label>
-    <select id="client-lga" name="lga" required>
-      <option value="">Select LGA</option>
-      <% if (currentUser && currentUser.lga) { %>
-      <!-- include current LGA as an initial value; location-picker will repopulate and try to restore this selection -->
-      <option value="<%= currentUser.lga %>" selected>
-        <%= currentUser.lga %>
-      </option>
-      <% } %>
-    </select>
+    <select id="client-lga" name="lga" required data-selected="<%= currentUser && currentUser.lga ? currentUser.lga : '' %>">
+  <option value="">Select LGA</option>
+  <% if (currentUser && currentUser.lga) { %>
+    <option value="<%= currentUser.lga %>" selected><%= currentUser.lga %></option>
+  <% } %>
+</select>
+
   </div>
 
   <div class="form-row">

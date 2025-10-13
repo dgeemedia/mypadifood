@@ -92,6 +92,77 @@
       try { window.initAccountFormHandlers(); } catch (e) { console.warn('initAccountFormHandlers failed', e); }
     }
 
+    // --- ensure state options exist and populate LGAs for the revealed inner panel ---
+    try {
+      // helper: get pooled states data from location-picker loaded sources
+      const getStatesData = () => {
+        // prefer the location-picker's cached data
+        if (window.__LOCATION_PICKER_STATES && Array.isArray(window.__LOCATION_PICKER_STATES) && window.__LOCATION_PICKER_STATES.length) {
+          return window.__LOCATION_PICKER_STATES;
+        }
+        // then window.STATE_DATA
+        if (Array.isArray(window.STATE_DATA) && window.STATE_DATA.length) return window.STATE_DATA;
+        // then try to parse #states-data dataset if present
+        const sd = document.getElementById('states-data');
+        if (sd && sd.dataset && sd.dataset.states) {
+          try { return JSON.parse(sd.dataset.states); } catch (e) { /* ignore */ }
+        }
+        // nothing available synchronously
+        return null;
+      };
+
+      const statesData = getStatesData();
+
+      // find state selects inside this inner panel (address partial uses #client-state)
+      const stateSelects = Array.from(inner.querySelectorAll('select#client-state, select[name="state"]'));
+
+      // If we have statesData synchronously and the state select has only the placeholder, fill it
+      if (statesData && statesData.length) {
+        stateSelects.forEach(s => {
+          // if server didn't render options (only 1 placeholder option), populate client-side
+          if (!s.options || s.options.length <= 1) {
+            s.innerHTML = '<option value="">Select state</option>';
+            statesData.forEach(st => {
+              const name = st.state || st.name || st;
+              const opt = document.createElement('option');
+              opt.value = name;
+              opt.textContent = name;
+              s.appendChild(opt);
+            });
+            // restore previously selected value (if any)
+            const cur = (typeof currentUser !== 'undefined' && currentUser && currentUser.state) ? String(currentUser.state).trim() : '';
+            if (cur) {
+              const found = Array.from(s.options).some(o => String(o.value).trim().toLowerCase() === cur.toLowerCase());
+              if (found) s.value = cur;
+            }
+          }
+          // after ensuring options, populate LGAs for this select using location-picker helpers if available
+          if (window.populateLgasForSelect && typeof window.populateLgasForSelect === 'function') {
+            try { window.populateLgasForSelect(s); } catch (e) { console.warn('populateLgasForSelect failed', e); }
+          } else {
+            // fallback: if location-picker not present, attempt to trigger a change event so other logic may handle it
+            try { s.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
+          }
+        });
+      } else {
+        // no sync states data — try to initialize the location picker (async); it will populate selects
+        if (window.initLocationPicker && typeof window.initLocationPicker === 'function') {
+          window.initLocationPicker().then(() => {
+            const sList = Array.from(inner.querySelectorAll('select#client-state, select[name="state"]'));
+            sList.forEach(s => {
+              if (window.populateLgasForSelect && typeof window.populateLgasForSelect === 'function') {
+                try { window.populateLgasForSelect(s); } catch (e) { console.warn('populateLgasForSelect after init failed', e); }
+              } else {
+                try { s.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
+              }
+            });
+          }).catch(e => console.warn('initLocationPicker failed', e));
+        }
+      }
+    } catch (e) {
+      console.warn('Address panel population failed', e);
+    }
+
     // Update history/state so back/forward works.
     // store the sub-panel in state but use a stable hash (we'll set hash to innerId for readability)
     try {

@@ -487,10 +487,26 @@ exports.dashboard = async (req, res) => {
       client.email ||
       '';
 
+    // --- NEW: ensure currentUser and statesLGAs are available to the template
+    const currentUser = res.locals.currentUser || client || (req.session && req.session.user) || {};
+    let statesLGAs = [];
+    try {
+      if (typeof loadStatesLGAs === 'function') {
+        statesLGAs = loadStatesLGAs();
+      } else if (res.locals && Array.isArray(res.locals.statesLGAs)) {
+        statesLGAs = res.locals.statesLGAs;
+      }
+    } catch (e) {
+      console.warn('Could not load statesLGAs for dashboard', e);
+      statesLGAs = [];
+    }
+
     return res.render('client/dashboard', {
       title: 'Dashboard',
       layout: 'layouts/layout',
       user: client,
+      currentUser,            // NEW
+      statesLGAs,             // NEW
       displayName: displayName || '—',
       wallet,
       orders,
