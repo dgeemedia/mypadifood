@@ -125,5 +125,5 @@ async function main() {
 main();
 
 /*
-node scripts/createSuperAdmin.js super@admin.local 'Ellaberry1@' 'Super Admin'
+node scripts/createSuperAdmin.js super@admin.local 'Superadmin1@' 'George Olumah'
 */

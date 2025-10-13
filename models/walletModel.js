@@ -3,27 +3,101 @@ const { pool } = require('../database/database');
 const uuid = require('uuid');
 
 /**
- * Ensure wallet row exists for client (idempotent).
+ * Return wallet row by client id (or null)
+ */
+async function getByClientId(clientId) {
+  const { rows } = await pool.query(
+    `SELECT wallet_uuid AS id, client_id, balance, wallet_uuid, wallet_identifier,
+            wallet_identifier_locked, created_at, updated_at
+     FROM wallets
+     WHERE client_id = $1
+     LIMIT 1`,
+    [clientId]
+  );
+  return rows[0] || null;
+}
+
+/**
+ * Create wallet if missing. If walletIdentifier provided, set it (but only if no existing identifier).
+ * If race on unique constraint occurs, it falls back to create without identifier.
+ *
+ * lockIdentifier: boolean - when true, sets wallet_identifier_locked = true for the inserted identifier
+ */
+async function createIfNotExists(clientId, walletIdentifier = null, lockIdentifier = true) {
+  const existing = await getByClientId(clientId);
+  if (existing) {
+    // If existing has no identifier and we provided one, attempt to set it (only if not locked)
+    if (!existing.wallet_identifier && walletIdentifier) {
+      try {
+        const { rows } = await pool.query(
+          `UPDATE wallets
+           SET wallet_identifier = $1, wallet_identifier_locked = $2, updated_at = now()
+           WHERE wallet_uuid = $3
+           RETURNING wallet_uuid AS id, client_id, balance, wallet_uuid, wallet_identifier, wallet_identifier_locked`,
+          [walletIdentifier, lockIdentifier, existing.wallet_uuid]
+        );
+        return rows[0] || (await getByClientId(clientId));
+      } catch (err) {
+        // unique constraint could fail (another wallet claimed that identifier), return existing
+        return existing;
+      }
+    }
+    return existing;
+  }
+
+  // Insert new wallet row; include walletIdentifier if provided
+  try {
+    const sql = `
+      INSERT INTO wallets (wallet_uuid, client_id, balance, wallet_identifier, wallet_identifier_locked, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, now(), now())
+      RETURNING wallet_uuid AS id, client_id, balance, wallet_uuid, wallet_identifier, wallet_identifier_locked
+    `;
+    const walletUUID = uuid.v4();
+    const values = [walletUUID, clientId, 0.0, walletIdentifier, walletIdentifier ? lockIdentifier : false];
+    const { rows } = await pool.query(sql, values);
+    return rows[0];
+  } catch (err) {
+    if (err && err.code === '23505') {
+      try {
+        const fallbackUUID = uuid.v4();
+        const { rows } = await pool.query(
+          `INSERT INTO wallets (wallet_uuid, client_id, balance, created_at, updated_at)
+           VALUES ($1, $2, $3, now(), now())
+           RETURNING wallet_uuid AS id, client_id, balance, wallet_uuid, wallet_identifier, wallet_identifier_locked`,
+          [fallbackUUID, clientId, 0.0]
+        );
+        return rows[0];
+      } catch (e2) {
+        return await getByClientId(clientId);
+      }
+    }
+    throw err;
+  }
+}
+
+/**
+ * Ensure wallet row exists for client (idempotent)
  */
 async function ensureWallet(clientId) {
+  const walletUUID = uuid.v4();
   await pool.query(
-    `INSERT INTO wallets (client_id, balance) VALUES ($1, 0)
+    `INSERT INTO wallets (wallet_uuid, client_id, balance, created_at, updated_at)
+     VALUES ($1, $2, 0, now(), now())
      ON CONFLICT (client_id) DO NOTHING`,
-    [clientId]
+    [walletUUID, clientId]
   );
 }
 
 /**
- * Return numeric balance (Number).
+ * Return numeric balance
  */
 async function getBalance(clientId) {
-  await ensureWallet(clientId);
-  const { rows } = await pool.query('SELECT balance FROM wallets WHERE client_id = $1', [clientId]);
-  return rows[0] ? Number(rows[0].balance) : 0;
+  const w = await createIfNotExists(clientId);
+  return Number(w && w.balance ? w.balance : 0);
 }
 
 /**
- * Internal: persist a wallet_transactions row lookup by provider/provider_reference.
+ * Find wallet transaction by provider + provider_reference
  */
 async function findTransactionByProvider(provider, providerReference) {
   if (!provider || !providerReference) return null;
@@ -35,7 +109,7 @@ async function findTransactionByProvider(provider, providerReference) {
 }
 
 /**
- * Internal: find transaction by id.
+ * Find a wallet transaction by its ID
  */
 async function findTransactionById(txId) {
   if (!txId) return null;
@@ -47,12 +121,7 @@ async function findTransactionById(txId) {
 }
 
 /**
- * Atomically credit the wallet and insert wallet_transactions entry.
- * If provider+providerReference is set, this is idempotent: will not double-credit.
- *
- * @param {string} clientId
- * @param {number} amount - positive number
- * @param {Object} opts { provider, providerReference, orderId, note, raw, reason }
+ * Credit wallet (atomic, idempotent)
  */
 async function creditFromProvider(clientId, amount, opts = {}) {
   const {
@@ -67,109 +136,95 @@ async function creditFromProvider(clientId, amount, opts = {}) {
   if (!clientId) throw new Error('clientId required');
   if (!amount || Number(amount) <= 0) throw new Error('amount must be positive');
 
-  const client = await pool.connect();
+  const conn = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await conn.query('BEGIN');
 
-    // idempotency check: if provider+providerReference already applied, return existing row
     if (provider && providerReference) {
-      const { rows: existing } = await client.query(
+      const { rows: existing } = await conn.query(
         `SELECT * FROM wallet_transactions WHERE provider=$1 AND provider_reference=$2 LIMIT 1`,
         [provider, providerReference]
       );
       if (existing && existing.length) {
-        await client.query('COMMIT');
+        await conn.query('COMMIT');
         return existing[0];
       }
     }
 
-    // insert wallet transaction row (credit)
     const txId = uuid.v4();
-    await client.query(
+    await conn.query(
       `INSERT INTO wallet_transactions
-        (id, client_id, amount, type, reason, provider, provider_reference, order_id, note, raw)
-       VALUES ($1,$2,$3,'credit',$4,$5,$6,$7,$8,$9)`,
+        (id, client_id, amount, type, reason, provider, provider_reference, order_id, note, raw, created_at)
+       VALUES ($1,$2,$3,'credit',$4,$5,$6,$7,$8,$9, now())`,
       [txId, clientId, amount, reason, provider, providerReference, orderId, note, raw]
     );
 
-    // update or insert wallet row
-    await client.query(
-      `INSERT INTO wallets (client_id, balance, updated_at)
-         VALUES ($1, $2, now())
+    await conn.query(
+      `INSERT INTO wallets (wallet_uuid, client_id, balance, created_at, updated_at)
+       VALUES ($1, $2, $3, now(), now())
        ON CONFLICT (client_id) DO UPDATE
          SET balance = wallets.balance + EXCLUDED.balance, updated_at = now()`,
-      [clientId, amount]
+      [uuid.v4(), clientId, amount]
     );
 
-    await client.query('COMMIT');
+    await conn.query('COMMIT');
     return { id: txId, client_id: clientId, amount, reason };
   } catch (err) {
-    await client.query('ROLLBACK');
+    await conn.query('ROLLBACK');
     throw err;
   } finally {
-    client.release();
+    conn.release();
   }
 }
 
 /**
- * Atomically debit wallet if enough funds. Returns { success, balance, txId }.
- * Records a wallet_transactions row with type='debit'.
- *
- * @param {string} clientId
- * @param {number} amount - positive number
- * @param {Object} opts { orderId, note, raw }
+ * Debit wallet if enough funds
  */
 async function debitIfEnough(clientId, amount, opts = {}) {
   const { orderId = null, note = null, raw = {} } = opts;
   if (!clientId) throw new Error('clientId required');
   if (!amount || Number(amount) <= 0) throw new Error('amount must be positive');
 
-  const client = await pool.connect();
+  const conn = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await conn.query('BEGIN');
 
-    // lock wallet row
-    const { rows } = await client.query('SELECT balance FROM wallets WHERE client_id = $1 FOR UPDATE', [clientId]);
-    const balance = rows[0] ? Number(rows[0].balance) : 0;
+    const { rows } = await conn.query(
+      `SELECT wallet_uuid AS id, balance FROM wallets WHERE client_id = $1 FOR UPDATE`,
+      [clientId]
+    );
+    const balance = rows && rows[0] ? Number(rows[0].balance) : 0;
 
     if (balance < amount) {
-      await client.query('ROLLBACK');
+      await conn.query('ROLLBACK');
       return { success: false, balance };
     }
 
-    // create debit transaction
     const txId = uuid.v4();
-    await client.query(
+    await conn.query(
       `INSERT INTO wallet_transactions
-        (id, client_id, amount, type, reason, provider, provider_reference, order_id, note, raw)
-       VALUES ($1,$2,$3,'debit','purchase','wallet',NULL,$4,$5,$6)`,
+        (id, client_id, amount, type, reason, provider, provider_reference, order_id, note, raw, created_at)
+       VALUES ($1,$2,$3,'debit','purchase','wallet',NULL,$4,$5,$6, now())`,
       [txId, clientId, amount, orderId, note, raw]
     );
 
-    // update wallet balance
-    await client.query('UPDATE wallets SET balance = balance - $1, updated_at = now() WHERE client_id = $2', [amount, clientId]);
+    await conn.query(
+      `UPDATE wallets SET balance = balance - $1, updated_at = now() WHERE client_id = $2`,
+      [amount, clientId]
+    );
 
-    await client.query('COMMIT');
+    await conn.query('COMMIT');
     return { success: true, balance: balance - amount, txId };
   } catch (err) {
-    await client.query('ROLLBACK');
+    await conn.query('ROLLBACK');
     throw err;
   } finally {
-    client.release();
+    conn.release();
   }
 }
 
 /**
- * Refund money into a client's wallet.
- *
- * This will:
- *  - insert a wallet_transactions row with type='credit' and reason='refund'
- *  - increment the wallet balance atomically
- *  - optionally accept provider/providerReference to make it idempotent (won't double-apply)
- *
- * @param {string} clientId
- * @param {number} amount
- * @param {Object} opts { provider, providerReference, orderId, note, raw, original_tx_id }
+ * Refund to wallet (credit back)
  */
 async function refundToWallet(clientId, amount, opts = {}) {
   const {
@@ -184,50 +239,67 @@ async function refundToWallet(clientId, amount, opts = {}) {
   if (!clientId) throw new Error('clientId required');
   if (!amount || Number(amount) <= 0) throw new Error('amount must be positive');
 
-  const client = await pool.connect();
+  const conn = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await conn.query('BEGIN');
 
-    // idempotency check when provider/providerReference supplied
     if (provider && providerReference) {
-      const { rows: existing } = await client.query(
-        `SELECT * FROM wallet_transactions WHERE provider = $1 AND provider_reference = $2 LIMIT 1`,
+      const { rows: existing } = await conn.query(
+        `SELECT * FROM wallet_transactions WHERE provider=$1 AND provider_reference=$2 LIMIT 1`,
         [provider, providerReference]
       );
       if (existing && existing.length) {
-        await client.query('COMMIT');
+        await conn.query('COMMIT');
         return existing[0];
       }
     }
 
     const txId = uuid.v4();
-    await client.query(
+    await conn.query(
       `INSERT INTO wallet_transactions
-        (id, client_id, amount, type, reason, provider, provider_reference, order_id, note, raw)
-       VALUES ($1,$2,$3,'credit','refund',$4,$5,$6,$7,$8)`,
+        (id, client_id, amount, type, reason, provider, provider_reference, order_id, note, raw, created_at)
+       VALUES ($1,$2,$3,'credit','refund',$4,$5,$6,$7,$8, now())`,
       [txId, clientId, amount, provider, providerReference, orderId, note || `refund${original_tx_id ? ' for '+original_tx_id : ''}`, raw]
     );
 
-    // update wallet
-    await client.query(
-      `INSERT INTO wallets (client_id, balance, updated_at)
-         VALUES ($1, $2, now())
+    await conn.query(
+      `INSERT INTO wallets (wallet_uuid, client_id, balance, created_at, updated_at)
+       VALUES ($1, $2, $3, now(), now())
        ON CONFLICT (client_id) DO UPDATE
          SET balance = wallets.balance + EXCLUDED.balance, updated_at = now()`,
-      [clientId, amount]
+      [uuid.v4(), clientId, amount]
     );
 
-    await client.query('COMMIT');
+    await conn.query('COMMIT');
     return { id: txId, client_id: clientId, amount, reason: 'refund' };
   } catch (err) {
-    await client.query('ROLLBACK');
+    await conn.query('ROLLBACK');
     throw err;
   } finally {
-    client.release();
+    conn.release();
   }
 }
 
+/**
+ * Simple wrappers
+ */
+async function creditWallet(clientId, amount) {
+  return creditFromProvider(clientId, amount, { reason: 'manual_credit' });
+}
+
+async function debitWallet(clientId, amount) {
+  const res = await debitIfEnough(clientId, amount);
+  if (!res.success) {
+    const err = new Error('Insufficient funds');
+    err.code = 'INSUFFICIENT_FUNDS';
+    throw err;
+  }
+  return res;
+}
+
 module.exports = {
+  getByClientId,
+  createIfNotExists,
   ensureWallet,
   getBalance,
   findTransactionByProvider,
@@ -235,4 +307,6 @@ module.exports = {
   creditFromProvider,
   debitIfEnough,
   refundToWallet,
+  creditWallet,
+  debitWallet,
 };

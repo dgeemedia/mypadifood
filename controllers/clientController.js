@@ -12,7 +12,7 @@ const orderModel = models.order;
 const messageModel = models.message;
 const notificationModel = models.notification;
 const paymentsUtil = require('../utils/payments');
-const walletModel = models.wallet;
+const walletModel = (models && models.wallet) ? models.wallet : require('../models/walletModel');
 const paymentModel = models.payment;
 const withdrawalModel = models.withdrawal;
 
@@ -22,6 +22,7 @@ const weeklyPlanMessageModel =
   models.weeklyPlanMessages || require('../models/weeklyPlanMessageModel');
 
 const { sendMail } = require('../utils/mailer');
+const { toLocal10, maskLocalId } = require('../utils/phone');
 
 const SALT_ROUNDS = 10;
 const VERIFICATION_TOKEN_TTL_HOURS = 48;
@@ -402,24 +403,30 @@ exports.logout = (req, res) => {
   });
 };
 
-// Client dashboard: show local vendors and client orders
+/**
+ * Client dashboard: show local vendors and client orders
+ */
 exports.dashboard = async (req, res) => {
   try {
-    const clientId = req.session.user.id;
+    const clientId = req.session.user && req.session.user.id;
+    if (!clientId) {
+      req.session.error = 'Not authenticated';
+      return res.redirect('/');
+    }
+
     const client = await clientModel.findById(clientId);
     if (!client) {
       req.session.error = 'Client not found';
       return res.redirect('/');
     }
 
-    // --- NEW: read optional search filters from query string ---
+    // --- search filters (query string)
     const filters = {
       q: req.query.q ? String(req.query.q).trim() : null,
       state: req.query.state ? String(req.query.state).trim() : null,
       lga: req.query.lga ? String(req.query.lga).trim() : null,
     };
 
-    // If user didn't supply any filters, default to client's location (old behavior)
     const vendorFilter = {};
     if (filters.q) vendorFilter.q = filters.q;
     if (filters.state) vendorFilter.state = filters.state;
@@ -433,46 +440,66 @@ exports.dashboard = async (req, res) => {
     const vendors = await vendorModel.getApprovedVendors(vendorFilter);
     const orders = await orderModel.getOrdersByClient(clientId);
 
-    // Pull recent order id from session (set at booking time) — then remove it so it only triggers once
+    // Pull recent IDs for UI focus (one-time)
     const recentOrderId = req.session.recent_order_id || null;
     if (req.session.recent_order_id) delete req.session.recent_order_id;
 
-    // Pull recent weekly plan id (same pattern)
     const recentWeeklyPlanId = req.session.recent_weekly_plan_id || null;
     if (req.session.recent_weekly_plan_id) delete req.session.recent_weekly_plan_id;
 
-    // NEW: Pull recent wallet tx id (set after a successful wallet top-up)
     const recentWalletTxId = req.session.recent_wallet_tx_id || null;
     if (req.session.recent_wallet_tx_id) delete req.session.recent_wallet_tx_id;
 
-    // also fetch weekly plans to show in dashboard if desired
+    // weekly plans (non-fatal)
     let weeklyPlans = [];
     try {
       weeklyPlans = await weeklyPlanModel.getPlansByClient(clientId);
     } catch (e) {
-      // non-fatal; we still render dashboard
       console.warn('Could not load weekly plans for dashboard', e);
     }
 
-    // Get wallet balance (safe: use models.wallet if exported, otherwise require fallback)
-    let balance = null;
-    try {
-      const walletModel = (models && models.wallet) ? models.wallet : require('../models/walletModel');
-      balance = await walletModel.getBalance(clientId);
-    } catch (e) {
-      console.warn('Could not read wallet balance:', e);
-      balance = null;
-    }
+    // Normalize client's phone to local 10-digit (e.g. +2348065104250 -> 8065104250)
+    const rawPhone = client.phone || client.phonenumber || client.msisdn || null;
+    const local10 = toLocal10(rawPhone); // may be null if not parseable
+
+    // Ensure wallet exists and attempt to set wallet_identifier if not present (won't overwrite locked)
+    const w = await walletModel.createIfNotExists(clientId, local10 || null, true);
+
+    // choose wallet id for display: prefer wallet_identifier (local phone), else wallet_uuid, else numeric id
+    const walletRawId =
+      (w && w.wallet_identifier) ? w.wallet_identifier
+        : (w && w.wallet_uuid) ? w.wallet_uuid
+          : (w && w.id) ? String(w.id) : null;
+
+    const wallet = {
+      id: walletRawId,
+      displayId: (w && w.wallet_identifier) ? w.wallet_identifier : walletRawId,
+      maskedDisplay: maskLocalId((w && w.wallet_identifier) ? w.wallet_identifier : (walletRawId || '')),
+      balance: Number(w && w.balance ? w.balance : 0),
+      identifier_locked: !!(w && w.wallet_identifier_locked),
+    };
+
+    // compute displayName robustly from client record
+    const displayName =
+      client.name ||
+      client.full_name ||
+      (client.first_name && client.last_name ? `${client.first_name} ${client.last_name}` : null) ||
+      client.email ||
+      '';
 
     return res.render('client/dashboard', {
-      vendors,
+      title: 'Dashboard',
+      layout: 'layouts/layout',
+      user: client,
+      displayName: displayName || '—',
+      wallet,
       orders,
+      weeklyPlans,
+      vendors,
+      filters,
       recentOrderId,
       recentWeeklyPlanId,
-      recentWalletTxId, // passed to EJS so client JS can open wallet panel
-      weeklyPlans,
-      filters,
-      balance,
+      recentWalletTxId,
     });
   } catch (err) {
     console.error('Error loading client dashboard:', err);
@@ -480,7 +507,6 @@ exports.dashboard = async (req, res) => {
     return res.redirect('/');
   }
 };
-
 
 // Client posts menu/update to an existing order (so admin sees it)
 exports.postOrderMenu = async (req, res) => {
@@ -1249,92 +1275,147 @@ exports.viewWeeklyPlan = async (req, res) => {
   }
 };
 
+/* --------------------------
+   Manage account forms & updates
+   (Show form pages and handle POSTs)
+   -------------------------- */
+
+// Show account menu (keeps your existing behavior)
 exports.showAccountMenu = (req, res) => {
-  // res.locals.currentUser already set by authJwt.checkJWTToken
+  // res.locals.currentUser already set by auth middleware (if present)
   return res.render('client/account-menu', {
-    currentUser: res.locals.currentUser,
+    currentUser: res.locals.currentUser || (req.session && req.session.user) || {},
   });
 };
 
+// Render phone edit form (uses res.locals.currentUser for JWT flow)
 exports.showPhoneForm = (req, res) => {
   return res.render('client/account-phone', {
-    currentUser: res.locals.currentUser,
+    currentUser: res.locals.currentUser || (req.session && req.session.user) || {},
   });
 };
 
+// Render address edit form (exposes statesLGAs for the location picker)
 exports.showAddressForm = (req, res) => {
   return res.render('client/account-address', {
-    currentUser: res.locals.currentUser,
+    currentUser: res.locals.currentUser || (req.session && req.session.user) || {},
     statesLGAs: loadStatesLGAs(),
   });
 };
 
+// Render change-password form
 exports.showPasswordForm = (req, res) => {
   return res.render('client/account-password', {
-    currentUser: res.locals.currentUser,
+    currentUser: res.locals.currentUser || (req.session && req.session.user) || {},
   });
 };
 
-// AJAX handlers
+/**
+ * AJAX: Update phone
+ * - Uses clientModel.updatePhone(clientId, newPhone) if available
+ * - Falls back to clientModel.updateClient(clientId, { phone: newPhone })
+ * - Does NOT change wallet identifier.
+ */
 exports.updatePhone = async (req, res) => {
   try {
     const clientId =
       (req.user && req.user.id) ||
       (req.session && req.session.user && req.session.user.id);
-    if (!clientId)
-      return res
-        .status(401)
-        .json({ success: false, error: 'Not authenticated' });
+    if (!clientId) {
+      if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+        return res.status(401).json({ success: false, error: 'Not authenticated' });
+      }
+      req.session.error = 'Not authenticated';
+      return res.redirect('/login');
+    }
 
     const newPhone = String((req.body && req.body.phone) || '').trim();
     if (!newPhone || newPhone.length < 6) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: 'Please provide a valid phone number.',
-        });
+      if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+        return res.status(400).json({ success: false, error: 'Please provide a valid phone number.' });
+      }
+      req.session.error = 'Please provide a valid phone number.';
+      return res.redirect('/client/account/phone');
     }
 
-    const updated = await clientModel.updatePhone(clientId, newPhone);
+    // Use model helpers if present, else fall back
+    let updated;
+    if (typeof clientModel.updatePhone === 'function') {
+      updated = await clientModel.updatePhone(clientId, newPhone);
+    } else if (typeof clientModel.updateClient === 'function') {
+      await clientModel.updateClient(clientId, { phone: newPhone });
+      updated = await clientModel.findById(clientId);
+    } else {
+      if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+        return res.status(500).json({ success: false, error: 'Server not configured to update phone' });
+      }
+      req.session.error = 'Server not configured to update phone';
+      return res.redirect('/client/account/phone');
+    }
+
     // Sync session user display phone if present
-    if (req.session && req.session.user) req.session.user.phone = updated.phone;
-    return res.json({
-      success: true,
-      message: 'Phone updated',
-      phone: updated.phone,
-    });
+    if (req.session && req.session.user) req.session.user.phone = updated && updated.phone ? updated.phone : newPhone;
+
+    // Return JSON for AJAX; otherwise redirect back to dashboard with flash
+    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+      return res.json({ success: true, message: 'Phone updated', phone: updated.phone || newPhone });
+    }
+
+    req.session.success = 'Phone updated (wallet ID unchanged).';
+    return res.redirect('/client/dashboard#section-account');
   } catch (err) {
     console.error('updatePhone error', err);
-    return res.status(500).json({ success: false, error: 'Server error' });
+    if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+      return res.status(500).json({ success: false, error: 'Server error' });
+    }
+    req.session.error = 'Could not update phone.';
+    return res.redirect('/client/dashboard#section-account');
   }
 };
 
+/**
+ * AJAX: Update address
+ * - Uses clientModel.updateAddress(clientId, newAddress) if available
+ * - Falls back to clientModel.updateClient(clientId, { address, state, lga })
+ */
 exports.updateAddress = async (req, res) => {
   try {
     const clientId =
       (req.user && req.user.id) ||
       (req.session && req.session.user && req.session.user.id);
     if (!clientId)
-      return res
-        .status(401)
-        .json({ success: false, error: 'Not authenticated' });
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
 
-    const newAddress = String((req.body && req.body.address) || '').trim();
-    if (!newAddress) {
-      return res
-        .status(400)
-        .json({ success: false, error: 'Address cannot be empty.' });
+    const address = String((req.body && req.body.address) || '').trim();
+    const state = req.body && req.body.state ? String(req.body.state).trim() : null;
+    const lga = req.body && req.body.lga ? String(req.body.lga).trim() : null;
+
+    if (!address) {
+      return res.status(400).json({ success: false, error: 'Address cannot be empty.' });
     }
 
-    // optional: validate state/lga if provided
-    const updated = await clientModel.updateAddress(clientId, newAddress);
-    if (req.session && req.session.user)
-      req.session.user.address = updated.address;
+    let updated;
+    if (typeof clientModel.updateAddress === 'function') {
+      updated = await clientModel.updateAddress(clientId, { address, state, lga });
+    } else if (typeof clientModel.updateClient === 'function') {
+      await clientModel.updateClient(clientId, { address, state, lga });
+      updated = await clientModel.findById(clientId);
+    } else {
+      return res
+        .status(500)
+        .json({ success: false, error: 'Server not configured to update address' });
+    }
+
+    if (req.session && req.session.user) {
+      req.session.user.address = updated.address || address;
+      if (state) req.session.user.state = updated.state || state;
+      if (lga) req.session.user.lga = updated.lga || lga;
+    }
+
     return res.json({
       success: true,
       message: 'Address updated',
-      address: updated.address,
+      address: updated.address || address,
     });
   } catch (err) {
     console.error('updateAddress error', err);
@@ -1342,15 +1423,21 @@ exports.updateAddress = async (req, res) => {
   }
 };
 
+/**
+ * AJAX: Update password
+ *
+ * Expects current_password, new_password, confirm_password in body.
+ * - Validates presence, match, and minimal length.
+ * - Verifies current password against either client.password or client.password_hash.
+ * - Uses clientModel.updatePassword(clientId, hash) or clientModel.updateClient(clientId, { password_hash: hash }) as fallback.
+ */
 exports.updatePassword = async (req, res) => {
   try {
     const clientId =
       (req.user && req.user.id) ||
       (req.session && req.session.user && req.session.user.id);
     if (!clientId)
-      return res
-        .status(401)
-        .json({ success: false, error: 'Not authenticated' });
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
 
     const { current_password, new_password, confirm_password } = req.body || {};
 
@@ -1360,37 +1447,48 @@ exports.updatePassword = async (req, res) => {
         .json({ success: false, error: 'All password fields are required.' });
     }
     if (new_password !== confirm_password) {
-      return res
-        .status(400)
-        .json({ success: false, error: 'New passwords do not match.' });
+      return res.status(400).json({ success: false, error: 'New passwords do not match.' });
     }
-    // optional: enforce strength policy server-side
+    // enforce minimal strength policy server-side
     if (String(new_password).length < 8) {
       return res
         .status(400)
-        .json({
-          success: false,
-          error: 'New password must be at least 8 characters.',
-        });
+        .json({ success: false, error: 'New password must be at least 8 characters.' });
     }
 
     const user = await clientModel.findById(clientId);
-    if (!user)
-      return res.status(404).json({ success: false, error: 'User not found' });
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
-    const match = await bcrypt.compare(current_password, user.password_hash);
-    if (!match) {
-      return res
-        .status(400)
-        .json({ success: false, error: 'Current password is incorrect.' });
+    // determine what field holds the hashed password
+    const passwordHashField = user.password || user.password_hash || null;
+    if (passwordHashField) {
+      const match = await bcrypt.compare(current_password, passwordHashField);
+      if (!match) {
+        return res.status(400).json({ success: false, error: 'Current password is incorrect.' });
+      }
+    } else {
+      // no existing password; allow setting new password without checking current_password
+      // (you may want to require verification if account created via social/otp)
     }
 
     const hash = await bcrypt.hash(new_password, SALT_ROUNDS);
-    await clientModel.updatePassword(clientId, hash);
+
+    if (typeof clientModel.updatePassword === 'function') {
+      await clientModel.updatePassword(clientId, hash);
+    } else if (typeof clientModel.updateClient === 'function') {
+      // try to set password_hash or password depending on model shape
+      if ('password_hash' in user) {
+        await clientModel.updateClient(clientId, { password_hash: hash });
+      } else {
+        await clientModel.updateClient(clientId, { password: hash });
+      }
+    } else {
+      return res.status(500).json({ success: false, error: 'Server not configured to update password' });
+    }
+
     return res.json({
       success: true,
-      message:
-        'Password updated. Please use the new password next time you log in.',
+      message: 'Password updated. Please use the new password next time you log in.',
     });
   } catch (err) {
     console.error('updatePassword error', err);

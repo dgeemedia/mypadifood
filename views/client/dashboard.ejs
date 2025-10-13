@@ -8,6 +8,13 @@
           <span class="nav-label">Manage account</span>
         </button>
       </li>
+      
+      <li>
+        <button class="nav-item" data-target="section-account-edit" title="Edit account">
+        <span class="nav-icon" aria-hidden="true"><i class="fa fa-user-edit"></i></span>
+        <span class="nav-label">Edit account</span>
+        </button>
+      </li>
 
       <li>
         <button class="nav-item" data-target="section-weekly" title="Weekly plan">
@@ -37,54 +44,148 @@
         </button>
       </li>
 
+      <li>
+        <button class="nav-item" data-target="section-actions" title="Quick actions">
+          <span class="nav-icon" aria-hidden="true"><i class="fa fa-th-large"></i></span>
+          <span class="nav-label">Quick actions</span>
+        </button>
+      </li>
     </ul>
   </nav>
 
   <main class="app-main">
-    <!-- ACCOUNT -->
+    <!-- SECTION 1: Summary -->
     <section id="section-account" class="app-section" data-title="Manage account">
-      <!-- heading kept for screen readers only -->
-      <h2 class="sr-only">Manage account</h2>
+      <div class="summary-grid">
+        <div class="customer-summary card">
+          <h3>Customer summary</h3>
 
-      <section>
-        <h3>Your account</h3>
-        <p>
-          <a href="/client/account" class="btn">Manage account</a>
-        </p>
-      </section>
+          <!-- Updated Customer name -->
+          <div class="customer-row">
+            <div class="label">Customer name</div>
+            <div class="value">
+              <%= (typeof displayName !== 'undefined' && displayName) 
+                    ? displayName 
+                    : (user && (user.name || user.email)) 
+                      ? (user.name || user.email) 
+                      : '—' %>
+            </div>
+          </div>
+
+          <!-- Updated Wallet ID -->
+          <div class="customer-row">
+            <div class="label">Wallet ID</div>
+            <div class="value">
+              <span title="<%= wallet && wallet.id ? wallet.id : '' %>">
+                <%= (wallet && wallet.displayId) 
+                      ? wallet.displayId 
+                      : (wallet && wallet.id) 
+                        ? wallet.id 
+                        : '—' %>
+              </span>
+              <% if (wallet && wallet.maskedDisplay) { %>
+                <small class="muted" style="margin-left:8px">(<%= wallet.maskedDisplay %>)</small>
+              <% } %>
+            </div>
+          </div>
+
+          <div class="customer-row">
+            <div class="label">Wallet Balance</div>
+            <div class="value">₦<span id="balance-value"><%= (wallet && wallet.balance) ? Number(wallet.balance).toFixed(2) : '0.00' %></span></div>
+          </div>
+
+          <div class="customer-row">
+            <div class="label">Total Orders</div>
+            <div class="value"><%= (orders && orders.length) ? orders.length : 0 %></div>
+          </div>
+
+          <div class="customer-row">
+            <div class="label">Total Weekly Plan</div>
+            <div class="value"><%= (weeklyPlans && weeklyPlans.length) ? weeklyPlans.length : 0 %></div>
+          </div>
+        </div>
+
+        <div class="card stats-tiles" aria-hidden="false">
+          <div class="stat">
+            <div class="title">Active Wallet</div>
+            <div class="num">₦<%= (wallet && wallet.balance) ? Number(wallet.balance).toFixed(2) : '0.00' %></div>
+          </div>
+          <div class="stat">
+            <div class="title">Orders</div>
+            <div class="num"><%= (orders && orders.length) ? orders.length : 0 %></div>
+          </div>
+          <div class="stat">
+            <div class="title">Weekly Plans</div>
+            <div class="num"><%= (weeklyPlans && weeklyPlans.length) ? weeklyPlans.length : 0 %></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: Icons / Actions -->
+    <section id="section-actions" class="app-section app-section-hidden" data-title="Quick actions">
+      <div class="icons-grid card">
+        <div class="icon-card" role="button" tabindex="0" onclick="document.querySelector('[data-target=&quot;section-account&quot;]').click()">
+          <div class="icon"><i class="fa fa-user"></i></div>
+          <div class="label">Manage account</div>
+        </div>
+
+        <div class="icon-card" role="button" tabindex="0" onclick="document.querySelector('[data-target=&quot;section-weekly&quot;]').click()">
+          <div class="icon"><i class="fa fa-calendar-alt"></i></div>
+          <div class="label">Weekly plan</div>
+        </div>
+
+        <div class="icon-card" role="button" tabindex="0" onclick="document.querySelector('[data-target=&quot;section-orders&quot;]').click()">
+          <div class="icon"><i class="fa fa-shopping-basket"></i></div>
+          <div class="label">Place order</div>
+        </div>
+
+        <div class="icon-card" role="button" tabindex="0" onclick="document.querySelector('[data-target=&quot;section-vendors&quot;]').click()">
+          <div class="icon"><i class="fa fa-store"></i></div>
+          <div class="label">Find vendor</div>
+        </div>
+
+        <div class="icon-card" role="button" tabindex="0" onclick="document.querySelector('[data-target=&quot;section-wallet&quot;]').click()">
+          <div class="icon"><i class="fa fa-wallet"></i></div>
+          <div class="label">Fund wallet</div>
+        </div>
+
+        <div class="icon-card" role="button" tabindex="0" onclick="location.href='/client/transactions'">
+          <div class="icon"><i class="fa fa-exchange-alt"></i></div>
+          <div class="label">Deposit / Withdraw</div>
+        </div>
+      </div>
     </section>
 
     <!--WALLET-->
     <section id="section-wallet" class="app-section app-section-hidden" data-title="Wallet">
-  <h2 class="sr-only">Wallet</h2>
-  <section>
-    <h3>Your Wallet</h3>
-    <p>Balance: ₦<span id="wallet-balance"><%= (typeof balance !== 'undefined' ? Number(balance).toFixed(2) : '0.00') %></span></p>
+      <h2 class="sr-only">Wallet</h2>
+      <section>
+        <h3>Your Wallet</h3>
+        <p>Balance: ₦<span id="wallet-balance"><%= (wallet && wallet.balance !== undefined) ? Number(wallet.balance).toFixed(2) : '0.00' %></span></p>
 
-    <h4>Fund wallet</h4>
-    <form method="post" action="/client/wallet/fund" id="wallet-fund-form">
-      <input type="number" name="amount" step="0.01" min="50" placeholder="Amount (₦)" required />
-      <select name="provider" required>
-        <option value="paystack">Paystack</option>
-        <option value="flutterwave">Flutterwave</option>
-      </select>
-      <button type="submit" class="btn">Fund wallet</button>
-    </form>
+        <h4>Fund wallet</h4>
+        <form method="post" action="/client/wallet/fund" id="wallet-fund-form">
+          <input type="number" name="amount" step="0.01" min="50" placeholder="Amount (₦)" required />
+          <select name="provider" required>
+            <option value="paystack">Paystack</option>
+            <option value="flutterwave">Flutterwave</option>
+          </select>
+          <button type="submit" class="btn">Fund wallet</button>
+        </form>
 
-    <form method="post" action="/client/wallet/withdraw" id="wallet-withdraw-form">
-      <input type="number" name="amount" step="0.01" min="50" placeholder="Amount (₦)" required />
-      <!-- optional destination fields (or keep bank details in profile) -->
-      <input type="text" name="bank_name" placeholder="Bank name" />
-      <input type="text" name="account_number" placeholder="Account number" />
-      <input type="text" name="account_name" placeholder="Account name" />
-      <button type="submit" class="btn">Request withdrawal</button>
-    </form>
+        <form method="post" action="/client/wallet/withdraw" id="wallet-withdraw-form">
+          <input type="number" name="amount" step="0.01" min="50" placeholder="Amount (₦)" required />
+          <!-- optional destination fields (or keep bank details in profile) -->
+          <input type="text" name="bank_name" placeholder="Bank name" />
+          <input type="text" name="account_number" placeholder="Account number" />
+          <input type="text" name="account_name" placeholder="Account name" />
+          <button type="submit" class="btn">Request withdrawal</button>
+        </form>
 
-
-    <p class="muted">Top up your wallet and use it to pay for orders.</p>
-  </section>
-</section>
-
+        <p class="muted">Top up your wallet and use it to pay for orders.</p>
+      </section>
+    </section>
 
     <!-- WEEKLY PLAN -->
     <section id="section-weekly" class="app-section app-section-hidden" data-title="Weekly plan">
@@ -173,85 +274,106 @@
       </section>
     </section>
 
-<!-- VENDORS -->
-<section id="section-vendors" class="app-section app-section-hidden" data-title="Find local vendor">
-  <h2 class="sr-only">Find local vendor</h2>
+    <!-- VENDORS -->
+    <section id="section-vendors" class="app-section app-section-hidden" data-title="Find local vendor">
+      <h2 class="sr-only">Find local vendor</h2>
 
-  <section>
-    <!-- Search hero (same UX as index.ejs) -->
-    <section class="hero" aria-hidden="false">
-      <% const f = (typeof filters !== 'undefined' && filters) ? filters : {}; %>
-      <h3>Local Food Vendors</h3>
+      <section>
+        <!-- Search hero (same UX as index.ejs) -->
+        <section class="hero" aria-hidden="false">
+          <% const f = (typeof filters !== 'undefined' && filters) ? filters : {}; %>
+          <h3>Local Food Vendors</h3>
 
-      <form method="get" action="/client/dashboard" class="vendor-search-form" aria-label="Vendor search">
-        <input
-          type="text"
-          name="q"
-          placeholder="Search vendor or food item"
-          value="<%= f.q ? f.q : '' %>"
-          aria-label="Search vendor or food item"
-        />
+          <form method="get" action="/client/dashboard" class="vendor-search-form" aria-label="Vendor search">
+            <input
+              type="text"
+              name="q"
+              placeholder="Search vendor or food item"
+              value="<%= f.q ? f.q : '' %>"
+              aria-label="Search vendor or food item"
+            />
 
-        <!-- state input uses datalist -->
-        <input
-          type="text"
-          name="state"
-          id="vendor-search-state"
-          list="states-datalist"
-          placeholder="State (optional)"
-          value="<%= f.state ? f.state : '' %>"
-          autocomplete="off"
-          aria-label="State"
-        />
-        <datalist id="states-datalist"></datalist>
+            <!-- state input uses datalist -->
+            <input
+              type="text"
+              name="state"
+              id="vendor-search-state"
+              list="states-datalist"
+              placeholder="State (optional)"
+              value="<%= f.state ? f.state : '' %>"
+              autocomplete="off"
+              aria-label="State"
+            />
+            <datalist id="states-datalist"></datalist>
 
-        <!-- lga input uses datalist that will be populated based on selected state -->
-        <input
-          type="text"
-          name="lga"
-          id="vendor-search-lga"
-          list="lgas-datalist"
-          placeholder="LGA (optional)"
-          value="<%= f.lga ? f.lga : '' %>"
-          autocomplete="off"
-          aria-label="Local government area"
-        />
-        <datalist id="lgas-datalist"></datalist>
+            <!-- lga input uses datalist that will be populated based on selected state -->
+            <input
+              type="text"
+              name="lga"
+              id="vendor-search-lga"
+              list="lgas-datalist"
+              placeholder="LGA (optional)"
+              value="<%= f.lga ? f.lga : '' %>"
+              autocomplete="off"
+              aria-label="Local government area"
+            />
+            <datalist id="lgas-datalist"></datalist>
 
-        <button type="submit" class="btn">Search</button>
-        <button type="button" id="vendor-search-clear" class="btn btn-link">Clear</button>
-      </form>
+            <button type="submit" class="btn">Search</button>
+            <button type="button" id="vendor-search-clear" class="btn btn-link">Clear</button>
+          </form>
 
-      <p class="muted">Search anywhere by vendor name, food item, state or LGA. Leave filters empty to show vendors near you.</p>
+          <p class="muted">Search anywhere by vendor name, food item, state or LGA. Leave filters empty to show vendors near you.</p>
+        </section>
+
+        <!-- Results -->
+        <% if (!vendors || !vendors.length) { %>
+          <p>No vendors found. Try another location or search term.</p>
+        <% } else { %>
+          <div class="vendors-list">
+            <% vendors.forEach(function(v) { %>
+              <article class="vendor-card">
+                <h4><a href="/vendor/<%= v.id %>"><%= v.name %></a></h4>
+                <p><strong>Food:</strong> <%= v.food_item %></p>
+                <p><strong>Price (per plate):</strong> ₦<%= v.base_price %></p>
+                <p><strong>Address:</strong> <%= v.address %> (<%= v.lga %>, <%= v.state %>)</p>
+                <form method="post" action="/client/book">
+                  <input type="hidden" name="vendorId" value="<%= v.id %>" />
+                  <input type="text" name="item" placeholder="Special request (optional)" />
+                  <select name="payment_method">
+                    <option value="cod">Pay on delivery</option>
+                    <option value="wallet">Pay from wallet</option>
+                    <option value="paystack">Pay online (Paystack)</option>
+                    <option value="flutterwave">Pay online (Flutterwave)</option>
+                  </select>
+                  <button type="submit" class="btn">Book / Order</button>
+                </form>
+              </article>
+            <% }); %>
+          </div>
+        <% } %>
+      </section>
     </section>
 
-    <!-- Results -->
-    <% if (!vendors || !vendors.length) { %>
-      <p>No vendors found. Try another location or search term.</p>
-    <% } else { %>
-      <div class="vendors-list">
-        <% vendors.forEach(function(v) { %>
-          <article class="vendor-card">
-            <h4><a href="/vendor/<%= v.id %>"><%= v.name %></a></h4>
-            <p><strong>Food:</strong> <%= v.food_item %></p>
-            <p><strong>Price (per plate):</strong> ₦<%= v.base_price %></p>
-            <p><strong>Address:</strong> <%= v.address %> (<%= v.lga %>, <%= v.state %>)</p>
-            <form method="post" action="/client/book">
-              <input type="hidden" name="vendorId" value="<%= v.id %>" />
-              <input type="text" name="item" placeholder="Special request (optional)" />
-              <select name="payment_method">
-                <option value="cod">Pay on delivery</option>
-                <option value="paystack">Pay online (Paystack)</option>
-                <option value="flutterwave">Pay online (Flutterwave)</option>
-              </select>
-              <button type="submit" class="btn">Book / Order</button>
-            </form>
-          </article>
-        <% }); %>
+    <!-- SECTION 3: Analytics -->
+    <section id="section-analytics" class="app-section app-section-hidden" data-title="Analytics">
+      <div class="card analytics-grid">
+        <div class="analytics-card">
+          <h4>Order trend</h4>
+          <div class="chart-placeholder">[Orders chart]</div>
+        </div>
+
+        <div class="analytics-card">
+          <h4>Weekly plan trend</h4>
+          <div class="chart-placeholder">[Weekly plans chart]</div>
+        </div>
+
+        <div class="analytics-card">
+          <h4>Wallet trend (deposit / withdrawal)</h4>
+          <div class="chart-placeholder">[Wallet activity]</div>
+        </div>
       </div>
-    <% } %>
-  </section>
-</section>
+    </section>
 
     <%- include('../partials/chat-modal') %>
   </main>
@@ -268,8 +390,7 @@
     window.WEEKLY_PLAN_ID = "<%= recentWeeklyPlanId %>";
   <% } %>
 
-    <% if (typeof recentWalletTxId !== 'undefined' && recentWalletTxId) { %>
+  <% if (typeof recentWalletTxId !== 'undefined' && recentWalletTxId) { %>
     window.WALLET_TX_ID = "<%= recentWalletTxId %>";
   <% } %>
 </script>
-
