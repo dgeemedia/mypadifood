@@ -1,4 +1,3 @@
-<!-- views/client/dashboard.ejs -->
 <div class="dashboard-app container">
   <nav class="app-nav" role="navigation" aria-label="Client dashboard">
     <ul>
@@ -120,6 +119,47 @@
           </div>
         </div>
       </div>
+
+      <!-- QUICK ACTIONS (appears under Manage account) -->
+      <div class="card quick-actions" aria-hidden="false" style="margin-top:18px;">
+        <h4 style="margin:0 0 12px 0;">Quick actions</h4>
+        <div class="icons-grid">
+          <div class="icon-card" role="button" tabindex="0" data-target="section-account">
+            <div class="icon"><i class="fa fa-user"></i></div>
+            <div class="label">Account Overview</div>
+          </div>
+
+          <div class="icon-card" role="button" tabindex="0" data-target="section-weekly">
+            <div class="icon"><i class="fa fa-calendar-alt"></i></div>
+            <div class="label">Weekly plan</div>
+          </div>
+
+          <div class="icon-card" role="button" tabindex="0" data-target="section-orders">
+            <div class="icon"><i class="fa fa-shopping-basket"></i></div>
+            <div class="label">Place order</div>
+          </div>
+
+          <div class="icon-card" role="button" tabindex="0" data-target="section-vendors">
+            <div class="icon"><i class="fa fa-store"></i></div>
+            <div class="label">Find vendor</div>
+          </div>
+
+          <div class="icon-card" role="button" tabindex="0" data-target="section-wallet">
+            <div class="icon"><i class="fa fa-wallet"></i></div>
+            <div class="label">Fund wallet</div>
+          </div>
+
+          <div class="icon-card" role="button" tabindex="0" data-target="section-account-edit">
+            <div class="icon"><i class="fa fa-user-edit"></i></div>
+            <div class="label">Edit account</div>
+          </div>
+
+          <div class="icon-card" role="button" tabindex="0" data-href="/client/transactions">
+            <div class="icon"><i class="fa fa-exchange-alt"></i></div>
+            <div class="label">Deposit / Withdraw</div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Inline account-edit wrapper (hidden by default) -->
@@ -147,7 +187,6 @@
   }) %>
 </section>
 
-
 <section id="section-account-edit-password" class="edit-panel" aria-hidden="true" style="display:none;">
   <%- include('./account-password', {
     currentUser: (currentUser || user || {})
@@ -159,36 +198,35 @@
   </div>
 </section>
 
-
     <!-- SECTION 2: Icons / Actions -->
     <section id="section-actions" class="app-section app-section-hidden" data-title="Quick actions">
       <div class="icons-grid card">
-        <div class="icon-card" role="button" tabindex="0" onclick="document.querySelector('[data-target=&quot;section-account&quot;]').click()">
+        <div class="icon-card" role="button" tabindex="0" data-target="section-account">
           <div class="icon"><i class="fa fa-user"></i></div>
           <div class="label">Account Overview</div>
         </div>
 
-        <div class="icon-card" role="button" tabindex="0" onclick="document.querySelector('[data-target=&quot;section-weekly&quot;]').click()">
+        <div class="icon-card" role="button" tabindex="0" data-target="section-weekly">
           <div class="icon"><i class="fa fa-calendar-alt"></i></div>
           <div class="label">Weekly plan</div>
         </div>
 
-        <div class="icon-card" role="button" tabindex="0" onclick="document.querySelector('[data-target=&quot;section-orders&quot;]').click()">
+        <div class="icon-card" role="button" tabindex="0" data-target="section-orders">
           <div class="icon"><i class="fa fa-shopping-basket"></i></div>
           <div class="label">Place order</div>
         </div>
 
-        <div class="icon-card" role="button" tabindex="0" onclick="document.querySelector('[data-target=&quot;section-vendors&quot;]').click()">
+        <div class="icon-card" role="button" tabindex="0" data-target="section-vendors">
           <div class="icon"><i class="fa fa-store"></i></div>
           <div class="label">Find vendor</div>
         </div>
 
-        <div class="icon-card" role="button" tabindex="0" onclick="document.querySelector('[data-target=&quot;section-wallet&quot;]').click()">
+        <div class="icon-card" role="button" tabindex="0" data-target="section-wallet">
           <div class="icon"><i class="fa fa-wallet"></i></div>
           <div class="label">Fund wallet</div>
         </div>
 
-        <div class="icon-card" role="button" tabindex="0" onclick="location.href='/client/transactions'">
+        <div class="icon-card" role="button" tabindex="0" data-href="/client/transactions">
           <div class="icon"><i class="fa fa-exchange-alt"></i></div>
           <div class="label">Deposit / Withdraw</div>
         </div>

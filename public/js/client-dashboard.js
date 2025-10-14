@@ -1,4 +1,3 @@
-//public/js/client-dashboard.js
 (function () {
   'use strict';
 
@@ -190,11 +189,8 @@
 
   // wire account edit toggles (account-menu buttons, subnavs, any data-target attributes that reference account sections)
   function wireAccountEditToggles() {
-    // select anything that will toggle account edit areas:
-    // - .account-edit-toggle (account menu)
-    // - .subnav-item (subnav inside edit wrapper)
-    // - any element with data-target that starts with "section-account"
-    document.querySelectorAll('.account-edit-toggle, .subnav-item, [data-target^="section-account"]').forEach(btn => {
+    // include icon-cards that use data-target so they behave like other toggles
+    document.querySelectorAll('.account-edit-toggle, .subnav-item, [data-target^="section-account"], .icon-card[data-target]').forEach(btn => {
       // avoid double-binding
       if (btn.__acctToggleBound) return;
       btn.__acctToggleBound = true;
@@ -219,6 +215,25 @@
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           btn.click();
+        }
+      });
+    });
+
+    // wire icon-cards that navigate to other pages using data-href
+    document.querySelectorAll('.icon-card[data-href]').forEach(card => {
+      if (card.__hrefBound) return;
+      card.__hrefBound = true;
+
+      card.addEventListener('click', (e) => {
+        const href = card.dataset.href;
+        if (!href) return;
+        location.href = href;
+      });
+
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          card.click();
         }
       });
     });
@@ -342,6 +357,18 @@
 
     // wire account edit toggles AFTER DOM ready
     try { wireAccountEditToggles(); } catch (e) { console.warn('wireAccountEditToggles failed', e); }
+
+    // ensure icon-card keyboard activation (for any icon-card role="button")
+    document.querySelectorAll('.icon-card[tabindex]').forEach(ic => {
+      if (ic.__kbdBound) return;
+      ic.__kbdBound = true;
+      ic.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          ic.click();
+        }
+      });
+    });
 
     const initial = (history.state && history.state.section) || (location.hash ? location.hash.replace('#','') : 'section-account');
 
