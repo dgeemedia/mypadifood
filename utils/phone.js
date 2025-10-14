@@ -27,7 +27,7 @@ function maskLocalId(local10) {
   if (!local10) return '—';
   if (String(local10).length === 10) {
     // show first 3 and last 2: 806*****50
-    return local10.slice(0,3) + '*****' + local10.slice(-2);
+    return local10.slice(0, 3) + '*****' + local10.slice(-2);
   }
   return local10;
 }

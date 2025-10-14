@@ -1,16 +1,25 @@
 // public/js/admin-riders-pending.js
 (function () {
-  function qs(selector, ctx) { return (ctx || document).querySelector(selector); }
-  function qsa(selector, ctx) { return Array.from((ctx || document).querySelectorAll(selector)); }
+  function qs(selector, ctx) {
+    return (ctx || document).querySelector(selector);
+  }
+  function qsa(selector, ctx) {
+    return Array.from((ctx || document).querySelectorAll(selector));
+  }
 
   function showTempMsg(container, msg, ok = true) {
     const el = document.createElement('div');
     el.className = ok ? 'flash flash-success' : 'flash flash-error';
     el.textContent = msg;
     // insert at top of container (or body fallback)
-    (container || document.body).insertBefore(el, (container || document.body).firstChild);
+    (container || document.body).insertBefore(
+      el,
+      (container || document.body).firstChild
+    );
     setTimeout(() => {
-      try { el.remove(); } catch (e) {}
+      try {
+        el.remove();
+      } catch (e) {}
     }, 4000);
   }
 
@@ -25,9 +34,9 @@
       credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json'
+        Accept: 'application/json',
       },
-      body: body.toString()
+      body: body.toString(),
     });
     return resp;
   }
@@ -37,23 +46,35 @@
     if (!table) return;
 
     // Ensure buttons have data-rider-id set (backwards compatible with form-based markup)
-    qsa('form.rider-decision-form').forEach(form => {
-      const riderId = form.dataset && form.dataset.riderId ? form.dataset.riderId : (form.querySelector('input[name="riderId"]') ? form.querySelector('input[name="riderId"]').value : null);
-      const decision = form.querySelector('input[name="decision"]') ? form.querySelector('input[name="decision"]').value : null;
+    qsa('form.rider-decision-form').forEach((form) => {
+      const riderId =
+        form.dataset && form.dataset.riderId
+          ? form.dataset.riderId
+          : form.querySelector('input[name="riderId"]')
+            ? form.querySelector('input[name="riderId"]').value
+            : null;
+      const decision = form.querySelector('input[name="decision"]')
+        ? form.querySelector('input[name="decision"]').value
+        : null;
       const btn = form.querySelector('button');
       if (btn && riderId) {
         btn.setAttribute('data-rider-id', riderId);
-        btn.setAttribute('data-action', decision || btn.getAttribute('data-action') || '');
+        btn.setAttribute(
+          'data-action',
+          decision || btn.getAttribute('data-action') || ''
+        );
       }
     });
 
     // Approve buttons
-    qsa('button[data-action="approve"]').forEach(btn => {
+    qsa('button[data-action="approve"]').forEach((btn) => {
       btn.addEventListener('click', async (ev) => {
         ev.preventDefault();
         const riderId = btn.dataset.riderId;
         if (!riderId) return;
-        const ok = window.confirm('Approve this rider application? This will make them available in resources.');
+        const ok = window.confirm(
+          'Approve this rider application? This will make them available in resources.'
+        );
         if (!ok) return;
 
         btn.disabled = true;
@@ -68,14 +89,16 @@
               // prefer removing so resources list won't include pending rider
               row.remove();
             }
-            const container = document.querySelector('.account-page') || document.body;
+            const container =
+              document.querySelector('.account-page') || document.body;
             showTempMsg(container, 'Rider approved');
           } else {
             throw new Error((json && json.error) || 'Unknown error');
           }
         } catch (e) {
           console.error('Approve error', e);
-          const container = document.querySelector('.account-page') || document.body;
+          const container =
+            document.querySelector('.account-page') || document.body;
           showTempMsg(container, 'Could not approve rider', false);
           btn.disabled = false;
         }
@@ -83,7 +106,7 @@
     });
 
     // Reject buttons (with optional reason text input sibling)
-    qsa('button[data-action="reject"]').forEach(btn => {
+    qsa('button[data-action="reject"]').forEach((btn) => {
       btn.addEventListener('click', async (ev) => {
         ev.preventDefault();
         const riderId = btn.dataset.riderId;
@@ -91,10 +114,14 @@
 
         // find optional reason input (same row)
         const row = btn.closest('tr');
-        const reasonInput = row ? row.querySelector('input[name="reason"]') : null;
+        const reasonInput = row
+          ? row.querySelector('input[name="reason"]')
+          : null;
         const reason = reasonInput ? reasonInput.value.trim() : '';
 
-        const ok = window.confirm('Reject this rider application? This action can be accompanied by an optional reason.');
+        const ok = window.confirm(
+          'Reject this rider application? This action can be accompanied by an optional reason.'
+        );
         if (!ok) return;
 
         btn.disabled = true;
@@ -110,14 +137,16 @@
               const actionCell = r.querySelector('td:last-child');
               if (actionCell) actionCell.innerHTML = '<em>Rejected</em>';
             }
-            const container = document.querySelector('.account-page') || document.body;
+            const container =
+              document.querySelector('.account-page') || document.body;
             showTempMsg(container, 'Rider rejected');
           } else {
             throw new Error((json && json.error) || 'Unknown error');
           }
         } catch (e) {
           console.error('Reject error', e);
-          const container = document.querySelector('.account-page') || document.body;
+          const container =
+            document.querySelector('.account-page') || document.body;
           showTempMsg(container, 'Could not reject rider', false);
           btn.disabled = false;
         }

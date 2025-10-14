@@ -13,7 +13,8 @@ const riderModel = models.rider;
 const orderModel = models.order;
 const messageModel = models.message;
 const notificationModel = models.notification || null;
-const withdrawalModel = models.withdrawal || require('../models/withdrawalModel');
+const withdrawalModel =
+  models.withdrawal || require('../models/withdrawalModel');
 const walletModel = models.wallet || require('../models/walletModel');
 
 // weekly plan models (prefer models/index exports but fall back to direct require)
@@ -828,7 +829,8 @@ exports.riderDecision = async (req, res) => {
     const status = decision === 'approve' ? 'approved' : 'rejected';
 
     // reviewer (admin) id if available
-    const reviewerId = req.session && req.session.user ? req.session.user.id : null;
+    const reviewerId =
+      req.session && req.session.user ? req.session.user.id : null;
 
     // Update rider status and record reviewer + reason
     await riderModel.updateStatus(riderId, status, reviewerId, reason || null);
@@ -854,9 +856,14 @@ exports.riderDecision = async (req, res) => {
             ? `<p>Hi ${rider.full_name || 'Rider'},</p><p>Good news — your rider application has been <strong>approved</strong>. We will contact you with onboarding details shortly.</p>`
             : `<p>Hi ${rider.full_name || 'Rider'},</p><p>We are sorry to inform you that your rider application was <strong>rejected</strong>.</p><p>Reason: ${reason ? String(reason) : 'No reason provided'}.</p>`;
         const text = html.replace(/<\/?[^>]+(>|$)/g, '');
-        await sendMail({ to: rider.email, subject, html, text }).catch((mailErr) => {
-          console.error('Failed to send rider notification email (non-fatal):', mailErr);
-        });
+        await sendMail({ to: rider.email, subject, html, text }).catch(
+          (mailErr) => {
+            console.error(
+              'Failed to send rider notification email (non-fatal):',
+              mailErr
+            );
+          }
+        );
       }
     } catch (mailErr) {
       console.error('Failed to notify rider by email (non-fatal):', mailErr);
@@ -871,7 +878,7 @@ exports.riderDecision = async (req, res) => {
           id: riderId,
           status,
           action: status === 'approved' ? 'approved' : 'rejected',
-          name: rider ? (rider.full_name || null) : null,
+          name: rider ? rider.full_name || null : null,
           reviewed_by: reviewerId || null,
           reviewed_at: new Date(),
           review_reason: reason || null,
@@ -885,7 +892,11 @@ exports.riderDecision = async (req, res) => {
     }
 
     // If AJAX / fetch: return JSON, otherwise redirect
-    if (req.xhr || req.headers.accept?.includes('application/json') || req.query.format === 'json') {
+    if (
+      req.xhr ||
+      req.headers.accept?.includes('application/json') ||
+      req.query.format === 'json'
+    ) {
       return res.json({ ok: true, riderId, status });
     }
 
@@ -894,8 +905,14 @@ exports.riderDecision = async (req, res) => {
   } catch (err) {
     console.error('Error applying rider decision:', err);
     // handle AJAX callers as well
-    if (req.xhr || req.headers.accept?.includes('application/json') || req.query.format === 'json') {
-      return res.status(500).json({ ok: false, error: 'Error applying decision' });
+    if (
+      req.xhr ||
+      req.headers.accept?.includes('application/json') ||
+      req.query.format === 'json'
+    ) {
+      return res
+        .status(500)
+        .json({ ok: false, error: 'Error applying decision' });
     }
     req.session.error = 'Error applying decision';
     return res.redirect('/admin/riders/pending');
@@ -1044,7 +1061,11 @@ exports.approveWithdrawal = async (req, res) => {
     // If admin supplied markPaid (already paid externally), call markPaid OR markApproved with markPaid true.
     if (markPaid && provider && providerReference) {
       // Use markPaid so the system can handle provider idempotency
-      const resu = await withdrawalModel.markPaid(id, adminId, { provider, providerReference, raw: { adminNote: note } });
+      const resu = await withdrawalModel.markPaid(id, adminId, {
+        provider,
+        providerReference,
+        raw: { adminNote: note },
+      });
       if (!resu || !resu.success) {
         req.session.error = 'Could not mark withdrawal as paid';
         return res.redirect('/admin/withdrawals');
@@ -1052,9 +1073,13 @@ exports.approveWithdrawal = async (req, res) => {
 
       // emit + notify
       const io = require('../utils/socket').get();
-      if (io) io.to('admins').emit('withdrawal_processed', { id, result: resu });
+      if (io)
+        io.to('admins').emit('withdrawal_processed', { id, result: resu });
 
-      if (notificationModel && typeof notificationModel.createNotification === 'function') {
+      if (
+        notificationModel &&
+        typeof notificationModel.createNotification === 'function'
+      ) {
         await notificationModel.createNotification({
           order_id: null,
           type: 'withdrawal_processed',
@@ -1087,7 +1112,10 @@ exports.approveWithdrawal = async (req, res) => {
     // Emit socket event & create persistent notification (best-effort)
     const io = require('../utils/socket').get();
     if (io) io.to('admins').emit('withdrawal_processed', { id, result: resu });
-    if (notificationModel && typeof notificationModel.createNotification === 'function') {
+    if (
+      notificationModel &&
+      typeof notificationModel.createNotification === 'function'
+    ) {
       await notificationModel.createNotification({
         order_id: null,
         type: 'withdrawal_processed',
@@ -1096,7 +1124,10 @@ exports.approveWithdrawal = async (req, res) => {
       });
     }
 
-    req.session.success = resu.status === 'paid' ? 'Withdrawal approved and marked paid.' : 'Withdrawal approved (debited).';
+    req.session.success =
+      resu.status === 'paid'
+        ? 'Withdrawal approved and marked paid.'
+        : 'Withdrawal approved (debited).';
     return res.redirect('/admin/withdrawals');
   } catch (err) {
     console.error('approve withdrawal error', err);
@@ -1124,7 +1155,10 @@ exports.declineWithdrawal = async (req, res) => {
     const io = require('../utils/socket').get();
     if (io) io.to('admins').emit('withdrawal_declined', { id, row });
 
-    if (notificationModel && typeof notificationModel.createNotification === 'function') {
+    if (
+      notificationModel &&
+      typeof notificationModel.createNotification === 'function'
+    ) {
       await notificationModel.createNotification({
         order_id: null,
         type: 'withdrawal_declined',

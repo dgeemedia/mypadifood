@@ -23,7 +23,11 @@ async function getByClientId(clientId) {
  *
  * lockIdentifier: boolean - when true, sets wallet_identifier_locked = true for the inserted identifier
  */
-async function createIfNotExists(clientId, walletIdentifier = null, lockIdentifier = true) {
+async function createIfNotExists(
+  clientId,
+  walletIdentifier = null,
+  lockIdentifier = true
+) {
   const existing = await getByClientId(clientId);
   if (existing) {
     // If existing has no identifier and we provided one, attempt to set it (only if not locked)
@@ -53,7 +57,13 @@ async function createIfNotExists(clientId, walletIdentifier = null, lockIdentifi
       RETURNING wallet_uuid AS id, client_id, balance, wallet_uuid, wallet_identifier, wallet_identifier_locked
     `;
     const walletUUID = uuid.v4();
-    const values = [walletUUID, clientId, 0.0, walletIdentifier, walletIdentifier ? lockIdentifier : false];
+    const values = [
+      walletUUID,
+      clientId,
+      0.0,
+      walletIdentifier,
+      walletIdentifier ? lockIdentifier : false,
+    ];
     const { rows } = await pool.query(sql, values);
     return rows[0];
   } catch (err) {
@@ -134,7 +144,8 @@ async function creditFromProvider(clientId, amount, opts = {}) {
   } = opts;
 
   if (!clientId) throw new Error('clientId required');
-  if (!amount || Number(amount) <= 0) throw new Error('amount must be positive');
+  if (!amount || Number(amount) <= 0)
+    throw new Error('amount must be positive');
 
   const conn = await pool.connect();
   try {
@@ -156,7 +167,17 @@ async function creditFromProvider(clientId, amount, opts = {}) {
       `INSERT INTO wallet_transactions
         (id, client_id, amount, type, reason, provider, provider_reference, order_id, note, raw, created_at)
        VALUES ($1,$2,$3,'credit',$4,$5,$6,$7,$8,$9, now())`,
-      [txId, clientId, amount, reason, provider, providerReference, orderId, note, raw]
+      [
+        txId,
+        clientId,
+        amount,
+        reason,
+        provider,
+        providerReference,
+        orderId,
+        note,
+        raw,
+      ]
     );
 
     await conn.query(
@@ -183,7 +204,8 @@ async function creditFromProvider(clientId, amount, opts = {}) {
 async function debitIfEnough(clientId, amount, opts = {}) {
   const { orderId = null, note = null, raw = {} } = opts;
   if (!clientId) throw new Error('clientId required');
-  if (!amount || Number(amount) <= 0) throw new Error('amount must be positive');
+  if (!amount || Number(amount) <= 0)
+    throw new Error('amount must be positive');
 
   const conn = await pool.connect();
   try {
@@ -237,7 +259,8 @@ async function refundToWallet(clientId, amount, opts = {}) {
   } = opts;
 
   if (!clientId) throw new Error('clientId required');
-  if (!amount || Number(amount) <= 0) throw new Error('amount must be positive');
+  if (!amount || Number(amount) <= 0)
+    throw new Error('amount must be positive');
 
   const conn = await pool.connect();
   try {
@@ -259,7 +282,16 @@ async function refundToWallet(clientId, amount, opts = {}) {
       `INSERT INTO wallet_transactions
         (id, client_id, amount, type, reason, provider, provider_reference, order_id, note, raw, created_at)
        VALUES ($1,$2,$3,'credit','refund',$4,$5,$6,$7,$8, now())`,
-      [txId, clientId, amount, provider, providerReference, orderId, note || `refund${original_tx_id ? ' for '+original_tx_id : ''}`, raw]
+      [
+        txId,
+        clientId,
+        amount,
+        provider,
+        providerReference,
+        orderId,
+        note || `refund${original_tx_id ? ' for ' + original_tx_id : ''}`,
+        raw,
+      ]
     );
 
     await conn.query(

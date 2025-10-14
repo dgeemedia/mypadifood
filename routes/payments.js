@@ -42,7 +42,9 @@ router.get('/paystack/verify', async (req, res) => {
     // metadata format expected: { wallet_topup: true, clientId: "<uuid>" }
     const metadata = (result.data && result.data.metadata) || {};
     const amountNGN =
-      result.data && result.data.amount ? Number(result.data.amount) / 100 : null;
+      result.data && result.data.amount
+        ? Number(result.data.amount) / 100
+        : null;
 
     if (metadata && metadata.wallet_topup && metadata.clientId && amountNGN) {
       try {
@@ -164,7 +166,13 @@ router.get('/flutterwave/callback', async (req, res) => {
         ? verification.data.id || verification.data.tx_ref
         : tx_ref;
 
-    if (verification && verification.success && meta.wallet_topup && meta.clientId && fwAmount) {
+    if (
+      verification &&
+      verification.success &&
+      meta.wallet_topup &&
+      meta.clientId &&
+      fwAmount
+    ) {
       try {
         await walletModel.creditFromProvider(meta.clientId, fwAmount, {
           provider: 'flutterwave',
@@ -287,10 +295,10 @@ router.post('/webhook/paystack', async (req, res) => {
     // metadata expected: data.metadata.wallet_topup and data.metadata.clientId
     const meta = (data && data.metadata) || {};
     if (
-      (data &&
-        (data.status === 'success' ||
-          data.status === 'successful' ||
-          payload.event === 'charge.success')) &&
+      data &&
+      (data.status === 'success' ||
+        data.status === 'successful' ||
+        payload.event === 'charge.success') &&
       meta &&
       meta.wallet_topup &&
       meta.clientId &&
@@ -392,7 +400,13 @@ router.post('/webhook/flutterwave', async (req, res) => {
     // --- wallet top-up handling (Flutterwave webhook) ---
     const meta = (data && data.meta) || {};
     const fwRef = transaction_id || tx_ref;
-    if ((status === 'successful' || status === 'completed') && meta && meta.wallet_topup && meta.clientId && amount) {
+    if (
+      (status === 'successful' || status === 'completed') &&
+      meta &&
+      meta.wallet_topup &&
+      meta.clientId &&
+      amount
+    ) {
       try {
         await walletModel.creditFromProvider(meta.clientId, amount, {
           provider: 'flutterwave',

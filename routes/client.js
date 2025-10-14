@@ -109,16 +109,35 @@ router.get(
 
 // wallet routes section
 router.get('/wallet', auth.requireClient, clientController.showWallet);
-router.post('/wallet/fund', auth.requireClient, clientController.postFundWallet);
+router.post(
+  '/wallet/fund',
+  auth.requireClient,
+  clientController.postFundWallet
+);
 
 // new: client withdrawal request (uses controller)
-router.post('/withdrawals/request', auth.requireClient, clientController.postWithdrawalRequest);
+router.post(
+  '/withdrawals/request',
+  auth.requireClient,
+  clientController.postWithdrawalRequest
+);
 
 // optional: compatibility previous route (you had /wallet/withdraw)
-router.post('/wallet/withdraw', auth.requireClient, clientController.postWithdrawalRequest);
+router.post(
+  '/wallet/withdraw',
+  auth.requireClient,
+  clientController.postWithdrawalRequest
+);
 
-router.post('/wallet/withdraw', auth.requireClient, clientController.postWithdrawalRequest);
-router.get('/wallet/withdrawals', auth.requireClient, clientController.listMyWithdrawals);
-
+router.post(
+  '/wallet/withdraw',
+  auth.requireClient,
+  clientController.postWithdrawalRequest
+);
+router.get(
+  '/wallet/withdrawals',
+  auth.requireClient,
+  clientController.listMyWithdrawals
+);
 
 module.exports = router;

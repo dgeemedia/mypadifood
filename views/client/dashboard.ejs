@@ -2,50 +2,89 @@
   <nav class="app-nav" role="navigation" aria-label="Client dashboard">
     <ul>
       <li>
-        <button class="nav-item" data-target="section-account" aria-current="true" title="Manage account">
-          <span class="nav-icon" aria-hidden="true"><i class="fa fa-user"></i></span>
+        <button
+          class="nav-item"
+          data-target="section-account"
+          aria-current="true"
+          title="Manage account"
+        >
+          <span class="nav-icon" aria-hidden="true"
+            ><i class="fa fa-user"></i
+          ></span>
           <span class="nav-label">Account Overview</span>
-        </button>
-      </li>
-      
-      <li>
-        <button class="nav-item" data-target="section-account-edit" title="Edit account">
-        <span class="nav-icon" aria-hidden="true"><i class="fa fa-user-edit"></i></span>
-        <span class="nav-label">Edit account</span>
         </button>
       </li>
 
       <li>
-        <button class="nav-item" data-target="section-weekly" title="Weekly plan">
-          <span class="nav-icon" aria-hidden="true"><i class="fa fa-calendar-alt"></i></span>
+        <button
+          class="nav-item"
+          data-target="section-account-edit"
+          title="Edit account"
+        >
+          <span class="nav-icon" aria-hidden="true"
+            ><i class="fa fa-user-edit"></i
+          ></span>
+          <span class="nav-label">Edit account</span>
+        </button>
+      </li>
+
+      <li>
+        <button
+          class="nav-item"
+          data-target="section-weekly"
+          title="Weekly plan"
+        >
+          <span class="nav-icon" aria-hidden="true"
+            ><i class="fa fa-calendar-alt"></i
+          ></span>
           <span class="nav-label">Weekly plan</span>
         </button>
       </li>
 
       <li>
-        <button class="nav-item" data-target="section-orders" title="Place order">
-          <span class="nav-icon" aria-hidden="true"><i class="fa fa-shopping-basket"></i></span>
+        <button
+          class="nav-item"
+          data-target="section-orders"
+          title="Place order"
+        >
+          <span class="nav-icon" aria-hidden="true"
+            ><i class="fa fa-shopping-basket"></i
+          ></span>
           <span class="nav-label">Place order</span>
         </button>
       </li>
 
       <li>
-        <button class="nav-item" data-target="section-vendors" title="Find local vendor">
-          <span class="nav-icon" aria-hidden="true"><i class="fa fa-store"></i></span>
+        <button
+          class="nav-item"
+          data-target="section-vendors"
+          title="Find local vendor"
+        >
+          <span class="nav-icon" aria-hidden="true"
+            ><i class="fa fa-store"></i
+          ></span>
           <span class="nav-label">Find local vendor</span>
         </button>
       </li>
 
       <li>
         <button class="nav-item" data-target="section-wallet" title="Wallet">
-          <span class="nav-icon" aria-hidden="true"><i class="fa fa-wallet"></i></span>
+          <span class="nav-icon" aria-hidden="true"
+            ><i class="fa fa-wallet"></i
+          ></span>
           <span class="nav-label">Wallet</span>
         </button>
       </li>
 
       <li>
-        <button class="nav-item" data-target="section-actions" title="Quick actions">
-          <span class="nav-icon" aria-hidden="true"><i class="fa fa-th-large"></i></span>
+        <button
+          class="nav-item"
+          data-target="section-actions"
+          title="Quick actions"
+        >
+          <span class="nav-icon" aria-hidden="true"
+            ><i class="fa fa-th-large"></i
+          ></span>
           <span class="nav-label">Quick actions</span>
         </button>
       </li>
@@ -54,7 +93,11 @@
 
   <main class="app-main">
     <!-- SECTION 1: Summary -->
-    <section id="section-account" class="app-section" data-title="Manage account">
+    <section
+      id="section-account"
+      class="app-section"
+      data-title="Manage account"
+    >
       <div class="summary-grid">
         <div class="customer-summary card">
           <h3>Customer summary</h3>
@@ -63,11 +106,9 @@
           <div class="customer-row">
             <div class="label">Customer name</div>
             <div class="value">
-              <%= (typeof displayName !== 'undefined' && displayName) 
-                    ? displayName 
-                    : (user && (user.name || user.email)) 
-                      ? (user.name || user.email) 
-                      : '—' %>
+              <%= (typeof displayName !== 'undefined' && displayName) ?
+              displayName : (user && (user.name || user.email)) ? (user.name ||
+              user.email) : '—' %>
             </div>
           </div>
 
@@ -76,85 +117,141 @@
             <div class="label">Wallet ID</div>
             <div class="value">
               <span title="<%= wallet && wallet.id ? wallet.id : '' %>">
-                <%= (wallet && wallet.displayId) 
-                      ? wallet.displayId 
-                      : (wallet && wallet.id) 
-                        ? wallet.id 
-                        : '—' %>
+                <%= (wallet && wallet.displayId) ? wallet.displayId : (wallet &&
+                wallet.id) ? wallet.id : '—' %>
               </span>
               <% if (wallet && wallet.maskedDisplay) { %>
-                <small class="muted" style="margin-left:8px">(<%= wallet.maskedDisplay %>)</small>
+              <small class="muted" style="margin-left: 8px"
+                >(<%= wallet.maskedDisplay %>)</small
+              >
               <% } %>
             </div>
           </div>
 
           <div class="customer-row">
             <div class="label">Wallet Balance</div>
-            <div class="value">₦<span id="balance-value"><%= (wallet && wallet.balance) ? Number(wallet.balance).toFixed(2) : '0.00' %></span></div>
+            <div class="value">
+              ₦<span id="balance-value"
+                ><%= (wallet && wallet.balance) ?
+                Number(wallet.balance).toFixed(2) : '0.00' %></span
+              >
+            </div>
           </div>
 
           <div class="customer-row">
             <div class="label">Total Orders</div>
-            <div class="value"><%= (orders && orders.length) ? orders.length : 0 %></div>
+            <div class="value">
+              <%= (orders && orders.length) ? orders.length : 0 %>
+            </div>
           </div>
 
           <div class="customer-row">
             <div class="label">Total Weekly Plan</div>
-            <div class="value"><%= (weeklyPlans && weeklyPlans.length) ? weeklyPlans.length : 0 %></div>
+            <div class="value">
+              <%= (weeklyPlans && weeklyPlans.length) ? weeklyPlans.length : 0
+              %>
+            </div>
           </div>
         </div>
 
         <div class="card stats-tiles" aria-hidden="false">
           <div class="stat">
             <div class="title">Active Wallet</div>
-            <div class="num">₦<%= (wallet && wallet.balance) ? Number(wallet.balance).toFixed(2) : '0.00' %></div>
+            <div class="num">
+              ₦<%= (wallet && wallet.balance) ?
+              Number(wallet.balance).toFixed(2) : '0.00' %>
+            </div>
           </div>
           <div class="stat">
             <div class="title">Orders</div>
-            <div class="num"><%= (orders && orders.length) ? orders.length : 0 %></div>
+            <div class="num">
+              <%= (orders && orders.length) ? orders.length : 0 %>
+            </div>
           </div>
           <div class="stat">
             <div class="title">Weekly Plans</div>
-            <div class="num"><%= (weeklyPlans && weeklyPlans.length) ? weeklyPlans.length : 0 %></div>
+            <div class="num">
+              <%= (weeklyPlans && weeklyPlans.length) ? weeklyPlans.length : 0
+              %>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- QUICK ACTIONS (appears under Manage account) -->
-      <div class="card quick-actions" aria-hidden="false" style="margin-top:18px;">
-        <h4 style="margin:0 0 12px 0;">Quick actions</h4>
+      <div
+        class="card quick-actions"
+        aria-hidden="false"
+        style="margin-top: 18px"
+      >
+        <h4 style="margin: 0 0 12px 0">Quick actions</h4>
         <div class="icons-grid">
-          <div class="icon-card" role="button" tabindex="0" data-target="section-account">
+          <div
+            class="icon-card"
+            role="button"
+            tabindex="0"
+            data-target="section-account"
+          >
             <div class="icon"><i class="fa fa-user"></i></div>
             <div class="label">Account Overview</div>
           </div>
 
-          <div class="icon-card" role="button" tabindex="0" data-target="section-weekly">
+          <div
+            class="icon-card"
+            role="button"
+            tabindex="0"
+            data-target="section-weekly"
+          >
             <div class="icon"><i class="fa fa-calendar-alt"></i></div>
             <div class="label">Weekly plan</div>
           </div>
 
-          <div class="icon-card" role="button" tabindex="0" data-target="section-orders">
+          <div
+            class="icon-card"
+            role="button"
+            tabindex="0"
+            data-target="section-orders"
+          >
             <div class="icon"><i class="fa fa-shopping-basket"></i></div>
             <div class="label">Place order</div>
           </div>
 
-          <div class="icon-card" role="button" tabindex="0" data-target="section-vendors">
+          <div
+            class="icon-card"
+            role="button"
+            tabindex="0"
+            data-target="section-vendors"
+          >
             <div class="icon"><i class="fa fa-store"></i></div>
             <div class="label">Find vendor</div>
           </div>
 
-          <div class="icon-card" role="button" tabindex="0" data-target="section-wallet">
+          <div
+            class="icon-card"
+            role="button"
+            tabindex="0"
+            data-target="section-wallet"
+          >
             <div class="icon"><i class="fa fa-wallet"></i></div>
             <div class="label">Fund wallet</div>
           </div>
 
-          <div class="icon-card" role="button" tabindex="0" data-target="section-account-edit">
+          <div
+            class="icon-card"
+            role="button"
+            tabindex="0"
+            data-target="section-account-edit"
+          >
             <div class="icon"><i class="fa fa-user-edit"></i></div>
             <div class="label">Edit account</div>
           </div>
 
-          <div class="icon-card" role="button" tabindex="0" data-href="/client/transactions">
+          <div
+            class="icon-card"
+            role="button"
+            tabindex="0"
+            data-href="/client/transactions"
+          >
             <div class="icon"><i class="fa fa-exchange-alt"></i></div>
             <div class="label">Deposit / Withdraw</div>
           </div>
@@ -163,70 +260,132 @@
     </section>
 
     <!-- Inline account-edit wrapper (hidden by default) -->
-<section id="section-account-edit" class="app-section app-section-hidden" data-title="Edit account">
-  <div class="card">
-    <nav class="subnav">
-      <button class="subnav-item" data-target="section-account-edit-phone">Phone</button>
-      <button class="subnav-item" data-target="section-account-edit-address">Address</button>
-      <button class="subnav-item" data-target="section-account-edit-password">Password</button>
-      <button class="btn btn-link" data-target="section-account">Close</button>
-    </nav>
+    <section
+      id="section-account-edit"
+      class="app-section app-section-hidden"
+      data-title="Edit account"
+    >
+      <div class="card">
+        <nav class="subnav">
+          <button class="subnav-item" data-target="section-account-edit-phone">
+            Phone
+          </button>
+          <button
+            class="subnav-item"
+            data-target="section-account-edit-address"
+          >
+            Address
+          </button>
+          <button
+            class="subnav-item"
+            data-target="section-account-edit-password"
+          >
+            Password
+          </button>
+          <button class="btn btn-link" data-target="section-account">
+            Close
+          </button>
+        </nav>
 
-    <div id="edit-panels">
-      
-      <section id="section-account-edit-phone" class="edit-panel" aria-hidden="true" style="display:none;">
-  <%- include('./account-phone', {
-    currentUser: (currentUser || user || {})
-  }) %>
-</section>
+        <div id="edit-panels">
+          <section
+            id="section-account-edit-phone"
+            class="edit-panel"
+            aria-hidden="true"
+            style="display: none"
+          >
+            <%- include('./account-phone', { currentUser: (currentUser || user
+            || {}) }) %>
+          </section>
 
-<section id="section-account-edit-address" class="edit-panel" aria-hidden="true" style="display:none;">
-  <%- include('./account-address', {
-    currentUser: (typeof currentUser !== 'undefined' ? currentUser : (typeof user !== 'undefined' ? user : {})),
-    statesLGAs: (typeof statesLGAs !== 'undefined' ? statesLGAs : [])
-  }) %>
-</section>
+          <section
+            id="section-account-edit-address"
+            class="edit-panel"
+            aria-hidden="true"
+            style="display: none"
+          >
+            <%- include('./account-address', { currentUser: (typeof currentUser
+            !== 'undefined' ? currentUser : (typeof user !== 'undefined' ? user
+            : {})), statesLGAs: (typeof statesLGAs !== 'undefined' ? statesLGAs
+            : []) }) %>
+          </section>
 
-<section id="section-account-edit-password" class="edit-panel" aria-hidden="true" style="display:none;">
-  <%- include('./account-password', {
-    currentUser: (currentUser || user || {})
-  }) %>
-</section>
-
-      
-    </div>
-  </div>
-</section>
+          <section
+            id="section-account-edit-password"
+            class="edit-panel"
+            aria-hidden="true"
+            style="display: none"
+          >
+            <%- include('./account-password', { currentUser: (currentUser ||
+            user || {}) }) %>
+          </section>
+        </div>
+      </div>
+    </section>
 
     <!-- SECTION 2: Icons / Actions -->
-    <section id="section-actions" class="app-section app-section-hidden" data-title="Quick actions">
+    <section
+      id="section-actions"
+      class="app-section app-section-hidden"
+      data-title="Quick actions"
+    >
       <div class="icons-grid card">
-        <div class="icon-card" role="button" tabindex="0" data-target="section-account">
+        <div
+          class="icon-card"
+          role="button"
+          tabindex="0"
+          data-target="section-account"
+        >
           <div class="icon"><i class="fa fa-user"></i></div>
           <div class="label">Account Overview</div>
         </div>
 
-        <div class="icon-card" role="button" tabindex="0" data-target="section-weekly">
+        <div
+          class="icon-card"
+          role="button"
+          tabindex="0"
+          data-target="section-weekly"
+        >
           <div class="icon"><i class="fa fa-calendar-alt"></i></div>
           <div class="label">Weekly plan</div>
         </div>
 
-        <div class="icon-card" role="button" tabindex="0" data-target="section-orders">
+        <div
+          class="icon-card"
+          role="button"
+          tabindex="0"
+          data-target="section-orders"
+        >
           <div class="icon"><i class="fa fa-shopping-basket"></i></div>
           <div class="label">Place order</div>
         </div>
 
-        <div class="icon-card" role="button" tabindex="0" data-target="section-vendors">
+        <div
+          class="icon-card"
+          role="button"
+          tabindex="0"
+          data-target="section-vendors"
+        >
           <div class="icon"><i class="fa fa-store"></i></div>
           <div class="label">Find vendor</div>
         </div>
 
-        <div class="icon-card" role="button" tabindex="0" data-target="section-wallet">
+        <div
+          class="icon-card"
+          role="button"
+          tabindex="0"
+          data-target="section-wallet"
+        >
           <div class="icon"><i class="fa fa-wallet"></i></div>
           <div class="label">Fund wallet</div>
         </div>
 
-        <div class="icon-card" role="button" tabindex="0" data-href="/client/transactions">
+        <div
+          class="icon-card"
+          role="button"
+          tabindex="0"
+          data-href="/client/transactions"
+        >
           <div class="icon"><i class="fa fa-exchange-alt"></i></div>
           <div class="label">Deposit / Withdraw</div>
         </div>
@@ -234,15 +393,31 @@
     </section>
 
     <!--WALLET-->
-    <section id="section-wallet" class="app-section app-section-hidden" data-title="Wallet">
+    <section
+      id="section-wallet"
+      class="app-section app-section-hidden"
+      data-title="Wallet"
+    >
       <h2 class="sr-only">Wallet</h2>
       <section>
         <h3>Your Wallet</h3>
-        <p>Balance: ₦<span id="wallet-balance"><%= (wallet && wallet.balance !== undefined) ? Number(wallet.balance).toFixed(2) : '0.00' %></span></p>
+        <p>
+          Balance: ₦<span id="wallet-balance"
+            ><%= (wallet && wallet.balance !== undefined) ?
+            Number(wallet.balance).toFixed(2) : '0.00' %></span
+          >
+        </p>
 
         <h4>Fund wallet</h4>
         <form method="post" action="/client/wallet/fund" id="wallet-fund-form">
-          <input type="number" name="amount" step="0.01" min="50" placeholder="Amount (₦)" required />
+          <input
+            type="number"
+            name="amount"
+            step="0.01"
+            min="50"
+            placeholder="Amount (₦)"
+            required
+          />
           <select name="provider" required>
             <option value="paystack">Paystack</option>
             <option value="flutterwave">Flutterwave</option>
@@ -250,11 +425,26 @@
           <button type="submit" class="btn">Fund wallet</button>
         </form>
 
-        <form method="post" action="/client/wallet/withdraw" id="wallet-withdraw-form">
-          <input type="number" name="amount" step="0.01" min="50" placeholder="Amount (₦)" required />
+        <form
+          method="post"
+          action="/client/wallet/withdraw"
+          id="wallet-withdraw-form"
+        >
+          <input
+            type="number"
+            name="amount"
+            step="0.01"
+            min="50"
+            placeholder="Amount (₦)"
+            required
+          />
           <!-- optional destination fields (or keep bank details in profile) -->
           <input type="text" name="bank_name" placeholder="Bank name" />
-          <input type="text" name="account_number" placeholder="Account number" />
+          <input
+            type="text"
+            name="account_number"
+            placeholder="Account number"
+          />
           <input type="text" name="account_name" placeholder="Account name" />
           <button type="submit" class="btn">Request withdrawal</button>
         </form>
@@ -264,7 +454,11 @@
     </section>
 
     <!-- WEEKLY PLAN -->
-    <section id="section-weekly" class="app-section app-section-hidden" data-title="Weekly plan">
+    <section
+      id="section-weekly"
+      class="app-section app-section-hidden"
+      data-title="Weekly plan"
+    >
       <h2 class="sr-only">Weekly plan</h2>
 
       <section>
@@ -275,92 +469,114 @@
         </p>
 
         <% if (!weeklyPlans || !weeklyPlans.length) { %>
-          <p>You have no weekly plans yet.</p>
+        <p>You have no weekly plans yet.</p>
         <% } else { %>
-          <table>
-            <thead>
-              <tr>
-                <th>Week (Mon)</th>
-                <th>Plan</th>
-                <th>Price (₦)</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% weeklyPlans.forEach(p => { %>
-                <tr>
-                  <td>
-                    <%= p.week_of ? (p.week_of.toISOString ? p.week_of.toISOString().slice(0,10) : p.week_of) : '—' %>
-                  </td>
-                  <td><%= p.plan_type %></td>
-                  <td>₦<%= p.total_price %></td>
-                  <td><%= p.status %></td>
-                  <td>
-                    <a href="/client/special-order/<%= p.id %>">View</a>
-                    <% if (p.modifiable_from && p.modifiable_until) { %>
-                      <form method="post" action="/client/special-order/<%= p.id %>/update" style="display: inline">
-                        <button type="submit" class="btn">Modify</button>
-                      </form>
-                    <% } %>
-                  </td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
+        <table>
+          <thead>
+            <tr>
+              <th>Week (Mon)</th>
+              <th>Plan</th>
+              <th>Price (₦)</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% weeklyPlans.forEach(p => { %>
+            <tr>
+              <td>
+                <%= p.week_of ? (p.week_of.toISOString ? p.week_of.toISOString().slice(0,10) : p.week_of) : '—' %>
+              </td>
+              <td><%= p.plan_type %></td>
+              <td>₦<%= p.total_price %></td>
+              <td><%= p.status %></td>
+              <td>
+                <a href="/client/special-order/<%= p.id %>">View</a>
+                <% if (p.modifiable_from && p.modifiable_until) { %>
+                <form
+                  method="post"
+                  action="/client/special-order/<%= p.id %>/update"
+                  style="display: inline"
+                >
+                  <button type="submit" class="btn">Modify</button>
+                </form>
+                <% } %>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
         <% } %>
       </section>
     </section>
 
     <!-- ORDERS -->
-    <section id="section-orders" class="app-section app-section-hidden" data-title="Place order">
+    <section
+      id="section-orders"
+      class="app-section app-section-hidden"
+      data-title="Place order"
+    >
       <h2 class="sr-only">Place order</h2>
 
       <section>
         <h3>Your Orders</h3>
         <% if (!orders || !orders.length) { %>
-          <p>No orders yet.</p>
+        <p>No orders yet.</p>
         <% } else { %>
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Vendor</th>
-                <th>Status</th>
-                <th>Amount</th>
-                <th>Chat</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% orders.forEach(o => { %>
-                <tr>
-                  <td><%= o.item %></td>
-                  <td><%= o.vendor_name ? o.vendor_name : o.vendor_id %></td>
-                  <td><%= o.status %></td>
-                  <td>₦<%= o.total_amount %></td>
-                  <td>
-                    <button class="btn btn-view-chat" data-order-id="<%= o.id %>">View Chat</button>
-                    <button class="btn btn-add-menu" data-order-id="<%= o.id %>">Add / Update Menu</button>
-                  </td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Vendor</th>
+              <th>Status</th>
+              <th>Amount</th>
+              <th>Chat</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% orders.forEach(o => { %>
+            <tr>
+              <td><%= o.item %></td>
+              <td><%= o.vendor_name ? o.vendor_name : o.vendor_id %></td>
+              <td><%= o.status %></td>
+              <td>₦<%= o.total_amount %></td>
+              <td>
+                <button class="btn btn-view-chat" data-order-id="<%= o.id %>">
+                  View Chat
+                </button>
+                <button class="btn btn-add-menu" data-order-id="<%= o.id %>">
+                  Add / Update Menu
+                </button>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
         <% } %>
       </section>
     </section>
 
     <!-- VENDORS -->
-    <section id="section-vendors" class="app-section app-section-hidden" data-title="Find local vendor">
+    <section
+      id="section-vendors"
+      class="app-section app-section-hidden"
+      data-title="Find local vendor"
+    >
       <h2 class="sr-only">Find local vendor</h2>
 
       <section>
         <!-- Search hero (same UX as index.ejs) -->
         <section class="hero" aria-hidden="false">
-          <% const f = (typeof filters !== 'undefined' && filters) ? filters : {}; %>
+          <% const f = (typeof filters !== 'undefined' && filters) ? filters :
+          {}; %>
           <h3>Local Food Vendors</h3>
 
-          <form method="get" action="/client/dashboard" class="vendor-search-form" aria-label="Vendor search">
+          <form
+            method="get"
+            action="/client/dashboard"
+            class="vendor-search-form"
+            aria-label="Vendor search"
+          >
             <input
               type="text"
               name="q"
@@ -396,43 +612,64 @@
             <datalist id="lgas-datalist"></datalist>
 
             <button type="submit" class="btn">Search</button>
-            <button type="button" id="vendor-search-clear" class="btn btn-link">Clear</button>
+            <button type="button" id="vendor-search-clear" class="btn btn-link">
+              Clear
+            </button>
           </form>
 
-          <p class="muted">Search anywhere by vendor name, food item, state or LGA. Leave filters empty to show vendors near you.</p>
+          <p class="muted">
+            Search anywhere by vendor name, food item, state or LGA. Leave
+            filters empty to show vendors near you.
+          </p>
         </section>
 
         <!-- Results -->
         <% if (!vendors || !vendors.length) { %>
-          <p>No vendors found. Try another location or search term.</p>
+        <p>No vendors found. Try another location or search term.</p>
         <% } else { %>
-          <div class="vendors-list">
-            <% vendors.forEach(function(v) { %>
-              <article class="vendor-card">
-                <h4><a href="/vendor/<%= v.id %>"><%= v.name %></a></h4>
-                <p><strong>Food:</strong> <%= v.food_item %></p>
-                <p><strong>Price (per plate):</strong> ₦<%= v.base_price %></p>
-                <p><strong>Address:</strong> <%= v.address %> (<%= v.lga %>, <%= v.state %>)</p>
-                <form method="post" action="/client/book">
-                  <input type="hidden" name="vendorId" value="<%= v.id %>" />
-                  <input type="text" name="item" placeholder="Special request (optional)" />
-                  <select name="payment_method">
-                    <option value="cod">Pay on delivery</option>
-                    <option value="wallet">Pay from wallet</option>
-                    <option value="paystack">Pay online (Paystack)</option>
-                    <option value="flutterwave">Pay online (Flutterwave)</option>
-                  </select>
-                  <button type="submit" class="btn">Book / Order</button>
-                </form>
-              </article>
-            <% }); %>
-          </div>
+        <div class="vendors-list">
+          <% vendors.forEach(function(v) { %>
+          <article class="vendor-card">
+            <h4><a href="/vendor/<%= v.id %>"><%= v.name %></a></h4>
+            <p>
+              <strong>Food:</strong>
+              <%= v.food_item %>
+            </p>
+            <p><strong>Price (per plate):</strong> ₦<%= v.base_price %></p>
+            <p>
+              <strong>Address:</strong>
+              <%= v.address %>
+              (<%= v.lga %>,
+              <%= v.state %>)
+            </p>
+            <form method="post" action="/client/book">
+              <input type="hidden" name="vendorId" value="<%= v.id %>" />
+              <input
+                type="text"
+                name="item"
+                placeholder="Special request (optional)"
+              />
+              <select name="payment_method">
+                <option value="cod">Pay on delivery</option>
+                <option value="wallet">Pay from wallet</option>
+                <option value="paystack">Pay online (Paystack)</option>
+                <option value="flutterwave">Pay online (Flutterwave)</option>
+              </select>
+              <button type="submit" class="btn">Book / Order</button>
+            </form>
+          </article>
+          <% }); %>
+        </div>
         <% } %>
       </section>
     </section>
 
     <!-- SECTION 3: Analytics -->
-    <section id="section-analytics" class="app-section app-section-hidden" data-title="Analytics">
+    <section
+      id="section-analytics"
+      class="app-section app-section-hidden"
+      data-title="Analytics"
+    >
       <div class="card analytics-grid">
         <div class="analytics-card">
           <h4>Order trend</h4>

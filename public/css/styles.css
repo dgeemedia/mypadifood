@@ -76,27 +76,40 @@ body {
   display: inline-block;
   padding: 10px 14px;
   border-radius: 8px;
-  border: 1px solid rgba(15,23,42,0.06);
+  border: 1px solid rgba(15, 23, 42, 0.06);
   background: transparent;
   color: var(--brand);
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
-  transition: transform 0.08s ease, box-shadow 0.12s ease, opacity 0.08s;
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.12s ease,
+    opacity 0.08s;
 }
-.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(15,23,42,0.06); }
-.btn:active { transform: translateY(0); }
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+.btn:active {
+  transform: translateY(0);
+}
 
 /* Danger / destructive button */
 .btn-danger {
   background: var(--danger);
   color: #fff;
-  border-color: rgba(239,68,68,0.9);
+  border-color: rgba(239, 68, 68, 0.9);
 }
-.btn-danger:hover { opacity: 0.95; }
+.btn-danger:hover {
+  opacity: 0.95;
+}
 
 /* Small variant used inline in tables/forms */
-.btn.small { padding: 6px 8px; font-size: 0.92rem; }
+.btn.small {
+  padding: 6px 8px;
+  font-size: 0.92rem;
+}
 
 /* Header layout */
 .site-header {
@@ -681,27 +694,35 @@ body {
   margin-top: 8px;
 }
 .day-block {
-  background: linear-gradient(180deg,#fff,#fbfdff);
+  background: linear-gradient(180deg, #fff, #fbfdff);
   border-radius: 10px;
   padding: 12px;
-  box-shadow: 0 6px 18px rgba(6,12,34,0.04);
-  border: 1px solid rgba(15,23,42,0.03);
+  box-shadow: 0 6px 18px rgba(6, 12, 34, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.03);
 }
-.day-block h4 { margin: 0 0 8px 0; font-size: 1rem; color: var(--brand-2); }
+.day-block h4 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  color: var(--brand-2);
+}
 
 .food-select {
   width: 100%;
   padding: 9px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(15,23,42,0.06);
+  border: 1px solid rgba(15, 23, 42, 0.06);
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
   background-image:
     linear-gradient(45deg, transparent 50%, var(--muted) 50%),
     linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-  background-position: calc(100% - 18px) calc(1rem), calc(100% - 13px) calc(1rem);
-  background-size: 7px 7px, 7px 7px;
+  background-position:
+    calc(100% - 18px) calc(1rem),
+    calc(100% - 13px) calc(1rem);
+  background-size:
+    7px 7px,
+    7px 7px;
   background-repeat: no-repeat;
   padding-right: 40px;
   box-sizing: border-box;
@@ -709,25 +730,47 @@ body {
 }
 
 /* slot2 is hidden by default (JS shows it) but give it layout when visible */
-.slot2 { display: none; margin-top: 8px; }
-.slot2.show { display: block; }
+.slot2 {
+  display: none;
+  margin-top: 8px;
+}
+.slot2.show {
+  display: block;
+}
 
 /* small helper showing modifiable window info */
-#modifiableWindowInfo { color: var(--muted); font-size: 0.95rem; margin-bottom: 6px; }
+#modifiableWindowInfo {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+}
 
 /* Weekly plan message item */
 .weekly-plan-msg {
   padding: 8px 10px;
   border-radius: 8px;
-  background: linear-gradient(180deg,#fff,#f7fbff);
-  border: 1px solid rgba(15,23,42,0.04);
+  background: linear-gradient(180deg, #fff, #f7fbff);
+  border: 1px solid rgba(15, 23, 42, 0.04);
   margin-bottom: 8px;
 }
-.weekly-plan-msg strong { color: var(--brand); display:block; margin-bottom:4px; }
+.weekly-plan-msg strong {
+  color: var(--brand);
+  display: block;
+  margin-bottom: 4px;
+}
 
 /* Compact helpers for admin forms used in riders table */
-.rider-decision-form { display:inline-block; margin:4px 0; }
-.rider-decision-form input[type="text"] { width: 160px; display:inline-block; margin-right:6px; padding:8px; border-radius:6px; }
+.rider-decision-form {
+  display: inline-block;
+  margin: 4px 0;
+}
+.rider-decision-form input[type='text'] {
+  width: 160px;
+  display: inline-block;
+  margin-right: 6px;
+  padding: 8px;
+  border-radius: 6px;
+}
 
 /* Footer & social icons */
 .site-footer {
@@ -1579,11 +1622,16 @@ table tbody td {
 
 /* Responsive tweaks (merged) */
 @media (max-width: 560px) {
-  .meals-grid { grid-template-columns: 1fr; }
-  .account-form { padding: 14px; }
-  .food-select { padding-right: 36px; }
+  .meals-grid {
+    grid-template-columns: 1fr;
+  }
+  .account-form {
+    padding: 14px;
+  }
+  .food-select {
+    padding-right: 36px;
+  }
 }
-
 
 /* Dashboard app layout + vertical icon-first nav (icon above label) */
 .dashboard-app {
@@ -1595,7 +1643,7 @@ table tbody td {
 
 /* Vertical icon-first nav (icon above label) */
 .app-nav {
-  width: 96px;              /* narrow vertical strip */
+  width: 96px; /* narrow vertical strip */
   flex: 0 0 96px;
   position: sticky;
   top: 18px;
@@ -1613,28 +1661,31 @@ table tbody td {
 }
 .app-nav .nav-item {
   display: flex;
-  flex-direction: column;   /* icon on top, label underneath */
+  flex-direction: column; /* icon on top, label underneath */
   gap: 6px;
   align-items: center;
   justify-content: center;
   width: 100%;
   padding: 10px 6px;
   border-radius: 10px;
-  border: 1px solid rgba(15,23,42,0.04);
+  border: 1px solid rgba(15, 23, 42, 0.04);
   background: #fff;
   cursor: pointer;
   text-align: center;
   font-weight: 700;
-  transition: transform .08s ease, box-shadow .12s ease, background .12s;
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.12s ease,
+    background 0.12s;
 }
 .app-nav .nav-item:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(6,12,34,0.04);
+  box-shadow: 0 8px 20px rgba(6, 12, 34, 0.04);
 }
-.app-nav .nav-item[aria-current="true"] {
-  background: linear-gradient(180deg,#f7fbff,#fff);
-  box-shadow: 0 10px 26px rgba(6,12,34,0.06);
-  border-color: rgba(11,116,255,0.08);
+.app-nav .nav-item[aria-current='true'] {
+  background: linear-gradient(180deg, #f7fbff, #fff);
+  box-shadow: 0 10px 26px rgba(6, 12, 34, 0.06);
+  border-color: rgba(11, 116, 255, 0.08);
 }
 
 /* Icon circle */
@@ -1645,14 +1696,14 @@ table tbody td {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg,#eef6ff,#fff);
+  background: linear-gradient(180deg, #eef6ff, #fff);
   color: var(--brand-2);
   font-size: 18px;
 }
 
 /* Small label directly under icon */
 .nav-label {
-  font-size: 0.72rem;       /* small */
+  font-size: 0.72rem; /* small */
   font-weight: 700;
   color: #0f172a;
   line-height: 1;
@@ -1662,9 +1713,15 @@ table tbody td {
 }
 
 /* main area */
-.app-main { flex: 1 1 auto; }
-.app-section { display: block; }
-.app-section-hidden { display: none; }
+.app-main {
+  flex: 1 1 auto;
+}
+.app-section {
+  display: block;
+}
+.app-section-hidden {
+  display: none;
+}
 
 /* vendors grid within card */
 .vendors-grid {
@@ -1676,19 +1733,26 @@ table tbody td {
 .vendor-card {
   padding: 12px;
   border-radius: 10px;
-  background: linear-gradient(180deg,#fff,#fcfeff);
-  border: 1px solid rgba(15,23,42,0.04);
+  background: linear-gradient(180deg, #fff, #fcfeff);
+  border: 1px solid rgba(15, 23, 42, 0.04);
 }
 
 /* table wrap to restrict width */
-.table-wrap { overflow-x: auto; }
+.table-wrap {
+  overflow-x: auto;
+}
 
 /* smaller button variant used inside tables */
-.btn.small { padding: 6px 8px; font-size: 0.92rem; }
+.btn.small {
+  padding: 6px 8px;
+  font-size: 0.92rem;
+}
 
 /* Responsive: stack nav on top for narrow screens (horizontal band, icons + labels visible) */
 @media (max-width: 880px) {
-  .dashboard-app { flex-direction: column; }
+  .dashboard-app {
+    flex-direction: column;
+  }
   .app-nav {
     width: 100%;
     flex: 0 0 auto;
@@ -1713,26 +1777,48 @@ table tbody td {
 
   /* KEEP LABELS VISIBLE ON MOBILE: slightly larger but still compact */
   .nav-label {
-    font-size: 0.70rem;
+    font-size: 0.7rem;
     display: block;
     margin-top: 4px;
   }
-  .nav-icon { width:44px; height:44px; font-size:16px; border-radius:10px; }
+  .nav-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 16px;
+    border-radius: 10px;
+  }
 }
 
 /* Extra small screens: tighten spacing a bit more */
 @media (max-width: 480px) {
-  .app-nav { padding: 6px; }
-  .app-nav ul { gap: 8px; }
-  .app-nav .nav-item { padding: 6px; min-width: 56px; }
-  .nav-icon { width:40px; height:40px; font-size:15px; }
-  .nav-label { font-size: 0.66rem; margin-top: 2px; }
+  .app-nav {
+    padding: 6px;
+  }
+  .app-nav ul {
+    gap: 8px;
+  }
+  .app-nav .nav-item {
+    padding: 6px;
+    min-width: 56px;
+  }
+  .nav-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 15px;
+  }
+  .nav-label {
+    font-size: 0.66rem;
+    margin-top: 2px;
+  }
 }
 
 /* hide dashboard content until JS picks the right tab (prevents FOUC) */
-.app-main { visibility: hidden; }
-.js-ready .app-main { visibility: visible; }
-
+.app-main {
+  visibility: hidden;
+}
+.js-ready .app-main {
+  visibility: visible;
+}
 
 /* Accessible: visually hidden but available to screen readers */
 .sr-only {

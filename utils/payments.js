@@ -47,7 +47,10 @@ if (!FLUTTERWAVE_WEBHOOK_SECRET) {
  * @param {string} orderId - optional order id to include in metadata
  * @returns {Promise<{authorization_url, reference, raw}>}
  */
-async function initPaystack({ email, amount, metadata = {} } = {}, orderId = null) {
+async function initPaystack(
+  { email, amount, metadata = {} } = {},
+  orderId = null
+) {
   if (!PAYSTACK_KEY) throw new Error('Paystack not configured');
 
   const amountKobo = Math.round(Number(amount) * 100);

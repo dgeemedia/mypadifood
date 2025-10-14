@@ -22,9 +22,12 @@ function _escapeHtml(str) {
 module.exports = function flashMiddleware(req, res, next) {
   try {
     // keep previous behavior: expose current session values to templates
-    res.locals.currentUser = req.session && req.session.user ? req.session.user : null;
-    res.locals.success = req.session && req.session.success ? req.session.success : null;
-    res.locals.error = req.session && req.session.error ? req.session.error : null;
+    res.locals.currentUser =
+      req.session && req.session.user ? req.session.user : null;
+    res.locals.success =
+      req.session && req.session.success ? req.session.success : null;
+    res.locals.error =
+      req.session && req.session.error ? req.session.error : null;
     res.locals.title = res.locals.title || 'MyPadiFood';
 
     // Optional: expose dev verification link if present in session (one-time)

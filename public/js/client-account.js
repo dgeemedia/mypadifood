@@ -37,7 +37,13 @@
           const headerPhoneEl = document.querySelector('.user-phone');
           if (headerPhoneEl) headerPhoneEl.textContent = resp.phone || phone;
         } catch (err) {
-          showResult('phone-form-result', err && (err.error || err.message) ? (err.error || err.message) : 'Save failed', true);
+          showResult(
+            'phone-form-result',
+            err && (err.error || err.message)
+              ? err.error || err.message
+              : 'Save failed',
+            true
+          );
         }
       });
     }
@@ -55,13 +61,24 @@
 
         showResult('address-form-result', 'Saving...', false);
         try {
-          const resp = await postJson('/client/account/address', { address, state, lga });
+          const resp = await postJson('/client/account/address', {
+            address,
+            state,
+            lga,
+          });
           showResult('address-form-result', resp.message || 'Saved', false);
           // Optionally update header/address display elements
           const headerAddress = document.querySelector('.user-address');
-          if (headerAddress && resp.address) headerAddress.textContent = resp.address;
+          if (headerAddress && resp.address)
+            headerAddress.textContent = resp.address;
         } catch (err) {
-          showResult('address-form-result', err && (err.error || err.message) ? (err.error || err.message) : 'Save failed', true);
+          showResult(
+            'address-form-result',
+            err && (err.error || err.message)
+              ? err.error || err.message
+              : 'Save failed',
+            true
+          );
         }
       });
     }
@@ -82,12 +99,22 @@
             new_password,
             confirm_password,
           });
-          showResult('password-form-result', resp.message || 'Password updated', false);
+          showResult(
+            'password-form-result',
+            resp.message || 'Password updated',
+            false
+          );
           passwordForm.current_password.value = '';
           passwordForm.new_password.value = '';
           passwordForm.confirm_password.value = '';
         } catch (err) {
-          showResult('password-form-result', err && (err.error || err.message) ? (err.error || err.message) : 'Change failed', true);
+          showResult(
+            'password-form-result',
+            err && (err.error || err.message)
+              ? err.error || err.message
+              : 'Change failed',
+            true
+          );
         }
       });
     }

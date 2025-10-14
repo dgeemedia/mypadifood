@@ -15,5 +15,4 @@ module.exports = {
   rider: require('./riderModel'),
   wallet: require('./walletModel'),
   withdrawal: require('./withdrawalModel'),
-
 };

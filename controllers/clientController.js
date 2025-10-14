@@ -12,7 +12,8 @@ const orderModel = models.order;
 const messageModel = models.message;
 const notificationModel = models.notification;
 const paymentsUtil = require('../utils/payments');
-const walletModel = (models && models.wallet) ? models.wallet : require('../models/walletModel');
+const walletModel =
+  models && models.wallet ? models.wallet : require('../models/walletModel');
 const paymentModel = models.payment;
 const withdrawalModel = models.withdrawal;
 
@@ -445,7 +446,8 @@ exports.dashboard = async (req, res) => {
     if (req.session.recent_order_id) delete req.session.recent_order_id;
 
     const recentWeeklyPlanId = req.session.recent_weekly_plan_id || null;
-    if (req.session.recent_weekly_plan_id) delete req.session.recent_weekly_plan_id;
+    if (req.session.recent_weekly_plan_id)
+      delete req.session.recent_weekly_plan_id;
 
     const recentWalletTxId = req.session.recent_wallet_tx_id || null;
     if (req.session.recent_wallet_tx_id) delete req.session.recent_wallet_tx_id;
@@ -459,22 +461,33 @@ exports.dashboard = async (req, res) => {
     }
 
     // Normalize client's phone to local 10-digit (e.g. +2348065104250 -> 8065104250)
-    const rawPhone = client.phone || client.phonenumber || client.msisdn || null;
+    const rawPhone =
+      client.phone || client.phonenumber || client.msisdn || null;
     const local10 = toLocal10(rawPhone); // may be null if not parseable
 
     // Ensure wallet exists and attempt to set wallet_identifier if not present (won't overwrite locked)
-    const w = await walletModel.createIfNotExists(clientId, local10 || null, true);
+    const w = await walletModel.createIfNotExists(
+      clientId,
+      local10 || null,
+      true
+    );
 
     // choose wallet id for display: prefer wallet_identifier (local phone), else wallet_uuid, else numeric id
     const walletRawId =
-      (w && w.wallet_identifier) ? w.wallet_identifier
-        : (w && w.wallet_uuid) ? w.wallet_uuid
-          : (w && w.id) ? String(w.id) : null;
+      w && w.wallet_identifier
+        ? w.wallet_identifier
+        : w && w.wallet_uuid
+          ? w.wallet_uuid
+          : w && w.id
+            ? String(w.id)
+            : null;
 
     const wallet = {
       id: walletRawId,
-      displayId: (w && w.wallet_identifier) ? w.wallet_identifier : walletRawId,
-      maskedDisplay: maskLocalId((w && w.wallet_identifier) ? w.wallet_identifier : (walletRawId || '')),
+      displayId: w && w.wallet_identifier ? w.wallet_identifier : walletRawId,
+      maskedDisplay: maskLocalId(
+        w && w.wallet_identifier ? w.wallet_identifier : walletRawId || ''
+      ),
       balance: Number(w && w.balance ? w.balance : 0),
       identifier_locked: !!(w && w.wallet_identifier_locked),
     };
@@ -483,12 +496,18 @@ exports.dashboard = async (req, res) => {
     const displayName =
       client.name ||
       client.full_name ||
-      (client.first_name && client.last_name ? `${client.first_name} ${client.last_name}` : null) ||
+      (client.first_name && client.last_name
+        ? `${client.first_name} ${client.last_name}`
+        : null) ||
       client.email ||
       '';
 
     // --- NEW: ensure currentUser and statesLGAs are available to the template
-    const currentUser = res.locals.currentUser || client || (req.session && req.session.user) || {};
+    const currentUser =
+      res.locals.currentUser ||
+      client ||
+      (req.session && req.session.user) ||
+      {};
     let statesLGAs = [];
     try {
       if (typeof loadStatesLGAs === 'function') {
@@ -505,8 +524,8 @@ exports.dashboard = async (req, res) => {
       title: 'Dashboard',
       layout: 'layouts/layout',
       user: client,
-      currentUser,            // NEW
-      statesLGAs,             // NEW
+      currentUser, // NEW
+      statesLGAs, // NEW
       displayName: displayName || '—',
       wallet,
       orders,
@@ -728,9 +747,15 @@ exports.bookVendor = async (req, res) => {
 
         if (!debitRes || !debitRes.success) {
           // insufficient funds: mark order (if you have such a helper) and redirect user to wallet
-          if (orderModel && typeof orderModel.updatePaymentStatus === 'function') {
+          if (
+            orderModel &&
+            typeof orderModel.updatePaymentStatus === 'function'
+          ) {
             try {
-              await orderModel.updatePaymentStatus(orderId, 'insufficient_wallet');
+              await orderModel.updatePaymentStatus(
+                orderId,
+                'insufficient_wallet'
+              );
             } catch (e) {
               // non-fatal if method not implemented
             }
@@ -754,20 +779,28 @@ exports.bookVendor = async (req, res) => {
               raw: { tx: debitRes },
             });
           } catch (e) {
-            console.warn('Failed to persist wallet payment audit (non-fatal):', e);
+            console.warn(
+              'Failed to persist wallet payment audit (non-fatal):',
+              e
+            );
           }
         }
 
         // mark order as paid by wallet
         if (orderModel && typeof orderModel.markPaid === 'function') {
-          await orderModel.markPaid(orderId, 'wallet', debitRes.txId || `wallet_tx_${Date.now()}`);
+          await orderModel.markPaid(
+            orderId,
+            'wallet',
+            debitRes.txId || `wallet_tx_${Date.now()}`
+          );
         }
 
         req.session.success = 'Booking created and paid from wallet.';
         return res.redirect('/client/dashboard#section-orders');
       } catch (walletErr) {
         console.error('Wallet payment error:', walletErr);
-        req.session.error = 'Could not complete wallet payment. Please try again.';
+        req.session.error =
+          'Could not complete wallet payment. Please try again.';
         return res.redirect('/client/dashboard');
       }
     }
@@ -1043,9 +1076,15 @@ exports.postSpecialOrder = async (req, res) => {
 
         if (!debitRes || !debitRes.success) {
           // Optional: mark plan payment state for bookkeeping
-          if (weeklyPlanModel && typeof weeklyPlanModel.setPaymentStatus === 'function') {
+          if (
+            weeklyPlanModel &&
+            typeof weeklyPlanModel.setPaymentStatus === 'function'
+          ) {
             try {
-              await weeklyPlanModel.setPaymentStatus(created.id, 'insufficient_wallet');
+              await weeklyPlanModel.setPaymentStatus(
+                created.id,
+                'insufficient_wallet'
+              );
             } catch (e) {
               // non-fatal
             }
@@ -1069,19 +1108,34 @@ exports.postSpecialOrder = async (req, res) => {
               raw: { tx: debitRes },
             });
           } catch (e) {
-            console.warn('Failed to persist wallet payment audit (non-fatal):', e);
+            console.warn(
+              'Failed to persist wallet payment audit (non-fatal):',
+              e
+            );
           }
         }
 
         // mark weekly plan as paid (best-effort; try setPaymentStatus then fallback)
         try {
-          if (weeklyPlanModel && typeof weeklyPlanModel.markPaid === 'function') {
-            await weeklyPlanModel.markPaid(created.id, 'wallet', debitRes.txId || `wallet_tx_${Date.now()}`);
-          } else if (weeklyPlanModel && typeof weeklyPlanModel.setPaymentStatus === 'function') {
+          if (
+            weeklyPlanModel &&
+            typeof weeklyPlanModel.markPaid === 'function'
+          ) {
+            await weeklyPlanModel.markPaid(
+              created.id,
+              'wallet',
+              debitRes.txId || `wallet_tx_${Date.now()}`
+            );
+          } else if (
+            weeklyPlanModel &&
+            typeof weeklyPlanModel.setPaymentStatus === 'function'
+          ) {
             await weeklyPlanModel.setPaymentStatus(created.id, 'paid');
           } else {
             // If no helper exists, update the DB directly if you have a method
-            console.warn('No weeklyPlanModel.markPaid / setPaymentStatus found; payment recorded but plan may not be marked paid in DB.');
+            console.warn(
+              'No weeklyPlanModel.markPaid / setPaymentStatus found; payment recorded but plan may not be marked paid in DB.'
+            );
           }
         } catch (e) {
           console.warn('Failed to mark weekly plan paid (non-fatal):', e);
@@ -1091,7 +1145,8 @@ exports.postSpecialOrder = async (req, res) => {
         return res.redirect('/client/dashboard#section-weekly');
       } catch (walletErr) {
         console.error('Wallet payment error (weekly plan):', walletErr);
-        req.session.error = 'Could not complete wallet payment. Please try again.';
+        req.session.error =
+          'Could not complete wallet payment. Please try again.';
         return res.redirect('/client/dashboard');
       }
     }
@@ -1360,21 +1415,24 @@ exports.viewWeeklyPlan = async (req, res) => {
 exports.showAccountMenu = (req, res) => {
   // res.locals.currentUser already set by auth middleware (if present)
   return res.render('client/account-menu', {
-    currentUser: res.locals.currentUser || (req.session && req.session.user) || {},
+    currentUser:
+      res.locals.currentUser || (req.session && req.session.user) || {},
   });
 };
 
 // Render phone edit form (uses res.locals.currentUser for JWT flow)
 exports.showPhoneForm = (req, res) => {
   return res.render('client/account-phone', {
-    currentUser: res.locals.currentUser || (req.session && req.session.user) || {},
+    currentUser:
+      res.locals.currentUser || (req.session && req.session.user) || {},
   });
 };
 
 // Render address edit form (exposes statesLGAs for the location picker)
 exports.showAddressForm = (req, res) => {
   return res.render('client/account-address', {
-    currentUser: res.locals.currentUser || (req.session && req.session.user) || {},
+    currentUser:
+      res.locals.currentUser || (req.session && req.session.user) || {},
     statesLGAs: loadStatesLGAs(),
   });
 };
@@ -1382,7 +1440,8 @@ exports.showAddressForm = (req, res) => {
 // Render change-password form
 exports.showPasswordForm = (req, res) => {
   return res.render('client/account-password', {
-    currentUser: res.locals.currentUser || (req.session && req.session.user) || {},
+    currentUser:
+      res.locals.currentUser || (req.session && req.session.user) || {},
   });
 };
 
@@ -1399,7 +1458,9 @@ exports.updatePhone = async (req, res) => {
       (req.session && req.session.user && req.session.user.id);
     if (!clientId) {
       if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-        return res.status(401).json({ success: false, error: 'Not authenticated' });
+        return res
+          .status(401)
+          .json({ success: false, error: 'Not authenticated' });
       }
       req.session.error = 'Not authenticated';
       return res.redirect('/login');
@@ -1408,7 +1469,12 @@ exports.updatePhone = async (req, res) => {
     const newPhone = String((req.body && req.body.phone) || '').trim();
     if (!newPhone || newPhone.length < 6) {
       if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-        return res.status(400).json({ success: false, error: 'Please provide a valid phone number.' });
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error: 'Please provide a valid phone number.',
+          });
       }
       req.session.error = 'Please provide a valid phone number.';
       return res.redirect('/client/account/phone');
@@ -1423,18 +1489,29 @@ exports.updatePhone = async (req, res) => {
       updated = await clientModel.findById(clientId);
     } else {
       if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-        return res.status(500).json({ success: false, error: 'Server not configured to update phone' });
+        return res
+          .status(500)
+          .json({
+            success: false,
+            error: 'Server not configured to update phone',
+          });
       }
       req.session.error = 'Server not configured to update phone';
       return res.redirect('/client/account/phone');
     }
 
     // Sync session user display phone if present
-    if (req.session && req.session.user) req.session.user.phone = updated && updated.phone ? updated.phone : newPhone;
+    if (req.session && req.session.user)
+      req.session.user.phone =
+        updated && updated.phone ? updated.phone : newPhone;
 
     // Return JSON for AJAX; otherwise redirect back to dashboard with flash
     if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-      return res.json({ success: true, message: 'Phone updated', phone: updated.phone || newPhone });
+      return res.json({
+        success: true,
+        message: 'Phone updated',
+        phone: updated.phone || newPhone,
+      });
     }
 
     req.session.success = 'Phone updated (wallet ID unchanged).';
@@ -1456,14 +1533,19 @@ exports.updateAddress = async (req, res) => {
       (req.user && req.user.id) ||
       (req.session && req.session.user && req.session.user.id);
     if (!clientId)
-      return res.status(401).json({ success: false, error: 'Not authenticated' });
+      return res
+        .status(401)
+        .json({ success: false, error: 'Not authenticated' });
 
     const address = String((req.body && req.body.address) || '').trim();
-    const state = req.body && req.body.state ? String(req.body.state).trim() : null;
+    const state =
+      req.body && req.body.state ? String(req.body.state).trim() : null;
     const lga = req.body && req.body.lga ? String(req.body.lga).trim() : null;
 
     if (!address) {
-      return res.status(400).json({ success: false, error: 'Address cannot be empty.' });
+      return res
+        .status(400)
+        .json({ success: false, error: 'Address cannot be empty.' });
     }
 
     let updated = null;
@@ -1484,13 +1566,19 @@ exports.updateAddress = async (req, res) => {
     } else {
       return res
         .status(500)
-        .json({ success: false, error: 'Server not configured to update address' });
+        .json({
+          success: false,
+          error: 'Server not configured to update address',
+        });
     }
 
     // normalize returned address to string
-    const returnedAddress = updated && updated.address
-      ? (typeof updated.address === 'string' ? updated.address : (updated.address.address || ''))
-      : address;
+    const returnedAddress =
+      updated && updated.address
+        ? typeof updated.address === 'string'
+          ? updated.address
+          : updated.address.address || ''
+        : address;
 
     if (req.session && req.session.user) {
       req.session.user.address = returnedAddress;
@@ -1525,7 +1613,9 @@ exports.updatePassword = async (req, res) => {
       (req.user && req.user.id) ||
       (req.session && req.session.user && req.session.user.id);
     if (!clientId)
-      return res.status(401).json({ success: false, error: 'Not authenticated' });
+      return res
+        .status(401)
+        .json({ success: false, error: 'Not authenticated' });
 
     const { current_password, new_password, confirm_password } = req.body || {};
 
@@ -1535,24 +1625,32 @@ exports.updatePassword = async (req, res) => {
         .json({ success: false, error: 'All password fields are required.' });
     }
     if (new_password !== confirm_password) {
-      return res.status(400).json({ success: false, error: 'New passwords do not match.' });
+      return res
+        .status(400)
+        .json({ success: false, error: 'New passwords do not match.' });
     }
     // enforce minimal strength policy server-side
     if (String(new_password).length < 8) {
       return res
         .status(400)
-        .json({ success: false, error: 'New password must be at least 8 characters.' });
+        .json({
+          success: false,
+          error: 'New password must be at least 8 characters.',
+        });
     }
 
     const user = await clientModel.findById(clientId);
-    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+    if (!user)
+      return res.status(404).json({ success: false, error: 'User not found' });
 
     // determine what field holds the hashed password
     const passwordHashField = user.password || user.password_hash || null;
     if (passwordHashField) {
       const match = await bcrypt.compare(current_password, passwordHashField);
       if (!match) {
-        return res.status(400).json({ success: false, error: 'Current password is incorrect.' });
+        return res
+          .status(400)
+          .json({ success: false, error: 'Current password is incorrect.' });
       }
     } else {
       // no existing password; allow setting new password without checking current_password
@@ -1571,12 +1669,18 @@ exports.updatePassword = async (req, res) => {
         await clientModel.updateClient(clientId, { password: hash });
       }
     } else {
-      return res.status(500).json({ success: false, error: 'Server not configured to update password' });
+      return res
+        .status(500)
+        .json({
+          success: false,
+          error: 'Server not configured to update password',
+        });
     }
 
     return res.json({
       success: true,
-      message: 'Password updated. Please use the new password next time you log in.',
+      message:
+        'Password updated. Please use the new password next time you log in.',
     });
   } catch (err) {
     console.error('updatePassword error', err);
@@ -1623,7 +1727,10 @@ exports.postFundWallet = async (req, res) => {
     const metadata = { wallet_topup: true, clientId };
 
     if (provider === 'paystack') {
-      const init = await require('../utils/payments').initPaystack({ email: req.session.user.email, amount, metadata }, null);
+      const init = await require('../utils/payments').initPaystack(
+        { email: req.session.user.email, amount, metadata },
+        null
+      );
       // store initial payment (init) for traceability
       await paymentModel.createPayment({
         orderId: null,
@@ -1748,7 +1855,9 @@ exports.postWithdrawalRequest = async (req, res) => {
     sinceToday.setHours(0, 0, 0, 0);
     let dailyTotal = 0;
     try {
-      dailyTotal = await withdrawalModel.sumClientWithdrawals(clientId, { since: sinceToday });
+      dailyTotal = await withdrawalModel.sumClientWithdrawals(clientId, {
+        since: sinceToday,
+      });
     } catch (e) {
       // if that helper not present, fall back to 0
       dailyTotal = 0;
@@ -1791,7 +1900,10 @@ exports.postWithdrawalRequest = async (req, res) => {
     }
 
     // persistent notification (best-effort)
-    if (notificationModel && typeof notificationModel.createNotification === 'function') {
+    if (
+      notificationModel &&
+      typeof notificationModel.createNotification === 'function'
+    ) {
       try {
         await notificationModel.createNotification({
           order_id: null,

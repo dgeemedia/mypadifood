@@ -106,8 +106,8 @@
     "
   >
     <% if (messages && messages.length) { %>
-      <% messages.forEach(function(m) { %>
-        <% 
+    <% messages.forEach(function(m) { %>
+    <% 
           // prefer display_name (provided by the message model), fallback to sensible names
           var senderName = m.display_name;
           if (!senderName) {
@@ -120,14 +120,14 @@
             }
           }
         %>
-        <div class="weekly-plan-msg">
-          <strong><%= senderName %></strong>:
-          <%= m.message %>
-          <div style="font-size: 0.8em; color: #666">
-            <%= new Date(m.created_at).toLocaleString() %>
-          </div>
-        </div>
-      <% }); %>
+    <div class="weekly-plan-msg">
+      <strong><%= senderName %></strong>:
+      <%= m.message %>
+      <div style="font-size: 0.8em; color: #666">
+        <%= new Date(m.created_at).toLocaleString() %>
+      </div>
+    </div>
+    <% }); %>
     <% } else { %>
     <p>No messages yet.</p>
     <% } %>

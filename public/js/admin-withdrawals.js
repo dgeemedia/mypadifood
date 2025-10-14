@@ -16,15 +16,29 @@
       const row = document.createElement('tr');
       row.dataset.id = payload.id;
       const clientHtml = `<strong>${payload.client_name || 'Client'}</strong><div class="muted">${payload.client_email || ''} • ${payload.client_phone || ''}</div>`;
-      const dest = typeof payload.destination === 'object'
-        ? `<div><strong>Bank:</strong> ${payload.destination.bank || ''}</div><div><strong>Acct:</strong> ${payload.destination.account_number || ''} (${payload.destination.account_name || ''})</div>`
-        : (payload.destination || '—');
-      row.innerHTML = '<td>' + clientHtml + '</td>' +
-                      '<td>' + (payload.amount ? Number(payload.amount).toFixed(2) : '0.00') + '</td>' +
-                      '<td>' + dest + '</td>' +
-                      '<td>' + (payload.created_at ? new Date(payload.created_at).toLocaleString() : '') + '</td>' +
-                      '<td>' + (payload.note || '') + '</td>' +
-                      `<td>
+      const dest =
+        typeof payload.destination === 'object'
+          ? `<div><strong>Bank:</strong> ${payload.destination.bank || ''}</div><div><strong>Acct:</strong> ${payload.destination.account_number || ''} (${payload.destination.account_name || ''})</div>`
+          : payload.destination || '—';
+      row.innerHTML =
+        '<td>' +
+        clientHtml +
+        '</td>' +
+        '<td>' +
+        (payload.amount ? Number(payload.amount).toFixed(2) : '0.00') +
+        '</td>' +
+        '<td>' +
+        dest +
+        '</td>' +
+        '<td>' +
+        (payload.created_at
+          ? new Date(payload.created_at).toLocaleString()
+          : '') +
+        '</td>' +
+        '<td>' +
+        (payload.note || '') +
+        '</td>' +
+        `<td>
                         <button class="btn btn-sm btn-primary btn-approve" data-id="${payload.id}">Approve</button>
                         <button class="btn btn-sm btn-danger btn-decline" data-id="${payload.id}">Decline</button>
                         <a href="/admin/withdrawals/${payload.id}" class="btn btn-sm btn-link">View</a>
@@ -38,8 +52,12 @@
   });
 
   // Modal helpers (assumes modal markup exists)
-  function openModal(modal) { if (modal) modal.style.display = 'flex'; }
-  function closeModal(modal) { if (modal) modal.style.display = 'none'; }
+  function openModal(modal) {
+    if (modal) modal.style.display = 'flex';
+  }
+  function closeModal(modal) {
+    if (modal) modal.style.display = 'none';
+  }
 
   document.addEventListener('click', (ev) => {
     const approveBtn = ev.target.closest && ev.target.closest('.btn-approve');
@@ -69,8 +87,13 @@
   });
 
   const approveCancel = document.getElementById('approve-cancel');
-  if (approveCancel) approveCancel.addEventListener('click', () => closeModal(document.getElementById('modal-approve')));
+  if (approveCancel)
+    approveCancel.addEventListener('click', () =>
+      closeModal(document.getElementById('modal-approve'))
+    );
   const declineCancel = document.getElementById('decline-cancel');
-  if (declineCancel) declineCancel.addEventListener('click', () => closeModal(document.getElementById('modal-decline')));
-
+  if (declineCancel)
+    declineCancel.addEventListener('click', () =>
+      closeModal(document.getElementById('modal-decline'))
+    );
 })();

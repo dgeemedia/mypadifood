@@ -10,9 +10,15 @@ const { v4: uuidv4 } = require('uuid');
  * WEEKLY_WITHDRAWAL_LIMIT (default 500000)
  */
 const MIN_WITHDRAWAL_AMOUNT = Number(process.env.MIN_WITHDRAWAL_AMOUNT || 500);
-const WITHDRAWAL_KYC_THRESHOLD = Number(process.env.WITHDRAWAL_KYC_THRESHOLD || 50000);
-const DAILY_WITHDRAWAL_LIMIT = Number(process.env.DAILY_WITHDRAWAL_LIMIT || 100000);
-const WEEKLY_WITHDRAWAL_LIMIT = Number(process.env.WEEKLY_WITHDRAWAL_LIMIT || 500000);
+const WITHDRAWAL_KYC_THRESHOLD = Number(
+  process.env.WITHDRAWAL_KYC_THRESHOLD || 50000
+);
+const DAILY_WITHDRAWAL_LIMIT = Number(
+  process.env.DAILY_WITHDRAWAL_LIMIT || 100000
+);
+const WEEKLY_WITHDRAWAL_LIMIT = Number(
+  process.env.WEEKLY_WITHDRAWAL_LIMIT || 500000
+);
 
 /**
  * Create a withdrawal request (status = 'pending').
@@ -22,9 +28,16 @@ const WEEKLY_WITHDRAWAL_LIMIT = Number(process.env.WEEKLY_WITHDRAWAL_LIMIT || 50
  * NOTE: this does not debit the wallet. Wallet is debited at admin approval
  * OR when markPaid is called (depending on your chosen flow).
  */
-async function createRequest({ clientId, amount, method = 'bank', destination = {}, currency = 'NGN' }) {
+async function createRequest({
+  clientId,
+  amount,
+  method = 'bank',
+  destination = {},
+  currency = 'NGN',
+}) {
   if (!clientId) throw new Error('clientId required');
-  if (!amount || Number(amount) <= 0) throw new Error('amount must be positive');
+  if (!amount || Number(amount) <= 0)
+    throw new Error('amount must be positive');
   const amt = Number(amount);
 
   // Basic minimum check
@@ -35,7 +48,10 @@ async function createRequest({ clientId, amount, method = 'bank', destination = 
   }
 
   // Load client KYC / basic info to enforce KYC threshold and location-based checks.
-  const { rows: clientRows } = await pool.query('SELECT id, full_name, email, phone, kyc_verified FROM clients WHERE id = $1 LIMIT 1', [clientId]);
+  const { rows: clientRows } = await pool.query(
+    'SELECT id, full_name, email, phone, kyc_verified FROM clients WHERE id = $1 LIMIT 1',
+    [clientId]
+  );
   const client = clientRows && clientRows[0] ? clientRows[0] : null;
   if (!client) {
     const err = new Error('Client not found');
@@ -45,7 +61,9 @@ async function createRequest({ clientId, amount, method = 'bank', destination = 
 
   // If amount is above KYC threshold, require kyc_verified flag on client
   if (amt >= WITHDRAWAL_KYC_THRESHOLD && !client.kyc_verified) {
-    const err = new Error('Client KYC required for withdrawals above threshold');
+    const err = new Error(
+      'Client KYC required for withdrawals above threshold'
+    );
     err.code = 'kyc_required';
     throw err;
   }
@@ -121,7 +139,10 @@ async function getPendingRequests(limit = 200) {
  */
 async function findById(id) {
   if (!id) return null;
-  const { rows } = await pool.query('SELECT * FROM withdrawal_requests WHERE id = $1 LIMIT 1', [id]);
+  const { rows } = await pool.query(
+    'SELECT * FROM withdrawal_requests WHERE id = $1 LIMIT 1',
+    [id]
+  );
   return rows[0] || null;
 }
 
@@ -131,7 +152,8 @@ async function findById(id) {
 async function sumClientWithdrawals(clientId, opts = {}) {
   if (!clientId) return 0;
   const since = opts.since || null;
-  let sql = 'SELECT COALESCE(SUM(amount),0) AS total FROM withdrawal_requests WHERE client_id = $1 AND status IN (\'pending\',\'approved\',\'paid\')';
+  let sql =
+    "SELECT COALESCE(SUM(amount),0) AS total FROM withdrawal_requests WHERE client_id = $1 AND status IN ('pending','approved','paid')";
   const params = [clientId];
   if (since) {
     sql += ' AND created_at >= $2';
@@ -150,12 +172,20 @@ async function sumClientWithdrawals(clientId, opts = {}) {
  * This function implements the "debit at approval" flow (recommended if you want to prevent double-spend immediately).
  */
 async function markApproved(withdrawalId, adminId, opts = {}) {
-  const { note = null, markPaid = false, provider = null, providerReference = null } = opts;
+  const {
+    note = null,
+    markPaid = false,
+    provider = null,
+    providerReference = null,
+  } = opts;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    const { rows } = await client.query('SELECT * FROM withdrawal_requests WHERE id = $1 FOR UPDATE', [withdrawalId]);
+    const { rows } = await client.query(
+      'SELECT * FROM withdrawal_requests WHERE id = $1 FOR UPDATE',
+      [withdrawalId]
+    );
     if (!rows || !rows.length) {
       await client.query('ROLLBACK');
       return { success: false, message: 'not_found' };
@@ -180,7 +210,10 @@ async function markApproved(withdrawalId, adminId, opts = {}) {
     );
 
     // lock wallet row
-    const { rows: wRows } = await client.query('SELECT balance FROM wallets WHERE client_id = $1 FOR UPDATE', [wr.client_id]);
+    const { rows: wRows } = await client.query(
+      'SELECT balance FROM wallets WHERE client_id = $1 FOR UPDATE',
+      [wr.client_id]
+    );
     const balance = wRows[0] ? Number(wRows[0].balance) : 0;
     if (balance < amount) {
       await client.query('ROLLBACK');
@@ -191,17 +224,32 @@ async function markApproved(withdrawalId, adminId, opts = {}) {
     const txId = uuidv4();
     const txProvider = provider || 'admin';
     const txProviderRef = providerReference || null;
-    const rawObj = { adminId, withdrawalId, created_at: new Date().toISOString() };
+    const rawObj = {
+      adminId,
+      withdrawalId,
+      created_at: new Date().toISOString(),
+    };
 
     await client.query(
       `INSERT INTO wallet_transactions
         (id, client_id, amount, type, reason, provider, provider_reference, order_id, note, raw, created_at)
        VALUES ($1,$2,$3,'debit','withdrawal',$4,$5,NULL,$6,$7, now())`,
-      [txId, wr.client_id, amount, txProvider, txProviderRef, note || `withdrawal ${withdrawalId}`, rawObj]
+      [
+        txId,
+        wr.client_id,
+        amount,
+        txProvider,
+        txProviderRef,
+        note || `withdrawal ${withdrawalId}`,
+        rawObj,
+      ]
     );
 
     // update wallet balance
-    await client.query('UPDATE wallets SET balance = balance - $1, updated_at = now() WHERE client_id = $2', [amount, wr.client_id]);
+    await client.query(
+      'UPDATE wallets SET balance = balance - $1, updated_at = now() WHERE client_id = $2',
+      [amount, wr.client_id]
+    );
 
     // set withdrawal status to approved or paid (if markPaid)
     const status = markPaid ? 'paid' : 'approved';
@@ -247,7 +295,10 @@ async function markPaid(withdrawalId, adminId = null, opts = {}) {
   try {
     await client.query('BEGIN');
 
-    const { rows: wrRows } = await client.query('SELECT * FROM withdrawal_requests WHERE id = $1 FOR UPDATE', [withdrawalId]);
+    const { rows: wrRows } = await client.query(
+      'SELECT * FROM withdrawal_requests WHERE id = $1 FOR UPDATE',
+      [withdrawalId]
+    );
     if (!wrRows || !wrRows.length) {
       await client.query('ROLLBACK');
       return { success: false, message: 'not_found' };
@@ -291,7 +342,10 @@ async function markPaid(withdrawalId, adminId = null, opts = {}) {
     );
 
     // Lock wallet row
-    const { rows: wRows } = await client.query('SELECT balance FROM wallets WHERE client_id = $1 FOR UPDATE', [wr.client_id]);
+    const { rows: wRows } = await client.query(
+      'SELECT balance FROM wallets WHERE client_id = $1 FOR UPDATE',
+      [wr.client_id]
+    );
     const balance = wRows[0] ? Number(wRows[0].balance) : 0;
 
     // If wallet already debited earlier (e.g. markApproved debited), then balance check is not needed here.
@@ -306,7 +360,12 @@ async function markPaid(withdrawalId, adminId = null, opts = {}) {
         `UPDATE withdrawal_requests
            SET status='paid', admin_id = COALESCE($1, admin_id), provider = COALESCE($2, provider), provider_reference = COALESCE($3, provider_reference), updated_at = now()
          WHERE id = $4`,
-        [adminId, provider || wr.provider, providerReference || wr.provider_reference, withdrawalId]
+        [
+          adminId,
+          provider || wr.provider,
+          providerReference || wr.provider_reference,
+          withdrawalId,
+        ]
       );
       await client.query('COMMIT');
       return { success: true, status: 'paid' };
@@ -322,17 +381,31 @@ async function markPaid(withdrawalId, adminId = null, opts = {}) {
     const txId = uuidv4();
     const txProvider = provider || 'payout_provider';
     const txProviderRef = providerReference || txId;
-    const rawObj = Object.assign({}, raw, { withdrawalId, created_at: new Date().toISOString() });
+    const rawObj = Object.assign({}, raw, {
+      withdrawalId,
+      created_at: new Date().toISOString(),
+    });
 
     await client.query(
       `INSERT INTO wallet_transactions
         (id, client_id, amount, type, reason, provider, provider_reference, order_id, note, raw, created_at)
        VALUES ($1,$2,$3,'debit','withdrawal',$4,$5,NULL,$6,$7, now())`,
-      [txId, wr.client_id, amount, txProvider, txProviderRef, `withdrawal ${withdrawalId}`, rawObj]
+      [
+        txId,
+        wr.client_id,
+        amount,
+        txProvider,
+        txProviderRef,
+        `withdrawal ${withdrawalId}`,
+        rawObj,
+      ]
     );
 
     // Update wallet balance
-    await client.query('UPDATE wallets SET balance = balance - $1, updated_at = now() WHERE client_id = $2', [amount, wr.client_id]);
+    await client.query(
+      'UPDATE wallets SET balance = balance - $1, updated_at = now() WHERE client_id = $2',
+      [amount, wr.client_id]
+    );
 
     // Mark withdrawal as paid
     await client.query(
