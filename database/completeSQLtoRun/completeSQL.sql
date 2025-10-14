@@ -699,3 +699,9 @@ ADD COLUMN wallet_uuid uuid DEFAULT gen_random_uuid();
 
 ALTER TABLE wallets
 ADD COLUMN created_at timestamp with time zone DEFAULT now();
+
+-- add reviewer + reason + timestamp if they don't already exist
+ALTER TABLE riders
+  ADD COLUMN IF NOT EXISTS reviewed_by uuid,
+  ADD COLUMN IF NOT EXISTS reviewed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS review_reason text;
