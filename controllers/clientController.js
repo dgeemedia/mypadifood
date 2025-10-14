@@ -897,8 +897,6 @@ exports.postSpecialOrder = async (req, res) => {
       } catch (e) {
         items = [];
       }
-      // Fallback: if items is an empty array, attempt to read discrete form fields
-      // (handles cases where client sent "[]" but the individual selects are present)
       if (!items || !items.length) {
         const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
         for (const d of days) {
@@ -932,7 +930,6 @@ exports.postSpecialOrder = async (req, res) => {
         }
       }
     } else {
-      // existing fallback when no items JSON provided
       const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
       for (const d of days) {
         if (planType === 'single') {
@@ -966,8 +963,8 @@ exports.postSpecialOrder = async (req, res) => {
     }
 
     const PRICES = {
-      single: Number(process.env.WEEKLY_SINGLE_PRICE || 4000),
-      double: Number(process.env.WEEKLY_DOUBLE_PRICE || 8000),
+      single: Number(process.env.WEEKLY_SINGLE_PRICE || 30000),
+      double: Number(process.env.WEEKLY_DOUBLE_PRICE || 55000),
     };
     const totalPrice = PRICES[planType] || PRICES.single;
     const weekDate = new Date(weekOf + 'T00:00:00Z');
@@ -985,7 +982,7 @@ exports.postSpecialOrder = async (req, res) => {
       items,
     });
 
-       // Persist the recent weekly plan id so the dashboard can auto-open weekly plans view
+    // Persist recent weekly plan id so dashboard can auto-open weekly plans view
     req.session.recent_weekly_plan_id = created.id;
 
     // create persistent notification if available
@@ -994,8 +991,6 @@ exports.postSpecialOrder = async (req, res) => {
         notificationModel &&
         typeof notificationModel.createNotification === 'function'
       ) {
-        // Do NOT set order_id to the weekly-plan id. That column FK->orders.
-        // Instead pass order_id: null (or omit) and include weekly_plan_id in payload.
         await notificationModel.createNotification({
           order_id: null,
           type: 'weekly_plan',
@@ -1016,7 +1011,7 @@ exports.postSpecialOrder = async (req, res) => {
       console.warn('notif create failed', e);
     }
 
-    // Emit via socket to admins (so admin dashboards get live update)
+    // Emit via socket to admins
     try {
       const io = require('../utils/socket').get();
       if (io) {
@@ -1037,7 +1032,71 @@ exports.postSpecialOrder = async (req, res) => {
       console.warn('socket emit failed', e);
     }
 
-    // Payment flow
+    // --- WALLET payment handling for weekly plans (NEW) ---
+    if (paymentMethod === 'wallet') {
+      try {
+        // attempt to debit atomically (returns { success, balance, txId } on success)
+        const debitRes = await walletModel.debitIfEnough(clientId, totalPrice, {
+          weeklyPlanId: created.id,
+          note: `Payment for weekly plan ${created.id}`,
+        });
+
+        if (!debitRes || !debitRes.success) {
+          // Optional: mark plan payment state for bookkeeping
+          if (weeklyPlanModel && typeof weeklyPlanModel.setPaymentStatus === 'function') {
+            try {
+              await weeklyPlanModel.setPaymentStatus(created.id, 'insufficient_wallet');
+            } catch (e) {
+              // non-fatal
+            }
+          }
+          req.session.error =
+            'Insufficient wallet balance. Please fund your wallet or choose another payment method.';
+          return res.redirect('/client/dashboard#section-wallet');
+        }
+
+        // Record wallet payment for audit (if paymentModel exists)
+        if (paymentModel && typeof paymentModel.createPayment === 'function') {
+          try {
+            await paymentModel.createPayment({
+              weeklyPlanId: created.id,
+              provider: 'wallet',
+              event: 'payment',
+              providerReference: debitRes.txId || `wallet_tx_${Date.now()}`,
+              amount: totalPrice,
+              currency: 'NGN',
+              status: 'success',
+              raw: { tx: debitRes },
+            });
+          } catch (e) {
+            console.warn('Failed to persist wallet payment audit (non-fatal):', e);
+          }
+        }
+
+        // mark weekly plan as paid (best-effort; try setPaymentStatus then fallback)
+        try {
+          if (weeklyPlanModel && typeof weeklyPlanModel.markPaid === 'function') {
+            await weeklyPlanModel.markPaid(created.id, 'wallet', debitRes.txId || `wallet_tx_${Date.now()}`);
+          } else if (weeklyPlanModel && typeof weeklyPlanModel.setPaymentStatus === 'function') {
+            await weeklyPlanModel.setPaymentStatus(created.id, 'paid');
+          } else {
+            // If no helper exists, update the DB directly if you have a method
+            console.warn('No weeklyPlanModel.markPaid / setPaymentStatus found; payment recorded but plan may not be marked paid in DB.');
+          }
+        } catch (e) {
+          console.warn('Failed to mark weekly plan paid (non-fatal):', e);
+        }
+
+        req.session.success = 'Weekly plan created and paid from wallet.';
+        return res.redirect('/client/dashboard#section-weekly');
+      } catch (walletErr) {
+        console.error('Wallet payment error (weekly plan):', walletErr);
+        req.session.error = 'Could not complete wallet payment. Please try again.';
+        return res.redirect('/client/dashboard');
+      }
+    }
+
+    // --- External payment flows (paystack / flutterwave) ---
     if (paymentMethod === 'paystack' || paymentMethod === 'flutterwave') {
       try {
         const client = await clientModel.findById(clientId);
@@ -1072,6 +1131,7 @@ exports.postSpecialOrder = async (req, res) => {
       }
     }
 
+    // Default: booking created (e.g. COD)
     req.session.success =
       'Weekly plan created. Our Food Order Specialist will review it.';
     return res.redirect('/client/dashboard');

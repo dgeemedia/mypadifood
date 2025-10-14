@@ -80,14 +80,16 @@
     <% }) %>
   </fieldset>
 
-  <div class="form-row">
+    <div class="form-row">
     <label for="payment_method">Payment method</label>
     <select name="payment_method" id="payment_method">
       <option value="cod">Pay on delivery</option>
+      <option value="wallet">Pay from wallet</option>
       <option value="paystack">Pay online (Paystack)</option>
       <option value="flutterwave">Pay online (Flutterwave)</option>
     </select>
   </div>
+
 
   <!-- items JSON will be filled by public/js/special-order.js before submit -->
   <input type="hidden" name="items" id="itemsField" value="[]" />
