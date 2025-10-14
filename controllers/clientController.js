@@ -1449,11 +1449,7 @@ exports.updatePhone = async (req, res) => {
   }
 };
 
-/**
- * AJAX: Update address
- * - Uses clientModel.updateAddress(clientId, newAddress) if available
- * - Falls back to clientModel.updateClient(clientId, { address, state, lga })
- */
+//updateAddress
 exports.updateAddress = async (req, res) => {
   try {
     const clientId =
@@ -1470,10 +1466,19 @@ exports.updateAddress = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Address cannot be empty.' });
     }
 
-    let updated;
+    let updated = null;
+
+    // Use updateAddress for plain address string (avoid passing an object here)
     if (typeof clientModel.updateAddress === 'function') {
-      updated = await clientModel.updateAddress(clientId, { address, state, lga });
+      updated = await clientModel.updateAddress(clientId, address); // <-- pass string
+      // If you also need to update state/lga, call updateClient (if available)
+      if ((state || lga) && typeof clientModel.updateClient === 'function') {
+        await clientModel.updateClient(clientId, { state, lga });
+        // refresh updated record
+        updated = await clientModel.findById(clientId);
+      }
     } else if (typeof clientModel.updateClient === 'function') {
+      // If model only supports updateClient, use it with an object
       await clientModel.updateClient(clientId, { address, state, lga });
       updated = await clientModel.findById(clientId);
     } else {
@@ -1482,16 +1487,23 @@ exports.updateAddress = async (req, res) => {
         .json({ success: false, error: 'Server not configured to update address' });
     }
 
+    // normalize returned address to string
+    const returnedAddress = updated && updated.address
+      ? (typeof updated.address === 'string' ? updated.address : (updated.address.address || ''))
+      : address;
+
     if (req.session && req.session.user) {
-      req.session.user.address = updated.address || address;
-      if (state) req.session.user.state = updated.state || state;
-      if (lga) req.session.user.lga = updated.lga || lga;
+      req.session.user.address = returnedAddress;
+      if (state) req.session.user.state = (updated && updated.state) || state;
+      if (lga) req.session.user.lga = (updated && updated.lga) || lga;
     }
 
     return res.json({
       success: true,
       message: 'Address updated',
-      address: updated.address || address,
+      address: returnedAddress,
+      state: (updated && updated.state) || state,
+      lga: (updated && updated.lga) || lga,
     });
   } catch (err) {
     console.error('updateAddress error', err);

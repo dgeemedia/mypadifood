@@ -705,3 +705,37 @@ ALTER TABLE riders
   ADD COLUMN IF NOT EXISTS reviewed_by uuid,
   ADD COLUMN IF NOT EXISTS reviewed_at timestamptz,
   ADD COLUMN IF NOT EXISTS review_reason text;
+
+-- backup rows that look like JSON (starts with '{')
+CREATE TABLE clients_address_backup AS
+SELECT id, address
+FROM clients
+WHERE address IS NOT NULL AND address ~ '^\s*{';
+
+DO $$
+DECLARE
+  rec RECORD;
+  newaddr TEXT;
+BEGIN
+  FOR rec IN
+    SELECT id, address
+    FROM clients
+    WHERE address IS NOT NULL AND address ~ '^\s*{'
+  LOOP
+    BEGIN
+      -- cast to jsonb and extract 'address'
+      newaddr := (rec.address::jsonb ->> 'address');
+
+      IF newaddr IS NOT NULL AND trim(newaddr) <> '' THEN
+        UPDATE clients SET address = newaddr WHERE id = rec.id;
+      ELSE
+        RAISE NOTICE 'id %: JSON parsed but no "address" key or empty', rec.id;
+      END IF;
+
+    EXCEPTION WHEN OTHERS THEN
+      RAISE NOTICE 'id %: skipped (invalid JSON or parse error)', rec.id;
+      -- continue to next row
+    END;
+  END LOOP;
+END
+$$ LANGUAGE plpgsql;
