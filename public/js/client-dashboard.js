@@ -1,3 +1,4 @@
+// public/js/client-dashboard.js
 (function () {
   'use strict';
 
