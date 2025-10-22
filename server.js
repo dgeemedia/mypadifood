@@ -80,21 +80,19 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/locations', express.static(path.join(__dirname, 'locations')));
 
-// Routes
-// Mount auth routes early so /login etc are handled by the new controller
-app.use('/', require('./routes/auth')); // <-- unified JWT login/logout routes
-// --- MOUNT vendor router BEFORE the catch-all index router so literal paths like
-//     /vendor/register are handled by the vendor router and not mistaken for :id
+// Routes (canonical)
+app.use('/', require('./routes/auth'));
 app.use('/vendor', require('./routes/vendor'));
 app.use('/', require('./routes/index'));
 app.use('/client', require('./routes/client'));
 app.use('/admin', require('./routes/admin'));
 app.use('/admin/resources', require('./routes/adminResources'));
-app.use('/chat', require('./routes/chat')); // chat route
+app.use('/chat', require('./routes/chat'));
 app.use('/admin/orders', require('./routes/adminOrders'));
-app.use('/api', require('./routes/payments')); // payment endpoints (stubs)
+app.use('/api/payments', require('./routes/payments'));   // <-- payments router (thin routes)
+app.use('/client/wallet', require('./routes/wallet'));    // POST /client/wallet/fund etc
 app.use('/rider', require('./routes/rider'));
-app.use('/api/gpt4all', require('./routes/api/gpt4all')); // gpt4all support chat
+app.use('/api/gpt4all', require('./routes/api/gpt4all'));
 
 // ===== Socket.IO setup: create HTTP server, attach socket.io, expose to controllers via utils/socket =====
 const http = require('http');

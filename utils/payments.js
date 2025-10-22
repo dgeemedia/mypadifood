@@ -13,7 +13,7 @@ try {
 }
 
 const BASE_URL =
-  process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+  process.env.BASE_URL || `https://mypadifood.com`;
 const PAYSTACK_KEY = process.env.PAYSTACK_SECRET_KEY;
 const FLW_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
 
@@ -59,7 +59,7 @@ async function initPaystack(
   const body = {
     email,
     amount: amountKobo,
-    callback_url: `${BASE_URL}/api/paystack/verify`,
+    callback_url: `${BASE_URL}/api/payments/paystack/verify`,
     metadata: Object.assign({}, metadata, orderId ? { orderId } : {}),
   };
 
@@ -141,7 +141,7 @@ async function initFlutterwave(
     tx_ref,
     amount: String(amount),
     currency,
-    redirect_url: `${BASE_URL}/api/flutterwave/callback`,
+    redirect_url: `${BASE_URL}/api/payments/flutterwave/callback`,
     payment_options: 'card,banktransfer,ussd',
     customer: {
       email: customer.email || '',

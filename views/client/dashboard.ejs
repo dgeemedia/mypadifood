@@ -393,65 +393,51 @@
     </section>
 
     <!--WALLET-->
-    <section
-      id="section-wallet"
-      class="app-section app-section-hidden"
-      data-title="Wallet"
-    >
-      <h2 class="sr-only">Wallet</h2>
-      <section>
-        <h3>Your Wallet</h3>
-        <p>
-          Balance: ₦<span id="wallet-balance"
-            ><%= (wallet && wallet.balance !== undefined) ?
-            Number(wallet.balance).toFixed(2) : '0.00' %></span
-          >
-        </p>
+    <section id="section-wallet" class="app-section app-section-hidden" data-title="Wallet">
+  <div class="section-wallet">
+    <h3>Your Wallet</h3>
+    <p>Balance: <span class="wallet-balance">₦<span id="wallet-balance"><%= (wallet && wallet.balance !== undefined) ? Number(wallet.balance).toFixed(2) : '0.00' %></span></span></p>
 
-        <h4>Fund wallet</h4>
-        <form method="post" action="/client/wallet/fund" id="wallet-fund-form">
-          <input
-            type="number"
-            name="amount"
-            step="0.01"
-            min="50"
-            placeholder="Amount (₦)"
-            required
-          />
+    <div class="wallet-forms">
+      <form id="wallet-fund-form" method="post" action="/client/wallet/fund">
+        <label>Amount (₦)
+          <input type="number" name="amount" step="0.01" min="50" placeholder="Amount (₦)" required />
+        </label>
+        <label>Provider
           <select name="provider" required>
             <option value="paystack">Paystack</option>
             <option value="flutterwave">Flutterwave</option>
           </select>
-          <button type="submit" class="btn">Fund wallet</button>
-        </form>
+        </label>
+        <div style="margin-top:8px">
+          <button type="submit" class="btn" id="walletFundBtn">Fund wallet</button>
+        </div>
+        <div id="walletFundMsg" class="wallet-message" role="status"></div>
+      </form>
 
-        <form
-          method="post"
-          action="/client/wallet/withdraw"
-          id="wallet-withdraw-form"
-        >
-          <input
-            type="number"
-            name="amount"
-            step="0.01"
-            min="50"
-            placeholder="Amount (₦)"
-            required
-          />
-          <!-- optional destination fields (or keep bank details in profile) -->
+      <form id="wallet-withdraw-form" method="post" action="/client/wallet/withdraw">
+        <label>Amount (₦)
+          <input type="number" name="amount" step="0.01" min="50" placeholder="Amount (₦)" required />
+        </label>
+        <label>Bank name
           <input type="text" name="bank_name" placeholder="Bank name" />
-          <input
-            type="text"
-            name="account_number"
-            placeholder="Account number"
-          />
-          <input type="text" name="account_name" placeholder="Account name" />
-          <button type="submit" class="btn">Request withdrawal</button>
-        </form>
+        </label>
+        <label>Account number
+          <input type="text" name="account_number" placeholder="Enter number" />
+        </label>
+        <label>Account name
+          <input type="text" name="account_name" placeholder="Enter name" />
+        </label>
+        <div style="margin-top:8px">
+          <button type="submit" class="btn" id="walletWithdrawBtn">Request withdrawal</button>
+        </div>
+        <div id="walletWithdrawMsg" class="wallet-message" role="status"></div>
+      </form>
+    </div>
 
-        <p class="muted">Top up your wallet and use it to pay for orders.</p>
-      </section>
-    </section>
+    <p class="wallet-note muted">Top up your wallet and use it to pay for orders without leaving the dashboard.</p>
+  </div>
+</section>
 
     <!-- WEEKLY PLAN -->
 <section
@@ -698,6 +684,7 @@
 </div>
 
 <script src="/js/client-dashboard.js" defer></script>
+<script src="/js/wallet-dashboard.js" defer></script>
 
 <script>
   <% if (typeof recentOrderId !== 'undefined' && recentOrderId) { %>
