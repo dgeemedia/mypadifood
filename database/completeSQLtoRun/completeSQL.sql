@@ -752,3 +752,50 @@ CREATE TABLE IF NOT EXISTS payments (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_payments_client_id ON payments(client_id);
+
+-- create reviews without FK constraints
+CREATE TABLE IF NOT EXISTS reviews (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  vendor_id uuid NOT NULL,
+  client_id uuid,
+  admin_id uuid,
+  order_id uuid,
+  parent_id uuid,
+  rating smallint CHECK (rating BETWEEN 1 AND 5),
+  comment text,
+  visible boolean DEFAULT true,
+  created_at timestamptz DEFAULT now()
+);
+
+-- add FK only if referenced table exists (no-op if missing)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname='vendors') THEN
+    BEGIN
+      ALTER TABLE reviews ADD CONSTRAINT fk_reviews_vendor FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE CASCADE;
+    EXCEPTION WHEN duplicate_object THEN NULL; END;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname='clients') THEN
+    BEGIN
+      ALTER TABLE reviews ADD CONSTRAINT fk_reviews_client FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL;
+    EXCEPTION WHEN duplicate_object THEN NULL; END;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname='admins') THEN
+    BEGIN
+      ALTER TABLE reviews ADD CONSTRAINT fk_reviews_admin FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE SET NULL;
+    EXCEPTION WHEN duplicate_object THEN NULL; END;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname='orders') THEN
+    BEGIN
+      ALTER TABLE reviews ADD CONSTRAINT fk_reviews_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL;
+    EXCEPTION WHEN duplicate_object THEN NULL; END;
+  END IF;
+
+  -- self-referencing parent_id FK (reviews -> reviews)
+  BEGIN
+    ALTER TABLE reviews ADD CONSTRAINT fk_reviews_parent FOREIGN KEY (parent_id) REFERENCES reviews(id) ON DELETE CASCADE;
+  EXCEPTION WHEN duplicate_object THEN NULL; END;
+END $$;
