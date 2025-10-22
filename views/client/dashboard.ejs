@@ -454,24 +454,26 @@
     </section>
 
     <!-- WEEKLY PLAN -->
-    <section
-      id="section-weekly"
-      class="app-section app-section-hidden"
-      data-title="Weekly plan"
-    >
-      <h2 class="sr-only">Weekly plan</h2>
+<section
+  id="section-weekly"
+  class="app-section app-section-hidden"
+  data-title="Weekly plan"
+>
+  <h2 class="sr-only">Weekly plan</h2>
 
-      <section>
-        <h3>Special Weekly Booking</h3>
-        <p>
-          Subscribe to a weekly meal plan for busy professionals.
-          <a href="/client/special-order" class="btn">Create Weekly Plan</a>
-        </p>
+  <section>
+    <h3>Special Weekly Booking</h3>
+    <p>
+      Subscribe to a weekly meal plan for busy professionals.
+      <a href="/client/special-order" class="btn">Create Weekly Plan</a>
+    </p>
 
-        <% if (!weeklyPlans || !weeklyPlans.length) { %>
-        <p>You have no weekly plans yet.</p>
-        <% } else { %>
-        <table>
+    <% if (!weeklyPlans || !weeklyPlans.length) { %>
+      <p>You have no weekly plans yet.</p>
+    <% } else { %>
+
+      <div class="table-wrap">
+        <table class="table-weekly">
           <thead>
             <tr>
               <th>Week (Mon)</th>
@@ -483,47 +485,52 @@
           </thead>
           <tbody>
             <% weeklyPlans.forEach(p => { %>
-            <tr>
-              <td>
-                <%= p.week_of ? (p.week_of.toISOString ? p.week_of.toISOString().slice(0,10) : p.week_of) : '—' %>
-              </td>
-              <td><%= p.plan_type %></td>
-              <td>₦<%= p.total_price %></td>
-              <td><%= p.status %></td>
-              <td>
-                <a href="/client/special-order/<%= p.id %>">View</a>
-                <% if (p.modifiable_from && p.modifiable_until) { %>
-                <form
-                  method="post"
-                  action="/client/special-order/<%= p.id %>/update"
-                  style="display: inline"
-                >
-                  <button type="submit" class="btn">Modify</button>
-                </form>
-                <% } %>
-              </td>
-            </tr>
+              <tr>
+                <td data-label="Week (Mon)">
+                  <%= p.week_of ? (p.week_of.toISOString ? p.week_of.toISOString().slice(0,10) : p.week_of) : '—' %>
+                </td>
+                <td data-label="Plan"><%= p.plan_type %></td>
+                <td data-label="Price (₦)">₦<%= p.total_price %></td>
+                <td data-label="Status"><%= p.status %></td>
+                <td data-label="Actions">
+                  <a class="btn btn-ghost" href="/client/special-order/<%= p.id %>">View</a>
+                  <% if (p.modifiable_from && p.modifiable_until) { %>
+                    <form
+                      method="post"
+                      action="/client/special-order/<%= p.id %>/update"
+                      style="display:inline"
+                    >
+                      <button type="submit" class="btn">Modify</button>
+                    </form>
+                  <% } %>
+                </td>
+              </tr>
             <% }) %>
           </tbody>
         </table>
-        <% } %>
-      </section>
-    </section>
+      </div>
 
-    <!-- ORDERS -->
-    <section
-      id="section-orders"
-      class="app-section app-section-hidden"
-      data-title="Place order"
-    >
-      <h2 class="sr-only">Place order</h2>
+    <% } %>
+  </section>
+</section>
 
-      <section>
-        <h3>Your Orders</h3>
-        <% if (!orders || !orders.length) { %>
-        <p>No orders yet.</p>
-        <% } else { %>
-        <table>
+
+   <!-- ORDERS -->
+<section
+  id="section-orders"
+  class="app-section app-section-hidden"
+  data-title="Place order"
+>
+  <h2 class="sr-only">Place order</h2>
+
+  <section>
+    <h3>Your Orders</h3>
+    <% if (!orders || !orders.length) { %>
+      <p>No orders yet.</p>
+    <% } else { %>
+
+      <div class="table-wrap">
+        <table class="table-orders">
           <thead>
             <tr>
               <th>Item</th>
@@ -535,26 +542,24 @@
           </thead>
           <tbody>
             <% orders.forEach(o => { %>
-            <tr>
-              <td><%= o.item %></td>
-              <td><%= o.vendor_name ? o.vendor_name : o.vendor_id %></td>
-              <td><%= o.status %></td>
-              <td>₦<%= o.total_amount %></td>
-              <td>
-                <button class="btn btn-view-chat" data-order-id="<%= o.id %>">
-                  View Chat
-                </button>
-                <button class="btn btn-add-menu" data-order-id="<%= o.id %>">
-                  Add / Update Menu
-                </button>
-              </td>
-            </tr>
+              <tr>
+                <td data-label="Item"><%= o.item %></td>
+                <td data-label="Vendor"><%= o.vendor_name ? o.vendor_name : o.vendor_id %></td>
+                <td data-label="Status"><%= o.status %></td>
+                <td data-label="Amount">₦<%= o.total_amount %></td>
+                <td data-label="Chat">
+                  <button class="btn btn-ghost btn-view-chat" data-order-id="<%= o.id %>">View Chat</button>
+                  <button class="btn btn-ghost btn-add-menu" data-order-id="<%= o.id %>">Add / Update Menu</button>
+                </td>
+              </tr>
             <% }) %>
           </tbody>
         </table>
-        <% } %>
-      </section>
-    </section>
+      </div>
+
+    <% } %>
+  </section>
+</section>
 
     <!-- VENDORS -->
     <section

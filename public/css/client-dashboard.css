@@ -256,3 +256,245 @@ table th, table td { overflow: hidden; text-overflow: ellipsis; white-space: nor
   .icons-grid.card { grid-template-columns: repeat(2,1fr); }
   .analytics-grid { grid-template-columns: 1fr; }
 }
+
+/* === Tables: desktop normal, mobile stacked cards (Option B) === */
+
+/* Generic table wrapper for safe horizontal scrolling on very narrow screens */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  border-radius: 8px;
+}
+
+/* Desktop / default table */
+.table-wrap table {
+  width: 100%;
+  min-width: 0;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+.table-wrap thead th {
+  text-align: left;
+  font-weight: 700;
+  padding: 10px;
+  border-top: 1px solid rgba(15,23,42,0.04);
+}
+.table-wrap tbody td {
+  padding: 10px;
+  border-top: 1px solid rgba(15,23,42,0.04);
+  vertical-align: middle;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Small screens: convert table rows into stacked "cards" */
+@media (max-width: 720px) {
+  .table-wrap table,
+  .table-wrap thead,
+  .table-wrap tbody,
+  .table-wrap tr,
+  .table-wrap th,
+  .table-wrap td {
+    display: block;
+    width: 100%;
+  }
+
+  /* hide original header row */
+  .table-wrap thead { display: none; }
+
+  .table-wrap tr {
+    background: var(--card);
+    border: 1px solid rgba(15,23,42,0.04);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  .table-wrap td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border: none;
+    white-space: normal;
+  }
+
+  /* show label from data-label */
+  .table-wrap td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--muted);
+    margin-right: 8px;
+    flex: 0 0 auto;
+  }
+
+  /* content area (the actual cell value) */
+  .table-wrap td > * {
+    max-width: 64%;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  /* Buttons inside cells stack nicely on small screens */
+  .table-wrap td .btn {
+    display: inline-block;
+    margin-left: 8px;
+    white-space: nowrap;
+  }
+}
+
+/* Super small screens tweaks */
+@media (max-width: 420px) {
+  .table-wrap td .btn {
+    display: block;
+    margin: 6px 0 0 0;
+  }
+  .table-wrap td::before {
+    width: 45%;
+  }
+  .table-wrap td > * {
+    max-width: 100%;
+    text-align: left;
+    margin-top: 6px;
+    display: block;
+  }
+}
+
+/* Small accessibility / visual polish */
+.table-wrap a { text-decoration: none; }
+
+/* Ensure action buttons (table rows) use the brand color */
+.table-wrap .btn,
+.table-wrap .btn-ghost,
+.table-wrap .btn-view-chat,
+.table-wrap .btn-add-menu {
+  color: var(--brand) !important;
+  background: transparent !important;
+  border: 1px solid rgba(11,116,255,0.14) !important;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Primary table action (if you want a filled blue button) */
+.table-wrap .btn-primary {
+  background: var(--brand) !important;
+  color: #fff !important;
+  border: 1px solid transparent !important;
+}
+
+/* tiny hover states */
+.table-wrap .btn-ghost:hover,
+.table-wrap .btn-view-chat:hover,
+.table-wrap .btn-add-menu:hover {
+  background: rgba(11,116,255,0.08);
+  border-color: rgba(11,116,255,0.22);
+}
+
+/* ensure icons inside buttons inherit the color */
+.table-wrap .btn i,
+.table-wrap .btn svg { color: inherit; }
+
+/* === Weekly plan / special-order styles ===
+   Paste this near your other dashboard/table rules */
+.weekly-plan {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 12px;
+  box-sizing: border-box;
+  color: var(--text, #111827);
+}
+
+.weekly-plan h2 {
+  margin: 0 0 12px 0;
+  font-size: 1.25rem;
+  color: var(--brand);
+}
+
+.weekly-plan h3 { margin: 18px 0 8px 0; font-size: 1rem; color: var(--muted); }
+
+/* Summary block */
+.weekly-summary p { margin: 8px 0; line-height: 1.4; }
+.weekly-summary strong { display: inline-block; min-width: 110px; color: var(--muted); }
+
+/* Meals snapshot: reuse table-wrap to keep mobile stacked behaviour */
+.meals-snapshot .table-wrap { margin-top: 12px; }
+
+/* Better-looking messages panel (replaces inline styles) */
+.weekly-messages {
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid rgba(15,23,42,0.04);
+  padding: 10px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(249,250,251,0.98));
+  box-shadow: var(--shadow);
+}
+
+/* individual message */
+.weekly-plan-msg {
+  padding: 8px;
+  border-bottom: 1px dashed rgba(15,23,42,0.03);
+  margin-bottom: 8px;
+}
+.weekly-plan-msg:last-child { border-bottom: none; margin-bottom: 0; }
+.weekly-plan-msg strong { color: var(--brand); display:block; margin-bottom:4px; }
+
+/* Chat input area */
+.weekly-chat {
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-top:12px;
+}
+.weekly-chat #weeklyPlanChatInput {
+  flex: 1 1 auto;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(15,23,42,0.06);
+  box-sizing: border-box;
+}
+.weekly-chat #weeklyPlanSendBtn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  border: 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Buttons on this page: ensure consistent brand for ghost/primary */
+.weekly-plan .btn { border-radius: 8px; padding: 8px 12px; font-weight:700; }
+.weekly-plan .btn-ghost { background: transparent; border: 1px solid rgba(15,23,42,0.06); color: var(--brand); }
+.weekly-plan .btn-primary { background: var(--brand); color: #fff; border: 1px solid transparent; }
+
+/* Special-order form layout */
+form#weeklyPlanForm { max-width: 900px; margin: 0 auto; display: grid; gap: 12px; }
+.form-row { display: flex; flex-direction: column; gap: 6px; }
+.form-row label { font-weight:600; color:var(--muted); font-size:0.95rem; }
+.form-row input[type="date"], .form-row select, .form-row input[type="text"], .form-row input[type="number"] {
+  padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(15,23,42,0.06); box-sizing: border-box;
+}
+
+/* Meals grid form */
+.meals-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 760px) { .meals-grid { grid-template-columns: 1fr; } }
+.day-block { background: var(--card); border: 1px solid rgba(15,23,42,0.04); padding: 10px; border-radius: 10px; box-shadow: var(--shadow); }
+.day-block h4 { margin: 0 0 8px 0; text-transform: capitalize; color: var(--brand); }
+
+/* slot labels and selects */
+.day-block label { display: block; margin-bottom: 6px; }
+.food-select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(15,23,42,0.06); }
+
+/* submit */
+#submitPlan { background: var(--brand); color: #fff; border: 0; padding: 10px 12px; border-radius: 8px; font-weight:700; cursor:pointer; }
+
+/* small note: reuse .table-wrap mobile stacking earlier provided */
