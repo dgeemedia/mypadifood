@@ -3,21 +3,14 @@
 
 <% const days = ['monday','tuesday','wednesday','thursday','friday']; %>
 
-<form
-  id="weeklyPlanForm"
-  method="post"
-  action="/client/special-order"
-  novalidate
->
+<form id="weeklyPlanForm" method="post" action="/client/special-order" novalidate>
   <div class="form-row">
     <label for="vendorId">Vendor (optional)</label>
     <select name="vendorId" id="vendorId">
       <option value="">Any local vendor</option>
-      <% if (vendors && vendors.length) { %>
-      <% vendors.forEach(v => { %>
-      <option value="<%= v.id %>"><%= v.name %> - ₦<%= v.base_price %></option>
-      <% }) %>
-      <% } %>
+      <% if (vendors && vendors.length) { vendors.forEach(v => { %>
+        <option value="<%= v.id %>"><%= v.name %> - ₦<%= v.base_price %></option>
+      <% }) } %>
     </select>
   </div>
 
@@ -31,52 +24,34 @@
 
   <div class="form-row">
     <label for="weekOf">Week (Monday)</label>
-    <input
-      type="date"
-      id="weekOf"
-      name="week_of"
-      value="<%= defaultWeekOf %>"
-      required
-    />
+    <input type="date" id="weekOf" name="week_of" value="<%= defaultWeekOf %>" required />
   </div>
 
   <div id="modifiableWindowInfo" class="form-row" aria-live="polite"></div>
 
-  <fieldset id="mealsGrid" class="meals-grid">
-    <legend>Choose meals</legend>
+  <fieldset id="mealsGrid" class="meals-grid" aria-label="Choose meals">
+    <legend class="sr-only">Choose meals</legend>
 
     <% days.forEach(function(d) { %>
-    <div class="day-block" data-day="<%= d %>">
-      <h4><%= d.charAt(0).toUpperCase() + d.slice(1) %></h4>
+      <div class="day-block" data-day="<%= d %>">
+        <h4><%= d.charAt(0).toUpperCase() + d.slice(1) %></h4>
 
-      <label
-        >Meal 1
-        <select
-          class="food-select"
-          data-day="<%= d %>"
-          data-slot="1"
-          name="<%= d %>_1"
-        >
-          <option value="">-- select --</option>
-          <!-- options populated by /js/special-order.js -->
-        </select>
-      </label>
-
-      <div class="slot2" data-day="<%= d %>" style="display: none">
-        <label
-          >Meal 2
-          <select
-            class="food-select"
-            data-day="<%= d %>"
-            data-slot="2"
-            name="<%= d %>_2"
-          >
+        <label>Meal 1
+          <select class="food-select" data-day="<%= d %>" data-slot="1" name="<%= d %>_1">
             <option value="">-- select --</option>
             <!-- options populated by /js/special-order.js -->
           </select>
         </label>
+
+        <div class="slot2" data-day="<%= d %>" aria-hidden="true" style="display:none">
+          <label>Meal 2
+            <select class="food-select" data-day="<%= d %>" data-slot="2" name="<%= d %>_2">
+              <option value="">-- select --</option>
+              <!-- options populated by /js/special-order.js -->
+            </select>
+          </label>
+        </div>
       </div>
-    </div>
     <% }) %>
   </fieldset>
 
@@ -90,10 +65,9 @@
     </select>
   </div>
 
-  <!-- items JSON will be filled by public/js/special-order.js before submit -->
   <input type="hidden" name="items" id="itemsField" value="[]" />
 
   <div class="form-row">
-    <button type="submit" id="submitPlan">Book Weekly Plan</button>
+    <button type="submit" id="submitPlan" class="btn btn-primary">Book Weekly Plan</button>
   </div>
 </form>
