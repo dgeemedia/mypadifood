@@ -739,3 +739,16 @@ BEGIN
   END LOOP;
 END
 $$ LANGUAGE plpgsql;
+
+CREATE TABLE IF NOT EXISTS payments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id uuid NOT NULL,
+  amount numeric(16,2) NOT NULL,
+  provider varchar(128),
+  provider_reference varchar(256),
+  status varchar(32) DEFAULT 'pending', -- pending, succeeded, failed
+  raw jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_payments_client_id ON payments(client_id);
