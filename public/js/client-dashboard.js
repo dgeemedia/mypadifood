@@ -671,3 +671,21 @@
     });
   });
 })();
+
+// public/js/client-dashboard.js (append if not already present)
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.icon-card[data-href]').forEach(function (el) {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', function () {
+      const href = el.getAttribute('data-href');
+      if (!href) return;
+      window.location.href = href;
+    });
+    el.addEventListener('keypress', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        el.click();
+      }
+    });
+  });
+});
