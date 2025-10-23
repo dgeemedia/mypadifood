@@ -39,8 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
           return window.location.reload();
         } else {
           const txt = await resp.text().catch(() => null);
-          alert('Could not post review. ' + (txt || ''));
-        }
+  if (resp.status === 403) {
+    alert('Please login, order, and post your review.');
+  } else {
+    alert('Could not post review. ' + (txt || ''));
+  }
+}
       } catch (e) {
         console.error(e);
         // fallback to default submit
