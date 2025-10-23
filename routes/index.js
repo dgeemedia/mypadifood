@@ -4,6 +4,7 @@ const router = express.Router();
 
 const models = require('../models');
 const vendorModel = models.vendor;
+const reviewModel = models.review; // added
 
 // Home
 router.get('/', async (req, res) => {
@@ -16,7 +17,29 @@ router.get('/', async (req, res) => {
 
     const filters = { q: q || '', state: state || '', lga: lga || '' };
 
-    res.render('index', { vendors, filters });
+    // Attach review summary to each vendor (review_count + avg_rating)
+    let vendorsWithSummaries = vendors;
+    if (vendors && vendors.length) {
+      try {
+        vendorsWithSummaries = await Promise.all(
+          vendors.map(async (v) => {
+            try {
+              const sum = await reviewModel.getRatingSummaryForVendor(v.id);
+              return Object.assign({}, v, { reviewsSummary: sum || { review_count: 0, avg_rating: 0 } });
+            } catch (e) {
+              // non-fatal: return vendor without summary on error
+              console.warn('Could not load review summary for vendor', v.id, e);
+              return Object.assign({}, v, { reviewsSummary: { review_count: 0, avg_rating: 0 } });
+            }
+          })
+        );
+      } catch (e) {
+        console.warn('Could not fetch review summaries for vendor list', e);
+        vendorsWithSummaries = vendors;
+      }
+    }
+
+    res.render('index', { vendors: vendorsWithSummaries, filters });
   } catch (err) {
     console.error('Error rendering home:', err);
     res.status(500).send('Server error');

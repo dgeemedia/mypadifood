@@ -1429,3 +1429,17 @@ table tbody td {
     width: 100%;
   }
 }
+
+.ai-note {
+  display: block;
+  margin-top: 6px;
+  color: #888;
+  font-size: 0.85rem;
+  font-style: italic;
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}

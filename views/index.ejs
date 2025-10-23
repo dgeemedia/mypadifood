@@ -27,33 +27,66 @@
 
 <section class="vendors">
   <% if (!vendors || !vendors.length) { %>
-  <p>No vendors found. Try another location.</p>
+    <p>No vendors found. Try another location.</p>
   <% } else { %>
-  <% vendors.forEach(function(v) { %>
-  <article class="vendor-card">
-    <h3><a href="/vendor/<%= v.id %>"><%= v.name %></a></h3>
-    <p>
-      <strong>Food:</strong>
-      <%= v.food_item %>
-    </p>
-    <p><strong>Price (per plate):</strong> ₦<%= v.base_price %></p>
-    <p>
-      <strong>Address:</strong>
-      <%= v.address %>
-      (<%= v.lga %>,
-      <%= v.state %>)
-    </p>
-    <form method="post" action="/client/book">
-      <input type="hidden" name="vendorId" value="<%= v.id %>" />
-      <input type="text" name="item" placeholder="Special request (optional)" />
-      <select name="payment_method">
-        <option value="cod">Pay on delivery</option>
-        <option value="paystack">Paystack</option>
-        <option value="flutterwave">Flutterwave</option>
-      </select>
-      <button type="submit">Book / Order</button>
-    </form>
-  </article>
-  <% }); %>
+    <% vendors.forEach(function(v) { 
+         const s = v.reviewsSummary || { review_count: 0, avg_rating: 0 };
+         const avg = (s && s.avg_rating !== undefined) ? Number(s.avg_rating) : 0;
+         const count = (s && s.review_count) ? Number(s.review_count) : 0;
+         const rounded = Math.round(avg);
+    %>
+      <article class="vendor-card">
+        <h3><a href="/vendor/<%= v.id %>"><%= v.name %></a></h3>
+        <p>
+          <strong>Food:</strong>
+          <%= v.food_item %>
+        </p>
+        <p><strong>Price (per plate):</strong> ₦<%= v.base_price %></p>
+        <p>
+          <strong>Address:</strong>
+          <%= v.address %>
+          (<%= v.lga %>,
+          <%= v.state %>)
+        </p>
+
+        <% if (count > 0) { %>
+          <div class="rating-inline" style="margin-top:8px; font-size:0.95rem;">
+            <span class="stars" aria-hidden="true" title="<%= avg.toFixed(2) %> average">
+              <% for (let i = 1; i <= 5; i++) { %>
+                <% if (i <= rounded) { %>★<% } else { %>☆<% } %>
+              <% } %>
+            </span>
+            <span style="margin-left:8px;">
+              <strong><%= avg.toFixed(2) %></strong>
+              <small class="muted">(<%= count %> review<%= count === 1 ? '' : 's' %>)</small>
+            </span>
+          </div>
+        <% } else { %>
+          <div class="rating-inline" style="margin-top:8px; font-size:0.95rem;">
+            <span class="muted">No reviews yet</span>
+          </div>
+        <% } %>
+
+        <form method="post" action="/client/book" style="margin-top:10px;">
+          <input type="hidden" name="vendorId" value="<%= v.id %>" />
+          <input type="text" name="item" placeholder="Special request (optional)" />
+          <select name="payment_method">
+            <option value="cod">Pay on delivery</option>
+            <option value="paystack">Paystack</option>
+            <option value="flutterwave">Flutterwave</option>
+          </select>
+          <button type="submit">Book / Order</button>
+        </form>
+        <a class="btn btn-link" href="/vendor/<%= v.id %>" style="margin-left:8px;">View vendor</a>
+      </article>
+    <% }); %>
   <% } %>
 </section>
+
+<style>
+/* small styling helper — move to CSS file as needed */
+.vendor-card { margin-bottom: 14px; padding:12px; border:1px solid #eee; border-radius:6px; }
+.stars { color: #f5a623; font-size: 1rem; }
+.muted { color:#666; font-size:0.92rem; }
+</style>
+

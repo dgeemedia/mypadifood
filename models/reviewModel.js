@@ -50,7 +50,23 @@ async function getReviewsByVendor(vendorId) {
   return rows;
 }
 
+/**
+ * Return a small summary (count + avg) for a single vendor.
+ * avg_rating is rounded to 2 decimal places. If no ratings present, avg_rating will be 0.
+ */
+async function getRatingSummaryForVendor(vendorId) {
+  const sql = `
+    SELECT COUNT(*)::int AS review_count,
+           COALESCE(ROUND(AVG(rating)::numeric,2), 0) AS avg_rating
+    FROM reviews
+    WHERE vendor_id = $1 AND visible = true;
+  `;
+  const { rows } = await pool.query(sql, [vendorId]);
+  return rows[0] || { review_count: 0, avg_rating: 0 };
+}
+
 module.exports = {
   createReview,
   getReviewsByVendor,
+  getRatingSummaryForVendor,
 };
