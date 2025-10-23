@@ -1,40 +1,57 @@
 <main class="container vendor-page" role="main">
   <a class="btn btn-link" href="/client/dashboard">← Back to dashboard</a>
 
-  <header class="vendor-hero card" style="margin-top:16px;">
+  <header class="vendor-hero card" style="margin-top: 16px">
     <h1><%= vendor.name %></h1>
     <p class="muted">
-      <strong>Food:</strong> <%= vendor.food_item || '—' %> ·
-      <strong>Price:</strong> ₦<%= vendor.base_price != null ? vendor.base_price : '—' %>
+      <strong>Food:</strong>
+      <%= vendor.food_item || '—' %>
+      ·
+      <strong>Price:</strong>
+      ₦<%= vendor.base_price != null ? vendor.base_price : '—' %>
     </p>
     <% if (vendor.address) { %>
-      <p class="muted"><strong>Address:</strong> <%= vendor.address %> (<%= vendor.lga %>, <%= vendor.state %>)</p>
+    <p class="muted">
+      <strong>Address:</strong>
+      <%= vendor.address %>
+      (<%= vendor.lga %>,
+      <%= vendor.state %>)
+    </p>
     <% } %>
   </header>
 
-  <section class="vendor-body" style="margin-top:18px;">
+  <section class="vendor-body" style="margin-top: 18px">
     <div class="grid two-col">
       <div class="card">
         <h2>About</h2>
         <p><%= vendor.description || 'No description provided.' %></p>
         <% if (currentUser && currentUser.role === 'client') { %>
-          <form method="post" action="/client/book" style="margin-top:12px;">
-            <input type="hidden" name="vendorId" value="<%= vendor.id %>"/>
-            <button class="btn" type="submit">Order from <%= vendor.name %></button>
-          </form>
+        <form method="post" action="/client/book" style="margin-top: 12px">
+          <input type="hidden" name="vendorId" value="<%= vendor.id %>" />
+          <button class="btn" type="submit">
+            Order from <%= vendor.name %>
+          </button>
+        </form>
         <% } %>
       </div>
 
       <div class="card">
         <h2>Contact</h2>
-        <p><strong>Phone:</strong> <%= vendor.phone || '—' %></p>
-        <p><strong>Email:</strong> <%= vendor.email || '—' %></p>
+        <p>
+          <strong>Phone:</strong>
+          <%= vendor.phone || '—' %>
+        </p>
+        <p>
+          <strong>Email:</strong>
+          <%= vendor.email || '—' %>
+        </p>
       </div>
     </div>
 
     <!-- Reviews (partial) -->
-    <div style="margin-top:20px;">
-      <%- include('../partials/reviews', { vendor: vendor, reviews: reviews, currentUser: currentUser }) %>
+    <div style="margin-top: 20px">
+      <%- include('../partials/reviews', { vendor: vendor, reviews: reviews,
+      currentUser: currentUser }) %>
     </div>
   </section>
 </main>

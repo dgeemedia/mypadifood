@@ -1,39 +1,60 @@
 // public/js/wallet-dashboard.js
 document.addEventListener('DOMContentLoaded', () => {
   const fundForm = document.getElementById('wallet-fund-form');
-  const fundBtn = document.getElementById('walletFundBtn') || document.querySelector('#wallet-fund-form button[type="submit"]');
-  const fundMsg = document.getElementById('walletFundMsg') || (function(){ const d = document.createElement('div'); d.id='walletFundMsg'; d.style.display='none'; fundForm && fundForm.prepend(d); return d; })();
+  const fundBtn =
+    document.getElementById('walletFundBtn') ||
+    document.querySelector('#wallet-fund-form button[type="submit"]');
+  const fundMsg =
+    document.getElementById('walletFundMsg') ||
+    (function () {
+      const d = document.createElement('div');
+      d.id = 'walletFundMsg';
+      d.style.display = 'none';
+      fundForm && fundForm.prepend(d);
+      return d;
+    })();
   const balanceEl = document.getElementById('wallet-balance');
 
   if (!fundForm) return;
 
   // Helper show message
   function showMsg(el, text, type = 'success') {
-    el.className = 'wallet-message ' + (type === 'success' ? 'success' : 'error');
+    el.className =
+      'wallet-message ' + (type === 'success' ? 'success' : 'error');
     el.textContent = text;
     el.style.display = 'block';
   }
-  function hideMsg(el) { el.style.display = 'none'; el.textContent = ''; }
+  function hideMsg(el) {
+    el.style.display = 'none';
+    el.textContent = '';
+  }
 
   async function initWalletFund(amount, provider) {
     const body = { amount: Number(amount), provider };
     const resp = await fetch('/client/wallet/init', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
       credentials: 'same-origin',
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     });
     const json = await resp.json();
-    if (!resp.ok) throw new Error(json && json.error ? json.error : 'Init failed');
+    if (!resp.ok)
+      throw new Error(json && json.error ? json.error : 'Init failed');
     return json;
   }
 
   async function verifyPayment(provider, reference) {
     const resp = await fetch('/client/wallet/verify', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
       credentials: 'same-origin',
-      body: JSON.stringify({ provider, reference })
+      body: JSON.stringify({ provider, reference }),
     });
     const json = await resp.json();
     return { ok: resp.ok, body: json };
@@ -52,23 +73,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const handler = window.PaystackPop.setup({
       key: initData.paystackPublicKey || initData.publicKey || '',
       email: initData.email || '',
-      amount: initData.amountKobo || (Math.round(Number(initData.amount || 0) * 100)),
-      ref: initData.reference || initData.tx_ref || (`ps_${Date.now()}`),
-      onClose: function() { showMsg(fundMsg, 'Payment closed. No changes made.', 'error'); },
-      callback: async function(response) {
+      amount:
+        initData.amountKobo || Math.round(Number(initData.amount || 0) * 100),
+      ref: initData.reference || initData.tx_ref || `ps_${Date.now()}`,
+      onClose: function () {
+        showMsg(fundMsg, 'Payment closed. No changes made.', 'error');
+      },
+      callback: async function (response) {
         // response.reference
         try {
-          const { ok, body } = await verifyPayment('paystack', response.reference);
+          const { ok, body } = await verifyPayment(
+            'paystack',
+            response.reference
+          );
           if (ok && body && body.success) {
-            if (body.updatedBalance !== undefined && balanceEl) balanceEl.textContent = Number(body.updatedBalance).toFixed(2);
-            showMsg(fundMsg, body.message || 'Wallet funded successfully', 'success');
+            if (body.updatedBalance !== undefined && balanceEl)
+              balanceEl.textContent = Number(body.updatedBalance).toFixed(2);
+            showMsg(
+              fundMsg,
+              body.message || 'Wallet funded successfully',
+              'success'
+            );
           } else {
-            showMsg(fundMsg, (body && (body.error || body.message)) || 'Could not verify payment', 'error');
+            showMsg(
+              fundMsg,
+              (body && (body.error || body.message)) ||
+                'Could not verify payment',
+              'error'
+            );
           }
         } catch (err) {
           showMsg(fundMsg, err.message || 'Verify failed', 'error');
         }
-      }
+      },
     });
     // handler opens checkout automatically
   }
@@ -88,7 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const config = {
-      public_key: initData.publicKey || initData.public_key || initData.publicKey,
+      public_key:
+        initData.publicKey || initData.public_key || initData.publicKey,
       tx_ref: initData.tx_ref,
       amount: initData.amount || initData.amountKobo || '',
       currency: initData.currency || 'NGN',
@@ -99,17 +137,29 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const { ok, body } = await verifyPayment('flutterwave', reference);
           if (ok && body && body.success) {
-            if (body.updatedBalance !== undefined && balanceEl) balanceEl.textContent = Number(body.updatedBalance).toFixed(2);
-            showMsg(fundMsg, body.message || 'Wallet funded successfully', 'success');
+            if (body.updatedBalance !== undefined && balanceEl)
+              balanceEl.textContent = Number(body.updatedBalance).toFixed(2);
+            showMsg(
+              fundMsg,
+              body.message || 'Wallet funded successfully',
+              'success'
+            );
           } else {
-            showMsg(fundMsg, (body && (body.error || body.message)) || 'Could not verify payment', 'error');
+            showMsg(
+              fundMsg,
+              (body && (body.error || body.message)) ||
+                'Could not verify payment',
+              'error'
+            );
           }
         } catch (err) {
           showMsg(fundMsg, err.message || 'Verify failed', 'error');
         }
       },
-      onclose: function() { showMsg(fundMsg, 'Payment closed. No changes made.', 'error'); },
-      customizations: { title: 'MyPadiFood Wallet Top-up' }
+      onclose: function () {
+        showMsg(fundMsg, 'Payment closed. No changes made.', 'error');
+      },
+      customizations: { title: 'MyPadiFood Wallet Top-up' },
     };
     window.FlutterwaveCheckout(config);
   }
@@ -122,7 +172,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const amount = formData.get('amount');
     const provider = formData.get('provider') || 'paystack';
 
-    if (!amount || Number(amount) < 50) { showMsg(fundMsg, 'Enter an amount (minimum ₦50)', 'error'); return; }
+    if (!amount || Number(amount) < 50) {
+      showMsg(fundMsg, 'Enter an amount (minimum ₦50)', 'error');
+      return;
+    }
 
     if (fundBtn) {
       fundBtn.disabled = true;
@@ -140,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
           reference: init.reference,
           amountKobo: init.amountKobo,
           email: init.email,
-          paystackPublicKey: init.paystackPublicKey
+          paystackPublicKey: init.paystackPublicKey,
         });
       } else if (init.provider === 'flutterwave') {
         // init: { payment_link, tx_ref, amount, currency, publicKey }
@@ -150,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
           amount: init.amount,
           currency: init.currency,
           publicKey: init.publicKey,
-          customerEmail: init.customerEmail || init.email
+          customerEmail: init.customerEmail || init.email,
         });
       } else {
         showMsg(fundMsg, 'Unknown provider response', 'error');

@@ -89,8 +89,8 @@ app.use('/admin', require('./routes/admin'));
 app.use('/admin/resources', require('./routes/adminResources'));
 app.use('/chat', require('./routes/chat'));
 app.use('/admin/orders', require('./routes/adminOrders'));
-app.use('/api/payments', require('./routes/payments'));   // <-- payments router (thin routes)
-app.use('/client/wallet', require('./routes/wallet'));    // POST /client/wallet/fund etc
+app.use('/api/payments', require('./routes/payments')); // <-- payments router (thin routes)
+app.use('/client/wallet', require('./routes/wallet')); // POST /client/wallet/fund etc
 app.use('/client/transactions', require('./routes/clientTransactions'));
 app.use('/rider', require('./routes/rider'));
 app.use('/api/gpt4all', require('./routes/api/gpt4all'));

@@ -12,8 +12,7 @@ try {
   // ignore if node-fetch not installed and fetch exists
 }
 
-const BASE_URL =
-  process.env.BASE_URL || `https://mypadifood.com`;
+const BASE_URL = process.env.BASE_URL || `https://mypadifood.com`;
 const PAYSTACK_KEY = process.env.PAYSTACK_SECRET_KEY;
 const FLW_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
 

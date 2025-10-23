@@ -36,7 +36,8 @@ async function persistPaymentRecord({
   raw = {},
 }) {
   try {
-    if (!paymentModel || typeof paymentModel.createPayment !== 'function') return null;
+    if (!paymentModel || typeof paymentModel.createPayment !== 'function')
+      return null;
     return await paymentModel.createPayment({
       orderId,
       provider,
@@ -48,7 +49,10 @@ async function persistPaymentRecord({
       raw,
     });
   } catch (err) {
-    console.warn('persistPaymentRecord failed (non-fatal):', err && err.message ? err.message : err);
+    console.warn(
+      'persistPaymentRecord failed (non-fatal):',
+      err && err.message ? err.message : err
+    );
     return null;
   }
 }
@@ -89,12 +93,16 @@ exports.paystackRedirectHandler = async (req, res) => {
         const client = await clientModel.findById(metadata.clientId);
         if (!client) {
           safeLog('Paystack redirect: client not found', metadata.clientId);
-          if (req.session) req.session.error = 'Payment verified but client not found. Contact support.';
+          if (req.session)
+            req.session.error =
+              'Payment verified but client not found. Contact support.';
           return res.redirect('/client/dashboard');
         }
 
         // Idempotent: paymentModel / walletModel will prevent double credit
-        const existing = paymentModel && (await paymentModel.findByProviderReference('paystack', reference));
+        const existing =
+          paymentModel &&
+          (await paymentModel.findByProviderReference('paystack', reference));
         if (existing && existing.event === 'wallet_topup') {
           if (req.session) req.session.success = 'Wallet already credited.';
           return res.redirect('/client/dashboard#section-wallet');
@@ -123,26 +131,40 @@ exports.paystackRedirectHandler = async (req, res) => {
         return res.redirect('/client/dashboard#section-wallet');
       } catch (err) {
         console.error('Error crediting wallet (paystack redirect):', err);
-        if (req.session) req.session.error = 'Payment verified but could not credit wallet. Contact support.';
+        if (req.session)
+          req.session.error =
+            'Payment verified but could not credit wallet. Contact support.';
         return res.redirect('/client/dashboard');
       }
     }
 
     // ORDER payment flow
     if (result && result.success) {
-      const orderId = metadata.orderId || (data && data.metadata && data.metadata.orderId) || null;
+      const orderId =
+        metadata.orderId ||
+        (data && data.metadata && data.metadata.orderId) ||
+        null;
       if (orderId) {
         try {
           if (orderModel && typeof orderModel.markPaid === 'function') {
             await orderModel.markPaid(orderId, 'paystack', reference);
-          } else if (orderModel && typeof orderModel.updatePaymentStatus === 'function') {
-            await orderModel.updatePaymentStatus(orderId, 'paid', { provider: 'paystack', reference });
+          } else if (
+            orderModel &&
+            typeof orderModel.updatePaymentStatus === 'function'
+          ) {
+            await orderModel.updatePaymentStatus(orderId, 'paid', {
+              provider: 'paystack',
+              reference,
+            });
           }
-          if (req.session) req.session.success = 'Payment successful. Thank you!';
+          if (req.session)
+            req.session.success = 'Payment successful. Thank you!';
           return res.redirect('/client/dashboard#section-orders');
         } catch (err) {
           console.error('Error marking order paid (paystack redirect):', err);
-          if (req.session) req.session.error = 'Payment verified but could not mark order paid. Contact support.';
+          if (req.session)
+            req.session.error =
+              'Payment verified but could not mark order paid. Contact support.';
           return res.redirect('/client/dashboard');
         }
       }
@@ -151,11 +173,16 @@ exports.paystackRedirectHandler = async (req, res) => {
       return res.redirect('/client/dashboard');
     }
 
-    if (req.session) req.session.error = 'Payment not successful. Please contact support.';
+    if (req.session)
+      req.session.error = 'Payment not successful. Please contact support.';
     return res.redirect('/client/dashboard');
   } catch (err) {
-    console.error('Paystack verify error (redirect):', err && err.message ? err.message : err);
-    if (req.session) req.session.error = 'Verification failed for Paystack payment.';
+    console.error(
+      'Paystack verify error (redirect):',
+      err && err.message ? err.message : err
+    );
+    if (req.session)
+      req.session.error = 'Verification failed for Paystack payment.';
     return res.redirect('/client/dashboard');
   }
 };
@@ -183,7 +210,7 @@ exports.flutterwaveCallbackHandler = async (req, res) => {
       orderId: (data.meta && data.meta.orderId) || null,
       provider: 'flutterwave',
       event: 'verification',
-      providerReference: (data.id || data.tx_ref) || tx_ref,
+      providerReference: data.id || data.tx_ref || tx_ref,
       amount: data.amount || null,
       currency: data.currency || null,
       status: data.status || null,
@@ -193,18 +220,28 @@ exports.flutterwaveCallbackHandler = async (req, res) => {
     // WALLET TOP-UP via meta
     const meta = data.meta || {};
     const fwAmount = data.amount ? Number(data.amount) : null;
-    const fwRef = (data.id || data.tx_ref) || tx_ref;
+    const fwRef = data.id || data.tx_ref || tx_ref;
 
-    if (verification && verification.success && meta.wallet_topup && meta.clientId && fwAmount) {
+    if (
+      verification &&
+      verification.success &&
+      meta.wallet_topup &&
+      meta.clientId &&
+      fwAmount
+    ) {
       try {
         const client = await clientModel.findById(meta.clientId);
         if (!client) {
           safeLog('Flutterwave callback: client not found', meta.clientId);
-          if (req.session) req.session.error = 'Payment verified but client not found. Contact support.';
+          if (req.session)
+            req.session.error =
+              'Payment verified but client not found. Contact support.';
           return res.redirect('/client/dashboard');
         }
 
-        const existing = paymentModel && (await paymentModel.findByProviderReference('flutterwave', fwRef));
+        const existing =
+          paymentModel &&
+          (await paymentModel.findByProviderReference('flutterwave', fwRef));
         if (!existing || existing.event !== 'wallet_topup') {
           await walletModel.creditFromProvider(meta.clientId, fwAmount, {
             provider: 'flutterwave',
@@ -230,7 +267,9 @@ exports.flutterwaveCallbackHandler = async (req, res) => {
         return res.redirect('/client/dashboard#section-wallet');
       } catch (err) {
         console.error('Error crediting wallet (flutterwave callback):', err);
-        if (req.session) req.session.error = 'Payment verified but could not credit wallet. Contact support.';
+        if (req.session)
+          req.session.error =
+            'Payment verified but could not credit wallet. Contact support.';
         return res.redirect('/client/dashboard');
       }
     }
@@ -241,23 +280,36 @@ exports.flutterwaveCallbackHandler = async (req, res) => {
 
       if (!finalOrderId && data.tx_ref) {
         try {
-          const { rows } = await db.pool.query('SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1', [data.tx_ref]);
+          const { rows } = await db.pool.query(
+            'SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1',
+            [data.tx_ref]
+          );
           if (rows && rows[0] && rows[0].id) finalOrderId = rows[0].id;
         } catch (e) {
-          console.warn('Order lookup failed (flutterwave callback):', e && e.message ? e.message : e);
+          console.warn(
+            'Order lookup failed (flutterwave callback):',
+            e && e.message ? e.message : e
+          );
         }
       }
 
       if (finalOrderId) {
         try {
           if (orderModel && typeof orderModel.markPaid === 'function') {
-            await orderModel.markPaid(finalOrderId, 'flutterwave', data.id || data.tx_ref);
+            await orderModel.markPaid(
+              finalOrderId,
+              'flutterwave',
+              data.id || data.tx_ref
+            );
           }
-          if (req.session) req.session.success = 'Payment successful. Thank you!';
+          if (req.session)
+            req.session.success = 'Payment successful. Thank you!';
           return res.redirect('/client/dashboard#section-orders');
         } catch (err) {
           console.error('Error marking order paid (flutterwave):', err);
-          if (req.session) req.session.error = 'Payment verified but could not mark order paid. Contact support.';
+          if (req.session)
+            req.session.error =
+              'Payment verified but could not mark order paid. Contact support.';
           return res.redirect('/client/dashboard');
         }
       }
@@ -266,11 +318,17 @@ exports.flutterwaveCallbackHandler = async (req, res) => {
       return res.redirect('/client/dashboard');
     }
 
-    if (req.session) req.session.error = 'Flutterwave payment not successful or could not be verified.';
+    if (req.session)
+      req.session.error =
+        'Flutterwave payment not successful or could not be verified.';
     return res.redirect('/client/dashboard');
   } catch (err) {
-    console.error('Flutterwave verify error (redirect):', err && err.message ? err.message : err);
-    if (req.session) req.session.error = 'Verification failed for Flutterwave payment.';
+    console.error(
+      'Flutterwave verify error (redirect):',
+      err && err.message ? err.message : err
+    );
+    if (req.session)
+      req.session.error = 'Verification failed for Flutterwave payment.';
     return res.redirect('/client/dashboard');
   }
 };
@@ -290,8 +348,16 @@ exports.paystackWebhookHandler = async (req, res) => {
     const payload = req.body;
     const data = payload && payload.data ? payload.data : payload;
     const event = payload.event || null;
-    const reference = data && data.reference ? data.reference : data && data.id ? data.id : null;
-    const orderId = data && data.metadata && data.metadata.orderId ? data.metadata.orderId : null;
+    const reference =
+      data && data.reference
+        ? data.reference
+        : data && data.id
+          ? data.id
+          : null;
+    const orderId =
+      data && data.metadata && data.metadata.orderId
+        ? data.metadata.orderId
+        : null;
     const amount = data && data.amount ? Number(data.amount) / 100 : null; // kobo -> NGN
     const currency = data && data.currency ? data.currency : null;
     const status = data && data.status ? data.status : null;
@@ -310,18 +376,25 @@ exports.paystackWebhookHandler = async (req, res) => {
     const meta = (data && data.metadata) || {};
     if (
       data &&
-      (data.status === 'success' || data.status === 'successful' || payload.event === 'charge.success') &&
+      (data.status === 'success' ||
+        data.status === 'successful' ||
+        payload.event === 'charge.success') &&
       meta &&
       meta.wallet_topup &&
       meta.clientId &&
       amount
     ) {
       try {
-        const existing = paymentModel && (await paymentModel.findByProviderReference('paystack', reference));
+        const existing =
+          paymentModel &&
+          (await paymentModel.findByProviderReference('paystack', reference));
         if (!existing || existing.event !== 'wallet_topup') {
           const client = await clientModel.findById(meta.clientId);
           if (!client) {
-            console.warn('Paystack webhook: client not found for wallet_topup', meta.clientId);
+            console.warn(
+              'Paystack webhook: client not found for wallet_topup',
+              meta.clientId
+            );
           } else {
             await walletModel.creditFromProvider(meta.clientId, amount, {
               provider: 'paystack',
@@ -344,31 +417,48 @@ exports.paystackWebhookHandler = async (req, res) => {
           }
         }
       } catch (err) {
-        console.error('Error crediting wallet (paystack webhook):', err && err.message ? err.message : err);
+        console.error(
+          'Error crediting wallet (paystack webhook):',
+          err && err.message ? err.message : err
+        );
       }
       // Acknowledge
       return res.status(200).send('ok');
     }
 
     // Mark order paid when charge succeeded
-    if (data && (data.status === 'success' || data.status === 'successful' || payload.event === 'charge.success')) {
+    if (
+      data &&
+      (data.status === 'success' ||
+        data.status === 'successful' ||
+        payload.event === 'charge.success')
+    ) {
       try {
         if (orderId) {
           await orderModel.markPaid(orderId, 'paystack', reference);
         } else {
-          const { rows } = await db.pool.query('SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1', [reference]);
+          const { rows } = await db.pool.query(
+            'SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1',
+            [reference]
+          );
           if (rows && rows[0] && rows[0].id) {
             await orderModel.markPaid(rows[0].id, 'paystack', reference);
           }
         }
       } catch (err) {
-        console.error('Error marking order paid (paystack webhook):', err && err.message ? err.message : err);
+        console.error(
+          'Error marking order paid (paystack webhook):',
+          err && err.message ? err.message : err
+        );
       }
     }
 
     return res.status(200).send('ok');
   } catch (err) {
-    console.error('Paystack webhook handler error:', err && err.message ? err.message : err);
+    console.error(
+      'Paystack webhook handler error:',
+      err && err.message ? err.message : err
+    );
     return res.status(500).send('server error');
   }
 };
@@ -392,7 +482,8 @@ exports.flutterwaveWebhookHandler = async (req, res) => {
     const status = data && data.status ? data.status : null;
     const amount = data && data.amount ? Number(data.amount) : null;
     const currency = data && data.currency ? data.currency : null;
-    const orderId = data && data.meta && data.meta.orderId ? data.meta.orderId : null;
+    const orderId =
+      data && data.meta && data.meta.orderId ? data.meta.orderId : null;
 
     await persistPaymentRecord({
       orderId,
@@ -407,13 +498,24 @@ exports.flutterwaveWebhookHandler = async (req, res) => {
 
     const meta = (data && data.meta) || {};
     const fwRef = transaction_id || tx_ref;
-    if ((status === 'successful' || status === 'completed') && meta && meta.wallet_topup && meta.clientId && amount) {
+    if (
+      (status === 'successful' || status === 'completed') &&
+      meta &&
+      meta.wallet_topup &&
+      meta.clientId &&
+      amount
+    ) {
       try {
-        const existing = paymentModel && (await paymentModel.findByProviderReference('flutterwave', fwRef));
+        const existing =
+          paymentModel &&
+          (await paymentModel.findByProviderReference('flutterwave', fwRef));
         if (!existing || existing.event !== 'wallet_topup') {
           const client = await clientModel.findById(meta.clientId);
           if (!client) {
-            console.warn('Flutterwave webhook: client not found for wallet_topup', meta.clientId);
+            console.warn(
+              'Flutterwave webhook: client not found for wallet_topup',
+              meta.clientId
+            );
           } else {
             await walletModel.creditFromProvider(meta.clientId, amount, {
               provider: 'flutterwave',
@@ -436,7 +538,10 @@ exports.flutterwaveWebhookHandler = async (req, res) => {
           }
         }
       } catch (err) {
-        console.error('Error crediting wallet (flutterwave webhook):', err && err.message ? err.message : err);
+        console.error(
+          'Error crediting wallet (flutterwave webhook):',
+          err && err.message ? err.message : err
+        );
       }
       return res.status(200).send('ok');
     }
@@ -446,20 +551,33 @@ exports.flutterwaveWebhookHandler = async (req, res) => {
       try {
         let finalOrderId = orderId || null;
         if (!finalOrderId && tx_ref) {
-          const { rows } = await db.pool.query('SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1', [tx_ref]);
+          const { rows } = await db.pool.query(
+            'SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1',
+            [tx_ref]
+          );
           if (rows && rows[0] && rows[0].id) finalOrderId = rows[0].id;
         }
         if (finalOrderId) {
-          await orderModel.markPaid(finalOrderId, 'flutterwave', transaction_id || tx_ref);
+          await orderModel.markPaid(
+            finalOrderId,
+            'flutterwave',
+            transaction_id || tx_ref
+          );
         }
       } catch (err) {
-        console.error('Error marking order paid (flutterwave webhook):', err && err.message ? err.message : err);
+        console.error(
+          'Error marking order paid (flutterwave webhook):',
+          err && err.message ? err.message : err
+        );
       }
     }
 
     return res.status(200).send('ok');
   } catch (err) {
-    console.error('Flutterwave webhook handler error:', err && err.message ? err.message : err);
+    console.error(
+      'Flutterwave webhook handler error:',
+      err && err.message ? err.message : err
+    );
     return res.status(500).send('server error');
   }
 };

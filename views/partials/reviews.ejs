@@ -3,113 +3,179 @@
   <h3>Customer reviews</h3>
 
   <% if (!reviews || !reviews.length) { %>
-    <p class="muted">No reviews yet — be the first to leave feedback.</p>
+  <p class="muted">No reviews yet — be the first to leave feedback.</p>
   <% } else { %>
-    <ul class="reviews-list" style="list-style:none;padding-left:0;">
-      <% reviews.forEach(function(r) { %>
-        <li class="review-item" id="review-<%= r.id %>" style="margin-bottom:14px;border-bottom:1px solid #eee;padding-bottom:12px;">
-          <div class="review-meta" style="display:flex;align-items:center;gap:8px;">
+  <ul class="reviews-list" style="list-style: none; padding-left: 0">
+    <% reviews.forEach(function(r) { %>
+    <li
+      class="review-item"
+      id="review-<%= r.id %>"
+      style="
+        margin-bottom: 14px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 12px;
+      "
+    >
+      <div
+        class="review-meta"
+        style="display: flex; align-items: center; gap: 8px"
+      >
+        <strong>
+          <% if (r.client_name) { %>
+          <%= r.client_name %>
+          <% } else if (r.admin_name) { %>
+          <%= r.admin_name %>
+          <small>(admin)</small>
+          <% } else { %>
+          Anonymous
+          <% } %>
+        </strong>
+        <span class="muted" style="font-size: 0.9em"
+          >• <%= new Date(r.created_at).toLocaleString() %></span
+        >
+      </div>
+
+      <% if (r.rating) { %>
+      <div class="stars" aria-hidden="true" style="margin: 6px 0">
+        <% for (let i = 1; i <= 5; i++) { %> <% if (i <= r.rating) { %>
+        <span aria-hidden="true">★</span>
+        <% } else { %>
+        <span aria-hidden="true">☆</span>
+        <% } %>
+        <% } %>
+      </div>
+      <% } %>
+
+      <% if (r.comment) { %>
+      <div class="review-comment" style="margin-bottom: 8px">
+        <%= r.comment %>
+      </div>
+      <% } %>
+
+      <!-- Admin reply form (visible to admins) -->
+      <% if (currentUser && currentUser.role === 'admin') { %>
+      <form
+        class="reply-form-admin"
+        method="post"
+        action="/admin/reviews/<%= r.id %>/reply"
+        style="margin-bottom: 8px"
+      >
+        <input
+          type="hidden"
+          name="vendorId"
+          value="<%= vendor && vendor.id ? vendor.id : '' %>"
+        />
+        <input
+          type="text"
+          name="comment"
+          placeholder="Reply publicly as admin"
+          required
+          style="width: 70%; margin-right: 8px"
+        />
+        <button class="btn btn-sm" type="submit">Reply</button>
+      </form>
+      <% } %>
+
+      <!-- Client reply form (visible to logged-in clients) -->
+      <% if (currentUser && currentUser.role === 'client') { %>
+      <form
+        class="reply-form-client"
+        method="post"
+        action="/client/reviews/<%= r.id %>/reply"
+        style="margin-bottom: 8px"
+      >
+        <input
+          type="hidden"
+          name="vendorId"
+          value="<%= vendor && vendor.id ? vendor.id : '' %>"
+        />
+        <input
+          type="text"
+          name="comment"
+          placeholder="Reply to this review"
+          required
+          style="width: 70%; margin-right: 8px"
+        />
+        <button class="btn btn-sm" type="submit">Reply</button>
+      </form>
+      <% } %>
+
+      <!-- Nested replies -->
+      <% if (r.replies && r.replies.length) { %>
+      <ul
+        class="replies"
+        style="list-style: none; padding-left: 12px; margin-top: 6px"
+      >
+        <% r.replies.forEach(function(rep) { %>
+        <li style="margin-bottom: 8px">
+          <div class="reply-meta" style="font-size: 0.95em">
             <strong>
-              <% if (r.client_name) { %>
-                <%= r.client_name %>
-              <% } else if (r.admin_name) { %>
-                <%= r.admin_name %> <small>(admin)</small>
+              <% if (rep.client_name) { %>
+              <%= rep.client_name %>
+              <% } else if (rep.admin_name) { %>
+              <%= rep.admin_name %>
+              <small>(admin)</small>
               <% } else { %>
-                Anonymous
+              Anonymous
               <% } %>
             </strong>
-            <span class="muted" style="font-size:0.9em;">• <%= new Date(r.created_at).toLocaleString() %></span>
+            <span class="muted" style="font-size: 0.85em"
+              >• <%= new Date(rep.created_at).toLocaleString() %></span
+            >
           </div>
-
-          <% if (r.rating) { %>
-            <div class="stars" aria-hidden="true" style="margin:6px 0;">
-              <% for (let i = 1; i <= 5; i++) { %>
-                <% if (i <= r.rating) { %>
-                  <span aria-hidden="true">★</span>
-                <% } else { %>
-                  <span aria-hidden="true">☆</span>
-                <% } %>
-              <% } %>
-            </div>
-          <% } %>
-
-          <% if (r.comment) { %>
-            <div class="review-comment" style="margin-bottom:8px;"><%= r.comment %></div>
-          <% } %>
-
-          <!-- Admin reply form (visible to admins) -->
-          <% if (currentUser && currentUser.role === 'admin') { %>
-            <form class="reply-form-admin" method="post" action="/admin/reviews/<%= r.id %>/reply" style="margin-bottom:8px;">
-              <input type="hidden" name="vendorId" value="<%= vendor && vendor.id ? vendor.id : '' %>" />
-              <input type="text" name="comment" placeholder="Reply publicly as admin" required style="width:70%;margin-right:8px;"/>
-              <button class="btn btn-sm" type="submit">Reply</button>
-            </form>
-          <% } %>
-
-          <!-- Client reply form (visible to logged-in clients) -->
-          <% if (currentUser && currentUser.role === 'client') { %>
-            <form class="reply-form-client" method="post" action="/client/reviews/<%= r.id %>/reply" style="margin-bottom:8px;">
-              <input type="hidden" name="vendorId" value="<%= vendor && vendor.id ? vendor.id : '' %>" />
-              <input type="text" name="comment" placeholder="Reply to this review" required style="width:70%;margin-right:8px;"/>
-              <button class="btn btn-sm" type="submit">Reply</button>
-            </form>
-          <% } %>
-
-          <!-- Nested replies -->
-          <% if (r.replies && r.replies.length) { %>
-            <ul class="replies" style="list-style:none;padding-left:12px;margin-top:6px;">
-              <% r.replies.forEach(function(rep) { %>
-                <li style="margin-bottom:8px;">
-                  <div class="reply-meta" style="font-size:0.95em;">
-                    <strong>
-                      <% if (rep.client_name) { %>
-                        <%= rep.client_name %>
-                      <% } else if (rep.admin_name) { %>
-                        <%= rep.admin_name %> <small>(admin)</small>
-                      <% } else { %>
-                        Anonymous
-                      <% } %>
-                    </strong>
-                    <span class="muted" style="font-size:0.85em;">• <%= new Date(rep.created_at).toLocaleString() %></span>
-                  </div>
-                  <div class="reply-comment" style="margin-top:3px;"><%= rep.comment %></div>
-                </li>
-              <% }) %>
-            </ul>
-          <% } %>
+          <div class="reply-comment" style="margin-top: 3px">
+            <%= rep.comment %>
+          </div>
         </li>
-      <% }) %>
-    </ul>
+        <% }) %>
+      </ul>
+      <% } %>
+    </li>
+    <% }) %>
+  </ul>
   <% } %>
 
   <!-- New review form (clients only) -->
-  <div class="new-review" style="margin-top:12px;">
+  <div class="new-review" style="margin-top: 12px">
     <% if (currentUser && currentUser.role === 'client') { %>
-      <form id="new-review-form" method="post" action="/client/vendor/<%= vendor.id %>/reviews">
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-          <label style="margin:0;">
-            Rating
-            <select name="rating" required>
-              <option value="">—</option>
-              <option value="5">5 — Excellent</option>
-              <option value="4">4 — Very good</option>
-              <option value="3">3 — Good</option>
-              <option value="2">2 — Poor</option>
-              <option value="1">1 — Terrible</option>
-            </select>
-          </label>
-        </div>
+    <form
+      id="new-review-form"
+      method="post"
+      action="/client/vendor/<%= vendor.id %>/reviews"
+    >
+      <div
+        style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px"
+      >
+        <label style="margin: 0">
+          Rating
+          <select name="rating" required>
+            <option value="">—</option>
+            <option value="5">5 — Excellent</option>
+            <option value="4">4 — Very good</option>
+            <option value="3">3 — Good</option>
+            <option value="2">2 — Poor</option>
+            <option value="1">1 — Terrible</option>
+          </select>
+        </label>
+      </div>
 
-        <div style="margin-bottom:8px;">
-          <textarea name="comment" rows="3" placeholder="Share your experience (optional)" style="width:100%;"></textarea>
-        </div>
+      <div style="margin-bottom: 8px">
+        <textarea
+          name="comment"
+          rows="3"
+          placeholder="Share your experience (optional)"
+          style="width: 100%"
+        ></textarea>
+      </div>
 
-        <div>
-          <button class="btn" type="submit">Post review</button>
-        </div>
-      </form>
+      <div>
+        <button class="btn" type="submit">Post review</button>
+      </div>
+    </form>
     <% } else { %>
-      <p class="muted">Please <a href="/client/login">log in</a> to post a review.</p>
+    <p class="muted">
+      Please <a href="/client/login">log in</a> to post a review.
+    </p>
     <% } %>
   </div>
 </section>

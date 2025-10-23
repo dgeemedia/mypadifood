@@ -7,7 +7,6 @@ const models = require('../models');
 const vendorModel = models.vendor;
 const reviewController = require('./reviewController');
 
-
 const { sendMail } = require('../utils/mailer');
 
 function loadStatesLGAs() {

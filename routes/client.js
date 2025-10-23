@@ -141,17 +141,13 @@ router.get(
 );
 
 // Client can post a new review for a vendor
-router.post(
-  '/vendor/:vendorId/reviews',
-  auth.requireClient,
-  (req, res) => require('../controllers/reviewController').postReview(req, res)
+router.post('/vendor/:vendorId/reviews', auth.requireClient, (req, res) =>
+  require('../controllers/reviewController').postReview(req, res)
 );
 
 // Client can reply to a review
-router.post(
-  '/reviews/:id/reply',
-  auth.requireClient,
-  (req, res) => require('../controllers/reviewController').postReplyByClient(req, res)
+router.post('/reviews/:id/reply', auth.requireClient, (req, res) =>
+  require('../controllers/reviewController').postReplyByClient(req, res)
 );
 
 module.exports = router;

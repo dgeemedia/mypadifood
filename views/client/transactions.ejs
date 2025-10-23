@@ -5,74 +5,91 @@
 
   <section>
     <h3>Wallet</h3>
-    <p>Balance: ₦<%= (wallet && wallet.balance !== undefined) ? Number(wallet.balance).toFixed(2) : '0.00' %></p>
+    <p>
+      Balance: ₦<%= (wallet && wallet.balance !== undefined) ?
+      Number(wallet.balance).toFixed(2) : '0.00' %>
+    </p>
   </section>
 
   <section>
     <h3>Wallet activity</h3>
     <% if (!walletTransactions || !walletTransactions.length) { %>
-      <p>No wallet activity yet.</p>
+    <p>No wallet activity yet.</p>
     <% } else { %>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Type</th>
-              <th>Amount</th>
-              <th>Provider</th>
-              <th>Note</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% walletTransactions.forEach(tx => { %>
-              <tr>
-                <td data-label="Date"><%= tx.created_at ? new Date(tx.created_at).toLocaleString() : '—' %></td>
-                <td data-label="Type"><%= tx.type %></td>
-                <td data-label="Amount"><%= tx.type === 'credit' ? '₦' + Number(tx.amount).toFixed(2) : '- ₦' + Number(tx.amount).toFixed(2) %></td>
-                <td data-label="Provider"><%= tx.provider || '-' %></td>
-                <td data-label="Note"><%= tx.note || (tx.raw ? JSON.stringify(tx.raw).slice(0,120) : '-') %></td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Provider</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% walletTransactions.forEach(tx => { %>
+          <tr>
+            <td data-label="Date">
+              <%= tx.created_at ? new Date(tx.created_at).toLocaleString() : '—'
+              %>
+            </td>
+            <td data-label="Type"><%= tx.type %></td>
+            <td data-label="Amount">
+              <%= tx.type === 'credit' ? '₦' + Number(tx.amount).toFixed(2) : '-
+              ₦' + Number(tx.amount).toFixed(2) %>
+            </td>
+            <td data-label="Provider"><%= tx.provider || '-' %></td>
+            <td data-label="Note">
+              <%= tx.note || (tx.raw ? JSON.stringify(tx.raw).slice(0,120) :
+              '-') %>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
     <% } %>
   </section>
 
-  <section style="margin-top:1rem;">
+  <section style="margin-top: 1rem">
     <h3>Withdrawal requests</h3>
     <% if (!withdrawals || !withdrawals.length) { %>
-      <p>No withdrawal requests.</p>
+    <p>No withdrawal requests.</p>
     <% } else { %>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Amount</th>
-              <th>Method</th>
-              <th>Status</th>
-              <th>Note</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% withdrawals.forEach(w => { %>
-              <tr>
-                <td data-label="Date"><%= w.created_at ? new Date(w.created_at).toLocaleString() : '—' %></td>
-                <td data-label="Amount">₦<%= Number(w.amount).toFixed(2) %></td>
-                <td data-label="Method"><%= w.method || '-' %></td>
-                <td data-label="Status"><%= w.status %></td>
-                <td data-label="Note"><%= w.admin_note || w.destination || '-' %></td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Method</th>
+            <th>Status</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% withdrawals.forEach(w => { %>
+          <tr>
+            <td data-label="Date">
+              <%= w.created_at ? new Date(w.created_at).toLocaleString() : '—'
+              %>
+            </td>
+            <td data-label="Amount">₦<%= Number(w.amount).toFixed(2) %></td>
+            <td data-label="Method"><%= w.method || '-' %></td>
+            <td data-label="Status"><%= w.status %></td>
+            <td data-label="Note">
+              <%= w.admin_note || w.destination || '-' %>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
     <% } %>
   </section>
 
-  <section style="margin-top:1rem;">
+  <section style="margin-top: 1rem">
     <a href="/client/dashboard" class="btn">Back to dashboard</a>
   </section>
 </section>

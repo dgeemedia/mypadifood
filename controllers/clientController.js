@@ -1469,12 +1469,10 @@ exports.updatePhone = async (req, res) => {
     const newPhone = String((req.body && req.body.phone) || '').trim();
     if (!newPhone || newPhone.length < 6) {
       if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error: 'Please provide a valid phone number.',
-          });
+        return res.status(400).json({
+          success: false,
+          error: 'Please provide a valid phone number.',
+        });
       }
       req.session.error = 'Please provide a valid phone number.';
       return res.redirect('/client/account/phone');
@@ -1489,12 +1487,10 @@ exports.updatePhone = async (req, res) => {
       updated = await clientModel.findById(clientId);
     } else {
       if (req.xhr || req.headers.accept.indexOf('json') > -1) {
-        return res
-          .status(500)
-          .json({
-            success: false,
-            error: 'Server not configured to update phone',
-          });
+        return res.status(500).json({
+          success: false,
+          error: 'Server not configured to update phone',
+        });
       }
       req.session.error = 'Server not configured to update phone';
       return res.redirect('/client/account/phone');
@@ -1564,12 +1560,10 @@ exports.updateAddress = async (req, res) => {
       await clientModel.updateClient(clientId, { address, state, lga });
       updated = await clientModel.findById(clientId);
     } else {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          error: 'Server not configured to update address',
-        });
+      return res.status(500).json({
+        success: false,
+        error: 'Server not configured to update address',
+      });
     }
 
     // normalize returned address to string
@@ -1631,12 +1625,10 @@ exports.updatePassword = async (req, res) => {
     }
     // enforce minimal strength policy server-side
     if (String(new_password).length < 8) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: 'New password must be at least 8 characters.',
-        });
+      return res.status(400).json({
+        success: false,
+        error: 'New password must be at least 8 characters.',
+      });
     }
 
     const user = await clientModel.findById(clientId);
@@ -1669,12 +1661,10 @@ exports.updatePassword = async (req, res) => {
         await clientModel.updateClient(clientId, { password: hash });
       }
     } else {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          error: 'Server not configured to update password',
-        });
+      return res.status(500).json({
+        success: false,
+        error: 'Server not configured to update password',
+      });
     }
 
     return res.json({

@@ -1,11 +1,14 @@
 // public/js/client-dashboard-reviews.js
 document.addEventListener('DOMContentLoaded', () => {
   // debug:
-  console.log('reviews script loaded — buttons found:', document.querySelectorAll('.btn-leave-review').length);
+  console.log(
+    'reviews script loaded — buttons found:',
+    document.querySelectorAll('.btn-leave-review').length
+  );
 
   // re-run binding if buttons might be added later
   function bindButtons() {
-    document.querySelectorAll('.btn-leave-review').forEach(btn => {
+    document.querySelectorAll('.btn-leave-review').forEach((btn) => {
       if (btn.dataset._bound) return;
       btn.dataset._bound = '1';
       btn.addEventListener('click', () => {
@@ -13,7 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const vendorName = btn.dataset.vendorName || '';
         const orderId = btn.dataset.orderId;
         // openModal is in the file; ensure openModal exists
-        if (typeof openModal === 'function') openModal({ vendorId, vendorName, orderId });
+        if (typeof openModal === 'function')
+          openModal({ vendorId, vendorName, orderId });
         else console.warn('openModal not defined');
       });
     });
@@ -33,7 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function openModal({ vendorId, vendorName, orderId }) {
     document.getElementById('review-vendor-id').value = vendorId || '';
-    document.getElementById('review-vendor-name').textContent = vendorName || '';
+    document.getElementById('review-vendor-name').textContent =
+      vendorName || '';
     document.getElementById('review-order-id').value = orderId || '';
     document.getElementById('review-rating').value = '';
     document.getElementById('review-comment').value = '';
@@ -48,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Attach to all "Leave review" buttons
-  document.querySelectorAll('.btn-leave-review').forEach(btn => {
+  document.querySelectorAll('.btn-leave-review').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       const vendorId = btn.dataset.vendorId;
       const vendorName = btn.dataset.vendorName || '';
@@ -81,24 +86,28 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const resp = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
           credentials: 'same-origin',
           body: JSON.stringify(payload),
         });
 
         if (resp.ok) {
-          const j = await resp.json().catch(()=>null);
+          const j = await resp.json().catch(() => null);
           if (j && j.ok) {
             msg.style.color = 'green';
             msg.textContent = 'Review posted — refreshing...';
-            setTimeout(()=> window.location.reload(), 700);
+            setTimeout(() => window.location.reload(), 700);
             return;
           }
         }
 
-        const text = await resp.text().catch(()=>null);
+        const text = await resp.text().catch(() => null);
         msg.style.color = 'crimson';
-        msg.textContent = (text && text.length) ? `Error: ${text}` : 'Could not post review';
+        msg.textContent =
+          text && text.length ? `Error: ${text}` : 'Could not post review';
       } catch (err) {
         console.error(err);
         msg.style.color = 'crimson';

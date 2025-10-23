@@ -10,7 +10,11 @@ const FLW_PUBLIC_KEY = process.env.FLUTTERWAVE_PUBLIC_KEY || '';
 
 // Small helper to detect an AJAX/fetch request
 function wantsJson(req) {
-  return req.xhr || (req.headers.accept && req.headers.accept.indexOf('application/json') !== -1);
+  return (
+    req.xhr ||
+    (req.headers.accept &&
+      req.headers.accept.indexOf('application/json') !== -1)
+  );
 }
 
 /**
@@ -21,7 +25,8 @@ exports.initFund = async (req, res) => {
   try {
     const clientId = req.session && req.session.user && req.session.user.id;
     if (!clientId) {
-      if (wantsJson(req)) return res.status(401).json({ error: 'Not authenticated' });
+      if (wantsJson(req))
+        return res.status(401).json({ error: 'Not authenticated' });
       req.session && (req.session.error = 'Please log in');
       return res.redirect('/client/login');
     }
@@ -54,7 +59,10 @@ exports.initFund = async (req, res) => {
           raw: init.raw || init,
         });
       } catch (e) {
-        console.warn('Could not persist paystack init:', e && e.message ? e.message : e);
+        console.warn(
+          'Could not persist paystack init:',
+          e && e.message ? e.message : e
+        );
       }
 
       return res.json({
@@ -75,7 +83,10 @@ exports.initFund = async (req, res) => {
           customer: {
             email: client && client.email ? client.email : '',
             phonenumber: client && client.phone ? client.phone : '',
-            name: client && (client.full_name || client.name) ? (client.full_name || client.name) : '',
+            name:
+              client && (client.full_name || client.name)
+                ? client.full_name || client.name
+                : '',
           },
         },
         null
@@ -93,7 +104,10 @@ exports.initFund = async (req, res) => {
           raw: init.raw || init,
         });
       } catch (e) {
-        console.warn('Could not persist flutterwave init:', e && e.message ? e.message : e);
+        console.warn(
+          'Could not persist flutterwave init:',
+          e && e.message ? e.message : e
+        );
       }
 
       return res.json({
@@ -121,16 +135,25 @@ exports.initFund = async (req, res) => {
 exports.verifyPayment = async (req, res) => {
   try {
     const { provider, reference } = req.body;
-    if (!provider || !reference) return res.status(400).json({ error: 'Missing provider/reference' });
+    if (!provider || !reference)
+      return res.status(400).json({ error: 'Missing provider/reference' });
 
     if (provider === 'paystack') {
       const result = await paymentsUtil.verifyPaystack(reference);
       if (!result || !result.success) {
-        return res.status(400).json({ error: 'Verification failed', raw: result && result.raw ? result.raw : result });
+        return res
+          .status(400)
+          .json({
+            error: 'Verification failed',
+            raw: result && result.raw ? result.raw : result,
+          });
       }
 
       const metadata = (result.data && result.data.metadata) || {};
-      const amountNGN = result.data && result.data.amount ? Number(result.data.amount) / 100 : null;
+      const amountNGN =
+        result.data && result.data.amount
+          ? Number(result.data.amount) / 100
+          : null;
 
       // wallet topup flow
       if (metadata && metadata.wallet_topup && metadata.clientId && amountNGN) {
@@ -150,32 +173,58 @@ exports.verifyPayment = async (req, res) => {
             event: 'wallet_topup',
             providerReference: reference,
             amount: amountNGN,
-            currency: result.data && result.data.currency ? result.data.currency : 'NGN',
-            status: result.data && result.data.status ? result.data.status : 'success',
+            currency:
+              result.data && result.data.currency
+                ? result.data.currency
+                : 'NGN',
+            status:
+              result.data && result.data.status
+                ? result.data.status
+                : 'success',
             raw: result.raw || result,
           });
         } catch (e) {
-          console.warn('Could not persist paystack wallet_topup payment', e && e.message ? e.message : e);
+          console.warn(
+            'Could not persist paystack wallet_topup payment',
+            e && e.message ? e.message : e
+          );
         }
 
         const updatedBalance = await walletModel.getBalance(metadata.clientId);
-        return res.json({ success: true, message: 'Wallet funded', updatedBalance });
+        return res.json({
+          success: true,
+          message: 'Wallet funded',
+          updatedBalance,
+        });
       }
 
       // Non-wallet flow (order etc.) — return verification raw for further server-side handling
-      return res.json({ success: true, message: 'Payment verified', raw: result.raw || result });
+      return res.json({
+        success: true,
+        message: 'Payment verified',
+        raw: result.raw || result,
+      });
     }
 
     if (provider === 'flutterwave') {
       // flutterwave verify may accept transaction id; paymentsUtil.verifyFlutterwave tries that
       const result = await paymentsUtil.verifyFlutterwave(reference);
       if (!result || !result.success) {
-        return res.status(400).json({ error: 'Verification failed', raw: result && result.raw ? result.raw : result });
+        return res
+          .status(400)
+          .json({
+            error: 'Verification failed',
+            raw: result && result.raw ? result.raw : result,
+          });
       }
 
       const meta = (result.data && result.data.meta) || {};
-      const fwAmount = result.data && result.data.amount ? Number(result.data.amount) : null;
-      const fwRef = result.data && (result.data.id || result.data.tx_ref) ? (result.data.id || result.data.tx_ref) : reference;
+      const fwAmount =
+        result.data && result.data.amount ? Number(result.data.amount) : null;
+      const fwRef =
+        result.data && (result.data.id || result.data.tx_ref)
+          ? result.data.id || result.data.tx_ref
+          : reference;
 
       if (meta && meta.wallet_topup && meta.clientId && fwAmount) {
         await walletModel.creditFromProvider(meta.clientId, fwAmount, {
@@ -192,19 +241,36 @@ exports.verifyPayment = async (req, res) => {
             event: 'wallet_topup',
             providerReference: fwRef,
             amount: fwAmount,
-            currency: result.data && result.data.currency ? result.data.currency : 'NGN',
-            status: result.data && result.data.status ? result.data.status : 'success',
+            currency:
+              result.data && result.data.currency
+                ? result.data.currency
+                : 'NGN',
+            status:
+              result.data && result.data.status
+                ? result.data.status
+                : 'success',
             raw: result.raw || result,
           });
         } catch (e) {
-          console.warn('Could not persist flutterwave wallet_topup payment', e && e.message ? e.message : e);
+          console.warn(
+            'Could not persist flutterwave wallet_topup payment',
+            e && e.message ? e.message : e
+          );
         }
 
         const updatedBalance = await walletModel.getBalance(meta.clientId);
-        return res.json({ success: true, message: 'Wallet funded', updatedBalance });
+        return res.json({
+          success: true,
+          message: 'Wallet funded',
+          updatedBalance,
+        });
       }
 
-      return res.json({ success: true, message: 'Payment verified', raw: result.raw || result });
+      return res.json({
+        success: true,
+        message: 'Payment verified',
+        raw: result.raw || result,
+      });
     }
 
     return res.status(400).json({ error: 'Unknown provider' });

@@ -15,29 +15,29 @@
       <a class="nav-link" href="/contact">Contact Us</a>
 
       <% if (!currentUser) { %>
-        <!-- Sign in styled like the gold-wrapped logout button -->
-        <a class="link-like" href="/login" aria-label="Sign in">Sign in</a>
+      <!-- Sign in styled like the gold-wrapped logout button -->
+      <a class="link-like" href="/login" aria-label="Sign in">Sign in</a>
 
-        <!-- keep the lighter 'ghost' accent for signup -->
-        <a class="nav-ghost" href="/signup">Sign up</a>
+      <!-- keep the lighter 'ghost' accent for signup -->
+      <a class="nav-ghost" href="/signup">Sign up</a>
       <% } else { %>
-        <% if (currentUser.type === 'admin' || currentUser.type === 'super' || currentUser.type === 'agent') { %>
-          <a class="nav-link" href="/admin/dashboard">Dashboard</a>
-        <% } else { %>
-          <a class="nav-link" href="/client/dashboard">Dashboard</a>
-        <% } %>
+      <% if (currentUser.type === 'admin' || currentUser.type === 'super' || currentUser.type === 'agent') { %>
+      <a class="nav-link" href="/admin/dashboard">Dashboard</a>
+      <% } else { %>
+      <a class="nav-link" href="/client/dashboard">Dashboard</a>
+      <% } %>
 
-        <form
-          method="post"
-          action="/logout"
-          class="logout-form"
-          style="display: inline"
-        >
-          <input type="hidden" name="next" value="/" />
-          <button type="submit" class="link-like" aria-label="Logout">
-            Logout
-          </button>
-        </form>
+      <form
+        method="post"
+        action="/logout"
+        class="logout-form"
+        style="display: inline"
+      >
+        <input type="hidden" name="next" value="/" />
+        <button type="submit" class="link-like" aria-label="Logout">
+          Logout
+        </button>
+      </form>
       <% } %>
     </nav>
 
@@ -52,4 +52,3 @@
     </button>
   </div>
 </header>
-
