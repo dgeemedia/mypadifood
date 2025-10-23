@@ -95,4 +95,11 @@ router.get('/withdrawals', adminController.listPendingWithdrawals);
 router.post('/withdrawals/:id/approve', adminController.approveWithdrawal);
 router.post('/withdrawals/:id/decline', adminController.declineWithdrawal);
 
+// Admin can reply to a review
+router.post(
+  '/reviews/:id/reply',
+  auth.requireAdmin,
+  (req, res) => require('../controllers/reviewController').postReplyByAdmin(req, res)
+);
+
 module.exports = router;

@@ -5,6 +5,8 @@ const { v4: uuidv4 } = require('uuid');
 
 const models = require('../models');
 const vendorModel = models.vendor;
+const reviewController = require('./reviewController');
+
 
 const { sendMail } = require('../utils/mailer');
 
@@ -190,5 +192,37 @@ exports.thanksPage = async (req, res) => {
     console.error('Error rendering vendor thanks page:', err);
     req.session.error = 'Could not show confirmation page.';
     return res.redirect('/');
+  }
+};
+
+// Public vendor detail page (shows vendor + nested reviews)
+exports.show = async (req, res) => {
+  try {
+    const vendorId = req.params.id;
+    const vendor = await vendorModel.findById(vendorId);
+    if (!vendor) {
+      req.session.error = 'Vendor not found';
+      return res.redirect('/client/dashboard');
+    }
+
+    // fetch nested reviews (builds thread)
+    let reviewsTree = [];
+    try {
+      reviewsTree = await reviewController.getReviewsForVendor(vendorId);
+    } catch (e) {
+      console.warn('Could not load reviews for vendor', e);
+      reviewsTree = [];
+    }
+
+    return res.render('vendor/show', {
+      title: vendor.name || 'Vendor',
+      vendor,
+      reviews: reviewsTree,
+      currentUser: res.locals.currentUser || req.session.user || null,
+    });
+  } catch (e) {
+    console.error('vendor show error', e);
+    req.session.error = 'Error loading vendor';
+    return res.redirect('/client/dashboard');
   }
 };

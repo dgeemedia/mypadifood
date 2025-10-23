@@ -1,0 +1,45 @@
+<!-- views/partials/review-modal.ejs -->
+<div id="review-modal" class="modal" aria-hidden="true" style="display:none;">
+  <div class="modal-backdrop"></div>
+  <div class="modal-dialog card" role="dialog" aria-modal="true" aria-labelledby="review-modal-title" style="max-width:600px;">
+    <header style="display:flex;justify-content:space-between;align-items:center;">
+      <h3 id="review-modal-title">Leave review</h3>
+      <button id="review-modal-close" class="btn btn-link" aria-label="Close">✕</button>
+    </header>
+
+    <form id="review-modal-form" method="post" action="" style="margin-top:12px;">
+      <input type="hidden" name="vendorId" id="review-vendor-id" value="" />
+      <input type="hidden" name="orderId" id="review-order-id" value="" />
+
+      <div style="margin-bottom:8px;">
+        <label>Vendor: <strong id="review-vendor-name">—</strong></label>
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <label>Rating
+          <select name="rating" id="review-rating" required>
+            <option value="">Choose</option>
+            <option value="5">5 — Excellent</option>
+            <option value="4">4 — Very good</option>
+            <option value="3">3 — Good</option>
+            <option value="2">2 — Poor</option>
+            <option value="1">1 — Terrible</option>
+          </select>
+        </label>
+      </div>
+
+      <div style="margin-bottom:8px;">
+        <label>Comment
+          <textarea name="comment" id="review-comment" rows="4" placeholder="Share your experience (optional)"></textarea>
+        </label>
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="btn btn-primary">Post review</button>
+        <button type="button" id="review-modal-cancel" class="btn btn-link">Cancel</button>
+      </div>
+
+      <div id="review-modal-msg" style="margin-top:8px;font-size:0.95em;"></div>
+    </form>
+  </div>
+</div>

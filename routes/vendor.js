@@ -17,4 +17,7 @@ router.post(
 // Protected thanks page (one-time session token)
 router.get('/thanks', vendorController.thanksPage);
 
+// Public vendor detail page (shows vendor + nested reviews)
+router.get('/:id', vendorController.show);
+
 module.exports = router;
