@@ -1,5 +1,19 @@
 // public/js/client-dashboard-reviews.js
+// Handles "Leave review" modal open/submit for dashboard/vendor pages.
+
 document.addEventListener('DOMContentLoaded', () => {
+  // If modal was rendered inside a wrapper, move it to body so stacking context doesn't cover it.
+  try {
+    const modal = document.getElementById('review-modal');
+    if (modal && modal.parentNode !== document.body) {
+      document.body.appendChild(modal);
+      modal.style.position = 'fixed';
+    }
+  } catch (e) {
+    // non-fatal
+    console.warn('Could not move review-modal to body', e);
+  }
+
   // debug:
   console.log(
     'reviews script loaded — buttons found:',
@@ -15,10 +29,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const vendorId = btn.dataset.vendorId;
         const vendorName = btn.dataset.vendorName || '';
         const orderId = btn.dataset.orderId;
-        // openModal is in the file; ensure openModal exists
-        if (typeof openModal === 'function')
-          openModal({ vendorId, vendorName, orderId });
-        else console.warn('openModal not defined');
+        if (typeof openModal === 'function') openModal({ vendorId, vendorName, orderId });
+        else {
+          // openModal defined below in same file; call it directly if already defined
+          try {
+            window.__openReviewModal && window.__openReviewModal({ vendorId, vendorName, orderId });
+          } catch (err) {
+            console.warn('openModal not defined', err);
+          }
+        }
       });
     });
   }
@@ -29,30 +48,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
 document.addEventListener('DOMContentLoaded', () => {
   const modal = document.getElementById('review-modal');
-  const backdrop = modal && modal.querySelector('.modal-backdrop');
+  if (!modal) {
+    console.warn('review-modal not found in DOM');
+    return;
+  }
+  const backdrop = modal.querySelector('.modal-backdrop');
   const form = document.getElementById('review-modal-form');
   const closeBtn = document.getElementById('review-modal-close');
   const cancelBtn = document.getElementById('review-modal-cancel');
   const msg = document.getElementById('review-modal-msg');
 
+  // expose a safe global open in case bindButtons tried to call earlier
+  window.__openReviewModal = openModal;
+
   function openModal({ vendorId, vendorName, orderId }) {
-    document.getElementById('review-vendor-id').value = vendorId || '';
-    document.getElementById('review-vendor-name').textContent =
-      vendorName || '';
-    document.getElementById('review-order-id').value = orderId || '';
-    document.getElementById('review-rating').value = '';
-    document.getElementById('review-comment').value = '';
-    msg.textContent = '';
+    const vidEl = document.getElementById('review-vendor-id');
+    const vnameEl = document.getElementById('review-vendor-name');
+    const oidEl = document.getElementById('review-order-id');
+    const ratingEl = document.getElementById('review-rating');
+    const commentEl = document.getElementById('review-comment');
+
+    if (vidEl) vidEl.value = vendorId || '';
+    if (vnameEl) vnameEl.textContent = vendorName || '';
+    if (oidEl) oidEl.value = orderId || '';
+    if (ratingEl) ratingEl.value = '';
+    if (commentEl) commentEl.value = '';
+    if (msg) msg.textContent = '';
+
+    // show modal
     modal.style.display = '';
     modal.setAttribute('aria-hidden', 'false');
+
+    // focus first control
+    if (ratingEl) ratingEl.focus();
+
+    // ESC to close
+    document.addEventListener('keydown', escClose);
   }
 
   function closeModal() {
     modal.style.display = 'none';
     modal.setAttribute('aria-hidden', 'true');
+    document.removeEventListener('keydown', escClose);
   }
 
-  // Attach to all "Leave review" buttons
+  function escClose(e) {
+    if (e.key === 'Escape') closeModal();
+  }
+
+  // Attach to all "Leave review" buttons (redundant binding safe)
   document.querySelectorAll('.btn-leave-review').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       const vendorId = btn.dataset.vendorId;
@@ -70,18 +114,27 @@ document.addEventListener('DOMContentLoaded', () => {
   if (form) {
     form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
-      const vendorId = document.getElementById('review-vendor-id').value;
-      const orderId = document.getElementById('review-order-id').value;
-      const rating = document.getElementById('review-rating').value;
-      const comment = document.getElementById('review-comment').value;
+      const vendorId = (document.getElementById('review-vendor-id') || {}).value;
+      const orderId = (document.getElementById('review-order-id') || {}).value;
+      const rating = (document.getElementById('review-rating') || {}).value;
+      const comment = (document.getElementById('review-comment') || {}).value;
 
       if (!vendorId || !rating) {
-        msg.textContent = 'Vendor and rating are required';
+        if (msg) {
+          msg.style.color = 'crimson';
+          msg.textContent = 'Vendor and rating are required';
+        }
         return;
       }
 
       const url = `/client/vendor/${encodeURIComponent(vendorId)}/reviews`;
-      const payload = { orderId: orderId || null, rating, comment };
+      // include vendorId explicitly in body for server compatibility
+      const payload = {
+        vendorId,
+        orderId: orderId || null,
+        rating,
+        comment,
+      };
 
       try {
         const resp = await fetch(url, {
@@ -97,21 +150,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resp.ok) {
           const j = await resp.json().catch(() => null);
           if (j && j.ok) {
-            msg.style.color = 'green';
-            msg.textContent = 'Review posted — refreshing...';
+            if (msg) {
+              msg.style.color = 'green';
+              msg.textContent = 'Review posted — refreshing...';
+            }
             setTimeout(() => window.location.reload(), 700);
             return;
           }
         }
 
         const text = await resp.text().catch(() => null);
-        msg.style.color = 'crimson';
-        msg.textContent =
-          text && text.length ? `Error: ${text}` : 'Could not post review';
+        if (msg) {
+          msg.style.color = 'crimson';
+          msg.textContent = text && text.length ? `Error: ${text}` : 'Could not post review';
+        }
       } catch (err) {
         console.error(err);
-        msg.style.color = 'crimson';
-        msg.textContent = 'Network error while posting review';
+        if (msg) {
+          msg.style.color = 'crimson';
+          msg.textContent = 'Network error while posting review';
+        }
       }
     });
   }

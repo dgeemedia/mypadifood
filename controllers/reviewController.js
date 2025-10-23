@@ -26,7 +26,10 @@ exports.postReview = async (req, res) => {
     if (!clientId)
       return res.status(403).json({ ok: false, error: 'Not authenticated' });
 
-    const { vendorId, orderId, rating, comment } = req.body;
+    // Accept vendorId either from body (AJAX) or from URL params (/vendor/:vendorId/reviews)
+    const vendorId = req.body.vendorId || (req.params && req.params.vendorId);
+    const { orderId, rating, comment } = req.body;
+
     if (!vendorId)
       return res.status(400).json({ ok: false, error: 'vendorId required' });
 

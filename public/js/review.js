@@ -1,4 +1,6 @@
 // public/js/review.js
+// Handles inline review form on vendor page (#new-review-form) and reply forms.
+
 document.addEventListener('DOMContentLoaded', () => {
   async function postJson(url, payload) {
     const resp = await fetch(url, {
@@ -23,6 +25,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const body = {};
       formData.forEach((v, k) => (body[k] = v));
 
+      // add vendorId if not present and available in form.action (extract from URL)
+      if (!body.vendorId) {
+        const m = action.match(/\/vendor\/([0-9a-fA-F\-]{36})\/reviews/);
+        if (m && m[1]) body.vendorId = m[1];
+      }
+
       try {
         const resp = await postJson(action, body);
         if (resp.ok) {
@@ -43,9 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // handle any reply forms (client/admin)
   document
-    .querySelectorAll(
-      'form.reply-form-client, form.reply-form-admin, form.reply-form'
-    )
+    .querySelectorAll('form.reply-form-client, form.reply-form-admin, form.reply-form')
     .forEach((form) => {
       form.addEventListener('submit', async (ev) => {
         ev.preventDefault();
@@ -53,6 +59,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(form);
         const body = {};
         formData.forEach((v, k) => (body[k] = v));
+
+        // ensure vendorId for replies too (some reply forms include hidden vendorId)
+        if (!body.vendorId && action) {
+          const m = action.match(/\/vendor\/([0-9a-fA-F\-]{36})\//);
+          if (m && m[1]) body.vendorId = m[1];
+        }
 
         try {
           const resp = await postJson(action, body);
