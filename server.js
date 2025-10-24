@@ -15,6 +15,31 @@ const PORT = process.env.PORT || 3000;
 // database pool used by connect-pg-simple and controllers
 const { pool } = require('./database/database'); // see database/database.js
 
+// -----------------------------
+// lightweight homepage cache + helper
+// -----------------------------
+const _homeCache = {
+  ts: 0,
+  ttl: 30 * 1000, // 30 seconds
+  data: {
+    stats: { vendors: 0, orders: 0, customers: 0 },
+    partners: [],
+    testimonials: [],
+  },
+};
+
+// safe helper to check whether a DB table exists
+async function tableExists(tableName) {
+  try {
+    const q = `SELECT to_regclass('public.${tableName}') IS NOT NULL AS exists`;
+    const r = await pool.query(q);
+    return r.rows[0] && r.rows[0].exists;
+  } catch (err) {
+    console.warn('tableExists error', err);
+    return false;
+  }
+}
+
 // ===== create a session middleware instance (use same for app and socket.io) =====
 const sessionMiddleware = session({
   store: new PgSession({
@@ -80,12 +105,80 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/locations', express.static(path.join(__dirname, 'locations')));
 
-//  BEFORE your route registrations
+// expose currentUser (from JWT/session) to templates
 app.use((req, res, next) => {
-  // Ensure templates always have arrays to iterate
+  res.locals.currentUser = req.user || (req.session && req.session.user) || null;
+  next();
+});
+
+// homepage helpers: cached stats + partners + testimonials
+// NOTE: place this before route registrations so index route and layout can use res.locals.*
+app.use(async (req, res, next) => {
+  // ensure templates always have safe defaults
   res.locals.partners = res.locals.partners || [];
   res.locals.testimonials = res.locals.testimonials || [];
   res.locals.stats = res.locals.stats || {};
+
+  try {
+    const now = Date.now();
+    if (now - _homeCache.ts > _homeCache.ttl) {
+      // refresh cache
+      _homeCache.ts = now;
+
+      // 1) stats (safe queries)
+      const vendorsQ = await pool
+        .query("SELECT COUNT(*)::int AS count FROM vendors WHERE status = 'approved'")
+        .catch(() => ({ rows: [{ count: 0 }] }));
+      const ordersQ = await pool.query('SELECT COUNT(*)::int AS count FROM orders').catch(() => ({ rows: [{ count: 0 }] }));
+      const customersQ = await pool.query('SELECT COUNT(*)::int AS count FROM clients').catch(() => ({ rows: [{ count: 0 }] }));
+
+      _homeCache.data.stats = {
+        vendors: (vendorsQ.rows[0] && vendorsQ.rows[0].count) || 0,
+        orders: (ordersQ.rows[0] && ordersQ.rows[0].count) || 0,
+        customers: (customersQ.rows[0] && customersQ.rows[0].count) || 0,
+      };
+
+      // 2) partners (only if table exists)
+      if (await tableExists('partners')) {
+        const partnersQ = await pool
+          .query(
+            `SELECT id, name, COALESCE(logo_url,'') as logo_url, COALESCE(website,'') as website
+             FROM partners
+             ORDER BY created_at DESC
+             LIMIT 12`
+          )
+          .catch(() => ({ rows: [] }));
+        _homeCache.data.partners = partnersQ.rows || [];
+      } else {
+        _homeCache.data.partners = [];
+      }
+
+      // 3) testimonials (only if table exists)
+      if (await tableExists('testimonials')) {
+        const testiQ = await pool
+          .query(
+            `SELECT id, name, COALESCE(photo_url,'') as photo_url, city, quote
+             FROM testimonials
+             WHERE approved = true
+             ORDER BY created_at DESC
+             LIMIT 12`
+          )
+          .catch(() => ({ rows: [] }));
+        _homeCache.data.testimonials = testiQ.rows || [];
+      } else {
+        _homeCache.data.testimonials = [];
+      }
+    }
+
+    // expose to templates
+    res.locals.stats = _homeCache.data.stats;
+    res.locals.partners = _homeCache.data.partners;
+    res.locals.testimonials = _homeCache.data.testimonials;
+  } catch (err) {
+    console.error('homepage data middleware error', err);
+    // leave defaults
+  }
+
   next();
 });
 
@@ -103,6 +196,9 @@ app.use('/client/wallet', require('./routes/wallet')); // POST /client/wallet/fu
 app.use('/client/transactions', require('./routes/clientTransactions'));
 app.use('/rider', require('./routes/rider'));
 app.use('/api/gpt4all', require('./routes/api/gpt4all'));
+
+// Admin partners management
+// (ensure ./routes/adminPartners.js exists and handles uploads; route will check req.user for admin)
 app.use('/admin/partners', require('./routes/adminPartners'));
 
 // ===== Socket.IO setup: create HTTP server, attach socket.io, expose to controllers via utils/socket =====
