@@ -15,5 +15,7 @@ module.exports = {
   rider: require('./riderModel'),
   wallet: require('./walletModel'),
   withdrawal: require('./withdrawalModel'),
+  partner: require('./partnerModel'),
+  testimonial: require('./testimonialModel'),
   review: require('./reviewModel'),
 };

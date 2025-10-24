@@ -80,6 +80,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/locations', express.static(path.join(__dirname, 'locations')));
 
+//  BEFORE your route registrations
+app.use((req, res, next) => {
+  // Ensure templates always have arrays to iterate
+  res.locals.partners = res.locals.partners || [];
+  res.locals.testimonials = res.locals.testimonials || [];
+  res.locals.stats = res.locals.stats || {};
+  next();
+});
+
 // Routes (canonical)
 app.use('/', require('./routes/auth'));
 app.use('/vendor', require('./routes/vendor'));
@@ -94,6 +103,7 @@ app.use('/client/wallet', require('./routes/wallet')); // POST /client/wallet/fu
 app.use('/client/transactions', require('./routes/clientTransactions'));
 app.use('/rider', require('./routes/rider'));
 app.use('/api/gpt4all', require('./routes/api/gpt4all'));
+app.use('/admin/partners', require('./routes/adminPartners'));
 
 // ===== Socket.IO setup: create HTTP server, attach socket.io, expose to controllers via utils/socket =====
 const http = require('http');

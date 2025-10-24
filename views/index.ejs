@@ -1,92 +1,214 @@
-<!--views/index.ejs-->
-<section class="hero">
-  <% const f = (typeof filters !== 'undefined' && filters) ? filters : {}; %>
-  <h1>Local Food Vendors in Your Area</h1>
-  <form method="get" action="/">
-    <input
-      type="text"
-      name="q"
-      placeholder="Search vendor or food item"
-      value="<%= f.q ? f.q : '' %>"
-    />
-    <input
-      type="text"
-      name="state"
-      placeholder="State"
-      value="<%= f.state ? f.state : '' %>"
-    />
-    <input
-      type="text"
-      name="lga"
-      placeholder="LGA"
-      value="<%= f.lga ? f.lga : '' %>"
-    />
-    <button type="submit">Search</button>
-  </form>
+<% 
+// defensive locals + helpers
+const f = (typeof filters !== 'undefined' && filters) ? filters : {};
+const fallbackSvg = encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">' +
+  '<rect width="100%" height="100%" fill="#f6f7fb"/>' +
+  '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="20" fill="#888">Image unavailable</text>' +
+  '</svg>'
+);
+const initialVisible = 9;
+const vendorsList = (typeof vendors !== 'undefined' && vendors) ? vendors : [];
+const partnersList = (typeof partners !== 'undefined' && partners) ? partners : [];
+const testimonialsList = (typeof testimonials !== 'undefined' && testimonials) ? testimonials : [];
+const statsSafe = (typeof stats !== 'undefined' && stats) ? stats : {};
+const currentUserSafe = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
+
+/**
+ * Helper to produce a food-focused Unsplash URL
+ * We avoid seeds because source.unsplash doesn't guarantee stable seeds; we use food keywords + vendor id to make varied images.
+ */
+function foodImageUrl(term, w=600, h=400) {
+  const q = encodeURIComponent((term || 'local food').toString().replace(/\s+/g,'+'));
+  return `https://source.unsplash.com/${w}x${h}/?food,${q}`;
+}
+%>
+
+<section class="hero container homepage">
+  <div class="hero-left">
+    <h1>Local Food Vendors in Your Area</h1>
+    <p class="lead">Discover delicious, home-cooked meals from trusted local vendors. Fast delivery or pickup — order in seconds.</p>
+
+    <form class="hero-search" method="get" action="/">
+      <input type="text" name="q" placeholder="Search vendor or food item" value="<%= f.q ? f.q : '' %>" />
+      <input type="text" name="state" placeholder="State" value="<%= f.state ? f.state : '' %>" />
+      <input type="text" name="lga" placeholder="LGA" value="<%= f.lga ? f.lga : '' %>" />
+      <button class="btn btn-primary" type="submit">Search</button>
+    </form>
+
+    <div class="hero-ctas">
+      <a class="btn btn-secondary" href="/signup">Join as Customer</a>
+      <a class="btn" href="/vendor/register">Register Your Food Stall</a>
+      <a class="btn btn-ghost" href="/invest">Invest / Partner</a>
+    </div>
+
+    <div class="platform-metrics" aria-hidden="true">
+      <div><strong><%= statsSafe.vendors || 0 %>+</strong><small>Vendors</small></div>
+      <div><strong><%= statsSafe.orders || 0 %>+</strong><small>Orders</small></div>
+      <div><strong><%= statsSafe.customers || 0 %>+</strong><small>Customers</small></div>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <!-- more food-focused image; fallback to SVG -->
+    <img class="hero-image" alt="Local food" src="<%= foodImageUrl('african+food',900,520) %>" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'" />
+  </div>
 </section>
 
-<section class="vendors">
-  <% if (!vendors || !vendors.length) { %>
+<!-- Featured vendors (horizontal scroll) -->
+<section class="featured container homepage" aria-label="Featured vendors">
+  <h2>Featured vendors</h2>
+  <div class="featured-scroller" tabindex="0">
+    <% (vendorsList || []).slice(0,6).forEach(function(v) { 
+         const img = foodImageUrl(v.food_item || v.name || 'meal', 520, 340);
+    %>
+      <a class="featured-item" href="/vendor/<%= v.id %>">
+        <div class="featured-thumb">
+          <img alt="<%= v.food_item || 'meal' %>" src="<%= img %>" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'" loading="lazy" />
+        </div>
+        <div class="featured-meta">
+          <strong><%= v.name %></strong>
+          <small><%= v.food_item %> • ₦<%= v.base_price %></small>
+        </div>
+      </a>
+    <% }) %>
+  </div>
+</section>
+
+<!-- Vendors grid -->
+<section class="vendors container homepage">
+  <h2>Nearby Vendors</h2>
+
+  <% if (!vendorsList.length) { %>
     <p>No vendors found. Try another location.</p>
   <% } else { %>
-    <% vendors.forEach(function(v) { 
-         const s = v.reviewsSummary || { review_count: 0, avg_rating: 0 };
-         const avg = (s && s.avg_rating !== undefined) ? Number(s.avg_rating) : 0;
-         const count = (s && s.review_count) ? Number(s.review_count) : 0;
-         const rounded = Math.round(avg);
-    %>
-      <article class="vendor-card">
-        <h3><a href="/vendor/<%= v.id %>"><%= v.name %></a></h3>
-        <p>
-          <strong>Food:</strong>
-          <%= v.food_item %>
-        </p>
-        <p><strong>Price (per plate):</strong> ₦<%= v.base_price %></p>
-        <p>
-          <strong>Address:</strong>
-          <%= v.address %>
-          (<%= v.lga %>,
-          <%= v.state %>)
-        </p>
-
-        <% if (count > 0) { %>
-          <div class="rating-inline" style="margin-top:8px; font-size:0.95rem;">
-            <span class="stars" aria-hidden="true" title="<%= avg.toFixed(2) %> average">
-              <% for (let i = 1; i <= 5; i++) { %>
-                <% if (i <= rounded) { %>★<% } else { %>☆<% } %>
-              <% } %>
-            </span>
-            <span style="margin-left:8px;">
-              <strong><%= avg.toFixed(2) %></strong>
-              <small class="muted">(<%= count %> review<%= count === 1 ? '' : 's' %>)</small>
-            </span>
+    <div id="vendors-grid" class="vendors-grid" data-initial="<%= initialVisible %>">
+      <% vendorsList.forEach(function(v, index) { 
+           const avg = ((v.reviewsSummary && v.reviewsSummary.avg_rating) || 0);
+           const rounded = Math.round(Number(avg || 0));
+           const img = foodImageUrl(v.food_item || v.name || 'meal', 600, 400);
+      %>
+        <article class="vendor-card <%= index >= initialVisible ? 'vendor-hidden' : '' %>" data-index="<%= index %>">
+          <div class="vendor-media">
+            <img class="vendor-photo" alt="Photo of <%= v.food_item %> by <%= v.name %>" src="<%= img %>" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'" loading="lazy" />
+            <button class="fav-btn" title="Save vendor" aria-pressed="false" data-vendor-id="<%= v.id %>">♡</button>
           </div>
-        <% } else { %>
-          <div class="rating-inline" style="margin-top:8px; font-size:0.95rem;">
-            <span class="muted">No reviews yet</span>
-          </div>
-        <% } %>
 
-        <form method="post" action="/client/book" style="margin-top:10px;">
-          <input type="hidden" name="vendorId" value="<%= v.id %>" />
-          <input type="text" name="item" placeholder="Special request (optional)" />
-          <select name="payment_method">
-            <option value="cod">Pay on delivery</option>
-            <option value="paystack">Paystack</option>
-            <option value="flutterwave">Flutterwave</option>
-          </select>
-          <button type="submit">Book / Order</button>
-        </form>
-        <a class="btn btn-link" href="/vendor/<%= v.id %>" style="margin-left:8px;">View vendor</a>
-      </article>
-    <% }); %>
+          <div class="vendor-body">
+            <h3 class="vendor-title"><a href="/vendor/<%= v.id %>"><%= v.name %></a></h3>
+            <p class="vendor-food"><strong>Food:</strong> <%= v.food_item %></p>
+            <p class="vendor-price"><strong>Price:</strong> ₦<%= v.base_price %></p>
+            <p class="vendor-address"><%= v.lga %>, <%= v.state %></p>
+
+            <div class="rating-inline" aria-hidden="true">
+              <span class="stars" title="<%= avg.toFixed ? avg.toFixed(2) : avg %>">
+                <% for (let i=1;i<=5;i++){ %><%= i<=rounded ? '★' : '☆' %><% } %>
+              </span>
+              <small class="muted"><%= (v.reviewsSummary && v.reviewsSummary.review_count) || 0 %> reviews</small>
+            </div>
+
+            <div class="card-actions">
+              <button
+                class="btn btn-primary quick-order"
+                data-vendor-id="<%= v.id %>"
+                data-vendor-name="<%= v.name %>"
+                data-logged-in="<%= currentUserSafe ? '1' : '' %>"
+              >Quick order</button>
+
+              <a class="btn btn-muted" href="/vendor/<%= v.id %>">View vendor</a>
+            </div>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+
+    <div class="vendors-actions container">
+      <button id="show-more" class="btn">Show more vendors</button>
+      <small class="muted" id="infinite-hint">Scroll to load more (auto enabled)</small>
+    </div>
   <% } %>
 </section>
 
-<style>
-/* small styling helper — move to CSS file as needed */
-.vendor-card { margin-bottom: 14px; padding:12px; border:1px solid #eee; border-radius:6px; }
-.stars { color: #f5a623; font-size: 1rem; }
-.muted { color:#666; font-size:0.92rem; }
-</style>
+<!-- Partners -->
+<section class="partners container homepage" aria-label="Partners & supporters">
+  <h2>Our Partners</h2>
+  <div class="partners-row" role="list">
+    <% partnersList.forEach(p => { %>
+      <div class="partner" role="listitem">
+        <img src="<%= p.logo_url || '/images/partner-placeholder.png' %>" alt="<%= p.name %>" onerror="this.onerror=null;this.src='/images/partner-placeholder.png'"/>
+      </div>
+    <% }) %>
+    <% if (!partnersList || partnersList.length === 0) { %>
+      <div class="partner">
+        <img src="/images/partner-placeholder.png" alt="No partners yet" />
+      </div>
+    <% } %>
+  </div>
+  <p class="partners-note">Want your brand here? <a href="/partners">Partner with us</a>.</p>
+</section>
 
+<!-- Testimonials -->
+<section class="testimonials container homepage" aria-label="Customer testimonials">
+  <h2>What our customers say</h2>
+  <div class="testi-grid">
+    <% testimonialsList.forEach(function(t){ %>
+      <blockquote class="testi-card" tabindex="0">
+        <div class="testi-photo">
+          <img src="<%= t.photo_url || ('/images/avatar-placeholder.png') %>" alt="<%= t.name %>" onerror="this.onerror=null;this.src='/images/avatar-placeholder.png'"/>
+        </div>
+        <div class="testi-body">
+          <p class="quote">“<%= t.quote %>”</p>
+          <footer class="testi-meta"><strong><%= t.name %></strong><small><%= t.city || '' %></small></footer>
+        </div>
+      </blockquote>
+    <% }) %>
+    <% if (!testimonialsList || testimonialsList.length === 0) { %>
+      <p class="muted">No testimonials yet — ask customers to leave feedback after ordering.</p>
+    <% } %>
+  </div>
+</section>
+
+<!-- Investor / Footer CTA -->
+<section class="investor-cta container homepage">
+  <div class="investor-inner">
+    <div>
+      <h3>Invest in local food entrepreneurship</h3>
+      <p>We connect trusted vendors to thousands of customers. Join us to scale healthy income for local cooks and capture a high-growth market in quick-service food.</p>
+    </div>
+    <div class="investor-actions">
+      <a href="/invest" class="btn btn-primary">See pitch deck</a>
+      <a href="/contact" class="btn btn-muted">Contact sales</a>
+    </div>
+  </div>
+</section>
+
+<!-- Quick Order modal -->
+<div id="quick-order-modal" class="modal" aria-hidden="true">
+  <div class="modal-dialog" role="dialog" aria-modal="true">
+    <button class="modal-close" aria-label="Close">×</button>
+    <h3 id="qo-title">Quick order</h3>
+
+    <form id="quick-order-form" method="post" action="/client/book">
+      <input type="hidden" name="vendorId" id="qo-vendorId" value="">
+      <label>
+        Item (optional)
+        <input type="text" name="item" id="qo-item" placeholder="E.g. 2 plates, extra pepper" />
+      </label>
+      <label>
+        Payment method
+        <select name="payment_method" id="qo-payment">
+          <option value="cod">Pay on delivery</option>
+          <option value="paystack">Paystack</option>
+          <option value="flutterwave">Flutterwave</option>
+        </select>
+      </label>
+
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-primary">Place order</button>
+        <button type="button" class="btn btn-muted modal-cancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/index.js" defer></script>
