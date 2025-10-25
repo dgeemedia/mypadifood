@@ -76,6 +76,40 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Public testimonial submit (any visitor or logged-in client)
+router.post('/testimonials', async (req, res) => {
+  try {
+    const name = (req.body.name && String(req.body.name).trim()) || (req.user && (req.user.name || req.user.full_name)) || 'Anonymous';
+    const city = req.body.city && String(req.body.city).trim() || null;
+    const quote = req.body.quote && String(req.body.quote).trim();
+    const photo_url = req.body.photo_url && String(req.body.photo_url).trim() || null;
+
+    if (!quote || quote.length < 8) {
+      if (req.flash) req.flash('error', 'Testimonial must be at least 8 characters long');
+      return res.redirect(req.get('Referer') || '/');
+    }
+
+    // create testimonial; default approved = false (admin to approve)
+    // Use create helper (returns entire row) OR createTestimonial (returns id)
+    if (testimonialModel && typeof testimonialModel.create === 'function') {
+      await testimonialModel.create({ name, photo_url, city, quote, approved: false });
+    } else if (testimonialModel && typeof testimonialModel.createTestimonial === 'function') {
+      await testimonialModel.createTestimonial({ name, photo_url, city, quote });
+    } else {
+      console.warn('No testimonialModel available');
+      if (req.flash) req.flash('error', 'Service unavailable');
+      return res.redirect(req.get('Referer') || '/');
+    }
+
+    if (req.flash) req.flash('success', 'Thanks — your testimonial was submitted and will appear after review');
+    return res.redirect(req.get('Referer') || '/');
+  } catch (err) {
+    console.error('Error submitting testimonial', err);
+    if (req.flash) req.flash('error', 'Could not submit testimonial');
+    return res.redirect(req.get('Referer') || '/');
+  }
+});
+
 const uuidPattern =
   '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
 

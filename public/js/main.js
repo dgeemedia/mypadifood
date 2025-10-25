@@ -327,3 +327,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   })();
 }); // end DOMContentLoaded
+
+// public/js/flash.js (or append to main.js)
+document.addEventListener('DOMContentLoaded', function () {
+  const FLASH_DISMISS_MS = 4000; // change as you like
+  const flashes = document.querySelectorAll('.flash');
+  if (!flashes || flashes.length === 0) return;
+
+  // Add fade-out class after timeout
+  setTimeout(() => {
+    flashes.forEach((el) => {
+      el.classList.add('flash--fadeout');
+    });
+  }, FLASH_DISMISS_MS);
+
+  // remove from DOM after transition (defensive)
+  document.addEventListener('transitionend', (ev) => {
+    if (ev.target && ev.target.classList && ev.target.classList.contains('flash--fadeout')) {
+      ev.target.remove();
+    }
+  });
+
+  // optional: hide immediately on click
+  flashes.forEach((el) => el.addEventListener('click', () => el.remove()));
+});

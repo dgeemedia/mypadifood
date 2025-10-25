@@ -1,7 +1,21 @@
 <!--views/partials/flash.ejs-->
-<% if (success) { %>
-<div class="flash flash-success"><%= success %></div>
+<% if (flash && Object.keys(flash).length) { %>
+  <div class="flash-container">
+    <% if (flash.success) { flash.success.forEach(function(m){ %>
+      <div class="flash flash-success"><%= m %></div>
+    <% }) } %>
+
+    <% if (flash.error) { flash.error.forEach(function(m){ %>
+      <div class="flash flash-error"><%= m %></div>
+    <% }) } %>
+
+    <% // render any other types generically %>
+    <% Object.keys(flash).forEach(function(type){ 
+         if (type === 'success' || type === 'error') return;
+         (flash[type] || []).forEach(function(m){ %>
+           <div class="flash flash-<%= type %>"><%= m %></div>
+    <%   }); 
+       }); %>
+  </div>
 <% } %>
-<% if (error) { %>
-<div class="flash flash-error"><%= error %></div>
-<% } %>
+

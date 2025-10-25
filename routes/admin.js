@@ -6,6 +6,9 @@ const adminController = require('../controllers/adminController');
 const auth = require('../middleware/auth');
 const authController = require('../controllers/authController');
 
+// Add testimonials controller require
+const adminTestimonialsController = require('../controllers/adminTestimonialsController');
+
 // Public admin auth routes
 router.get('/login', adminController.showLogin);
 router.post('/login', authController.login);
@@ -21,33 +24,17 @@ router.post('/reset', adminController.reset);
 
 // Protected admin area (uses middleware.requireAdmin / requireSuper)
 router.get('/dashboard', auth.requireAdmin, adminController.dashboard);
-router.get(
-  '/vendors/pending',
-  auth.requireAdmin,
-  adminController.pendingVendors
-);
-router.post(
-  '/vendors/decision',
-  auth.requireAdmin,
-  adminController.vendorDecision
-);
+router.get('/vendors/pending', auth.requireAdmin, adminController.pendingVendors);
+router.post('/vendors/decision', auth.requireAdmin, adminController.vendorDecision);
 
 // pending riders + decision
 router.get('/riders/pending', auth.requireAdmin, adminController.pendingRiders);
-router.post(
-  '/riders/decision',
-  auth.requireAdmin,
-  adminController.riderDecision
-);
+router.post('/riders/decision', auth.requireAdmin, adminController.riderDecision);
 
 // resources listing + JSON data + CSV export
 router.get('/resources', auth.requireAdmin, adminController.resourcesPage);
 router.get('/resources/data', auth.requireAdmin, adminController.resourcesData);
-router.get(
-  '/resources/export',
-  auth.requireAdmin,
-  adminController.resourcesExport
-);
+router.get('/resources/export', auth.requireAdmin, adminController.resourcesExport);
 
 // Admin creation (form + handler). Route-level middleware will restrict access.
 router.get('/create', auth.requireAdmin, adminController.showCreateForm);
@@ -69,26 +56,10 @@ router.post('/notifications/:id/read', auth.requireAdmin, async (req, res) => {
    WEEKLY PLANS (admin)
    keep these here at /admin/food-orders...
 */
-router.get(
-  '/food-orders',
-  auth.requireAdmin,
-  adminController.pendingWeeklyPlans
-);
-router.get(
-  '/food-orders/:planId',
-  auth.requireAdmin,
-  adminController.viewWeeklyPlan
-);
-router.post(
-  '/food-orders/:planId/accept',
-  auth.requireAdmin,
-  adminController.acceptWeeklyPlan
-);
-router.post(
-  '/food-orders/:planId/complete',
-  auth.requireAdmin,
-  adminController.completeWeeklyPlan
-);
+router.get('/food-orders', auth.requireAdmin, adminController.pendingWeeklyPlans);
+router.get('/food-orders/:planId', auth.requireAdmin, adminController.viewWeeklyPlan);
+router.post('/food-orders/:planId/accept', auth.requireAdmin, adminController.acceptWeeklyPlan);
+router.post('/food-orders/:planId/complete', auth.requireAdmin, adminController.completeWeeklyPlan);
 
 // withdrawls
 router.get('/withdrawals', adminController.listPendingWithdrawals);
@@ -99,5 +70,12 @@ router.post('/withdrawals/:id/decline', adminController.declineWithdrawal);
 router.post('/reviews/:id/reply', auth.requireAdmin, (req, res) =>
   require('../controllers/reviewController').postReplyByAdmin(req, res)
 );
+
+/* ---------------------------
+   NEW: Testimonials management
+*/
+router.get('/testimonials/pending', auth.requireAdmin, adminTestimonialsController.listPending);
+router.post('/testimonials/:id/approve', auth.requireAdmin, adminTestimonialsController.approve);
+router.post('/testimonials/:id/reject', auth.requireAdmin, adminTestimonialsController.reject);
 
 module.exports = router;

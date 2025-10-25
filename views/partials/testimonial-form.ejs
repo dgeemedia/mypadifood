@@ -3,32 +3,32 @@
   <h3>Share your experience</h3>
   <p class="muted">Your testimonial helps local vendors grow. Submitted testimonials are reviewed before publication.</p>
 
-  <form method="post" action="/testimonials/submit" enctype="multipart/form-data">
-    <div class="form-row">
+  <form method="post" action="/testimonials">
+    <div class="form-row" style="margin-bottom:8px;">
       <label>
         Your name
         <input type="text" name="name" value="<%= (currentUser && (currentUser.name || currentUser.full_name)) ? (currentUser.name || currentUser.full_name) : '' %>" />
       </label>
     </div>
 
-    <div class="form-row">
+    <div class="form-row" style="margin-bottom:8px;">
       <label>
         City (optional)
         <input type="text" name="city" value="" />
       </label>
     </div>
 
-    <div class="form-row">
+    <div class="form-row" style="margin-bottom:8px;">
       <label>
         Testimonial (short)
         <textarea name="quote" rows="3" required placeholder="What did you like?"></textarea>
       </label>
     </div>
 
-    <div class="form-row">
+    <div class="form-row" style="margin-bottom:8px;">
       <label>
-        Photo (optional)
-        <input type="file" name="photo" accept="image/*" />
+        Photo URL (optional)
+        <input type="url" name="photo_url" placeholder="https://example.com/photo.jpg" />
       </label>
     </div>
 

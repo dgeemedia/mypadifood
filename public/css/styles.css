@@ -496,6 +496,22 @@ body {
   color: var(--muted);
   text-align: center;
 }
+
+/* flash styles */
+.flash { 
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  transition: opacity .35s ease, transform .35s ease;
+}
+.flash--fadeout { 
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+.flash-success { background:#e6ffed; color:#0b6b3a; border:1px solid #b8f2c9; }
+.flash-error { background:#fff1f0; color:#7a1b1b; border:1px solid #f7c6c6; }
+
 .flash-messages {
   width: 100%;
   max-width: 460px;

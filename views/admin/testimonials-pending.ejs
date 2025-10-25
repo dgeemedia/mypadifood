@@ -7,7 +7,7 @@
 <% } else { %>
   <div class="testi-grid">
     <% testimonials.forEach(function(t) { %>
-      <div class="testi-card card">
+      <div class="testi-card card" style="padding:12px;margin-bottom:12px;">
         <div style="display:flex; gap:12px; align-items:flex-start;">
           <div style="flex:0 0 80px;">
             <% if (t.photo_url) { %>
@@ -23,8 +23,9 @@
               <button class="btn" type="submit">Approve</button>
             </form>
             <form method="post" action="/admin/testimonials/<%= t.id %>/reject" style="display:inline; margin-left:8px">
-              <button class="btn btn-danger" type="submit">Reject</button>
+              <button class="btn btn-danger" type="submit" onclick="return confirm('Reject and delete this testimonial?')">Reject</button>
             </form>
+            <div style="margin-top:6px"><small class="muted">Submitted: <%= (t.created_at) ? new Date(t.created_at).toLocaleString() : '' %></small></div>
           </div>
         </div>
       </div>
