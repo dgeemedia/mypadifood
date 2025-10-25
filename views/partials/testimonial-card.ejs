@@ -1,0 +1,18 @@
+<!-- views/partials/testimonial-card.ejs -->
+<article class="testimonial-card">
+  <img
+    class="testimonial-avatar"
+    src="<%= testimonial.avatar %>"
+    alt="<%= testimonial.name ? (testimonial.name + ' avatar') : 'User avatar' %>"
+    width="64"
+    height="64"
+    onerror="this.onerror=null;this.src='/images/avatar-placeholder.png';"
+  />
+  <div class="testimonial-body">
+    <strong class="testimonial-name"><%= testimonial.name || 'Anonymous' %></strong>
+    <% if (testimonial.city) { %>
+      <div class="testimonial-meta"><%= testimonial.city %></div>
+    <% } %>
+    <blockquote class="testimonial-quote"><%= testimonial.quote %></blockquote>
+  </div>
+</article>

@@ -43,7 +43,8 @@ function svgDataUri(initials, bg, size = 128, fg = '#ffffff') {
       font-family='Segoe UI, Roboto, Arial, Helvetica, sans-serif'
       font-size='${fontSize}' fill='${fg}'>${escapeXml(initials)}</text>
   </svg>`;
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  const b64 = Buffer.from(svg, 'utf8').toString('base64');
+  return `data:image/svg+xml;base64,${b64}`;
 }
 
 function escapeXml(s = '') {

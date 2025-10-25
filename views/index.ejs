@@ -1,35 +1,32 @@
-<% // defensive locals + helpers const f = (typeof filters !== 'undefined' &&
-filters) ? filters : {}; const fallbackSvg = encodeURIComponent( '<svg
-  xmlns="http://www.w3.org/2000/svg"
-  width="600"
-  height="400"
->
-  ' + '
-  <rect width="100%" height="100%" fill="#f6f7fb" />
-  ' + '
-  <text
-    x="50%"
-    y="50%"
-    dominant-baseline="middle"
-    text-anchor="middle"
-    font-size="20"
-    fill="#888"
-  >
-    Image unavailable
-  </text>
-  ' + '</svg
->' ); const initialVisible = 9; const vendorsList = (typeof vendors !==
-'undefined' && vendors) ? vendors : []; const partnersList = (typeof partners
-!== 'undefined' && partners) ? partners : []; const testimonialsList = (typeof
-testimonials !== 'undefined' && testimonials) ? testimonials : []; const
-statsSafe = (typeof stats !== 'undefined' && stats) ? stats : {}; const
-currentUserSafe = (typeof currentUser !== 'undefined' && currentUser) ?
-currentUser : null; /** * Helper to produce a food-focused Unsplash URL * We
-avoid seeds because source.unsplash doesn't guarantee stable seeds; we use food
-keywords + vendor id to make varied images. */ function foodImageUrl(term,
-w=600, h=400) { const q = encodeURIComponent((term || 'local
-food').toString().replace(/\s+/g,'+')); return
-`https://source.unsplash.com/${w}x${h}/?food,${q}`; } %>
+<!--views/index.ejs-->
+<% 
+// defensive locals + helpers
+const f = (typeof filters !== 'undefined' && filters) ? filters : {};
+
+const fallbackSvg = encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">
+     <rect width="100%" height="100%" fill="#f6f7fb" />
+     <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="20" fill="#888">
+       Image unavailable
+     </text>
+   </svg>`
+);
+
+const initialVisible = 9;
+const vendorsList = (typeof vendors !== 'undefined' && vendors) ? vendors : [];
+const partnersList = (typeof partners !== 'undefined' && partners) ? partners : [];
+const testimonialsList = (typeof testimonials !== 'undefined' && testimonials) ? testimonials : [];
+const statsSafe = (typeof stats !== 'undefined' && stats) ? stats : {};
+const currentUserSafe = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
+
+/**
+ * Helper to produce a food-focused Unsplash URL
+ */
+function foodImageUrl(term, w = 600, h = 400) {
+  const q = encodeURIComponent((term || 'local food').toString().replace(/\s+/g, '+'));
+  return `https://source.unsplash.com/${w}x${h}/?food,${q}`;
+}
+%>
 
 <section class="hero container homepage">
   <div class="hero-left">
@@ -231,43 +228,60 @@ food').toString().replace(/\s+/g,'+')); return
   </p>
 </section>
 
-<!-- Testimonials block (replace existing loop) -->
+<!-- Testimonials block (updated) -->
 <section
   class="testimonials container homepage"
   aria-label="Customer testimonials"
 >
   <h2>What our customers say</h2>
+
   <div class="testi-grid">
-    <% testimonialsList.forEach(function(t){ // choose avatar: uploaded photo ->
-    gender-based -> generic let avatar = t.photo_url && t.photo_url.length ?
-    t.photo_url : (t.gender === 'female' ? '/images/avatar-female.png' :
-    (t.gender === 'male' ? '/images/avatar-male.png' :
-    '/images/avatar-placeholder.png')); %>
-    <blockquote class="testi-card" tabindex="0">
-      <div class="testi-photo">
-        <img
-          src="<%= t.photo_url || t.avatar || '/images/avatar-placeholder.png' %>"
-          alt="<%= t.name || 'Customer' %>"
-          onerror="this.onerror=null;this.src='/images/avatar-placeholder.png'"
-        />
-      </div>
+    <% if (Array.isArray(testimonialsList) && testimonialsList.length) { %>
+      <% testimonialsList.forEach(function(t){ 
+           // prefer an explicit avatar set server-side, then uploaded photo_url,
+           // then gender-based image, else placeholder
+           const avatarSrc =
+             (t && t.avatar) ||
+             (t && t.photo_url) ||
+             (t && t.gender === 'female'
+               ? '/images/avatar-female.png'
+               : t && t.gender === 'male'
+               ? '/images/avatar-male.png'
+               : '/images/avatar-placeholder.png');
+      %>
 
-      <div class="testi-body">
-        <p class="quote">“<%= t.quote %>”</p>
-        <footer class="testi-meta">
-          <strong><%= t.name %></strong><small><%= t.city || '' %></small>
-        </footer>
-      </div>
-    </blockquote>
-    <% }) %>
+      <blockquote class="testi-card" tabindex="0" aria-label="Customer testimonial">
+        <div class="testi-photo" aria-hidden="false">
+          <img
+            src="<%= avatarSrc %>"
+            alt="<%= (t && (t.name || 'Customer')) %>'s avatar"
+            width="64"
+            height="64"
+            onerror="this.onerror=null;this.src='/images/avatar-placeholder.png';"
+            class="testimonial-avatar"
+          />
+        </div>
 
-    <% if (!testimonialsList || testimonialsList.length === 0) { %>
-    <p class="muted">
-      No testimonials yet — ask customers to leave feedback after ordering.
-    </p>
+        <div class="testi-body">
+          <p class="quote">“<%= (t && t.quote) ? t.quote : '' %>”</p>
+          <footer class="testi-meta">
+            <strong><%= (t && t.name) ? t.name : 'Anonymous' %></strong>
+            <% if (t && t.city) { %>
+              <small><%= t.city %></small>
+            <% } %>
+          </footer>
+        </div>
+      </blockquote>
+
+    <% }) /* end forEach */ %>
+    <% } else { %>
+      <p class="muted">
+        No testimonials yet — ask customers to leave feedback after ordering.
+      </p>
     <% } %>
   </div>
 </section>
+
 
 <!-- Investor / Footer CTA -->
 <section class="investor-cta container homepage">
