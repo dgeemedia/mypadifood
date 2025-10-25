@@ -799,3 +799,6 @@ BEGIN
     ALTER TABLE reviews ADD CONSTRAINT fk_reviews_parent FOREIGN KEY (parent_id) REFERENCES reviews(id) ON DELETE CASCADE;
   EXCEPTION WHEN duplicate_object THEN NULL; END;
 END $$;
+
+ALTER TABLE testimonials
+ADD COLUMN consent boolean NOT NULL DEFAULT false;

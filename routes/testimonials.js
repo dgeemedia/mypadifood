@@ -5,7 +5,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const auth = require('../middleware/auth'); // expects requireClient
+const testimonialModel = require('../models/testimonialModel');
 const { pool } = require('../database/database');
+
 
 // upload directory (ensure exists)
 const uploadDir = path.join(__dirname, '../public/uploads/testimonials');
@@ -45,22 +47,36 @@ router.post('/', auth.requireClient, upload.single('photo'), async (req, res) =>
     const user = req.user || (req.session && req.session.user) || {};
     const name = (req.body.name && String(req.body.name).trim()) || (user && (user.name || user.email)) || 'Anonymous';
     const city = (req.body.city && String(req.body.city).trim()) || null;
-    const quote = (req.body.quote && String(req.body.quote).trim()) || null;
 
-    if (!quote || quote.length < 8) {
+    const rawQuote = req.body.quote ? String(req.body.quote) : '';
+    const quoteTrim = rawQuote.trim();
+    const charCount = Array.from(quoteTrim).length; // counts codepoints (handles emoji)
+    const consentGiven = !!req.body.consent; // checkbox value 'yes' or 'on' -> truthy
+
+    if (!quoteTrim || charCount < 8) {
       pushMessage(req, 'error', 'Please provide a testimonial (at least 8 characters).');
+      return res.redirect(req.get('Referrer') || '/client/dashboard');
+    }
+
+    if (!consentGiven) {
+      pushMessage(req, 'error', 'Please confirm you consent to publish this testimonial when approved.');
       return res.redirect(req.get('Referrer') || '/client/dashboard');
     }
 
     const photo_url = req.file ? `/uploads/testimonials/${req.file.filename}` : null;
 
-    await pool.query(
-      'INSERT INTO testimonials (name, photo_url, city, quote, approved, created_at) VALUES ($1,$2,$3,$4,false,NOW())',
-      [name, photo_url, city, quote]
-    );
+    // Use model to create (returns id)
+    await testimonialModel.create({
+      name,
+      photo_url,
+      city,
+      quote: quoteTrim,
+      consent: true,      // stored for audit
+      approved: false     // pending approval
+    });
 
     pushMessage(req, 'success', 'Thank you! Your testimonial will be reviewed before publishing.');
-    return res.redirect(req.get('Referrer') || '/client/dashboard');
+    return res.redirect('/client/dashboard');
   } catch (e) {
     console.error('submit testimonial error', e);
     pushMessage(req, 'error', 'Could not submit testimonial');

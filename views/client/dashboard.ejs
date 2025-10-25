@@ -1,3 +1,4 @@
+<!---- views/client/dashboard.ejs ---->
 <div class="dashboard-app container">
   <nav class="app-nav" role="navigation" aria-label="Client dashboard">
     <ul>
@@ -179,12 +180,11 @@
       </div>
       
         <!-- include testimonial form so logged-in clients can submit -->
-  <div style="margin-top: 16px;">
-    <%- include('../partials/testimonial-form', {
-      currentUser: (typeof currentUser !== 'undefined' ? currentUser : (typeof user !== 'undefined' ? user : {})),
-      request: (typeof request !== 'undefined' ? request : null)
-    }) %>
-  </div>
+  <p class="muted">
+  Want to share your experience with us?
+  <a href="/testimonials/submit" id="open-testimonial-modal">Click here</a>
+</p>
+
 
 
       <!-- QUICK ACTIONS (appears under Manage account) -->
@@ -781,6 +781,7 @@
       </div>
     </section>
 
+
     <%- include('../partials/chat-modal') %>
   </main>
 </div>
@@ -801,3 +802,5 @@
     window.WALLET_TX_ID = "<%= recentWalletTxId %>";
   <% } %>
 </script>
+
+
