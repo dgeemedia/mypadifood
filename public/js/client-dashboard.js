@@ -1,7 +1,13 @@
 // public/js/client-dashboard.js
+// Full dashboard behavior + vendorId auto-open (combined)
+// Replaces/updates the previous file — drop in place of the old one.
+
 (function () {
   'use strict';
 
+  /* ---------------------------
+     Mini DOM helpers
+     --------------------------- */
   function $(sel, ctx) {
     return (ctx || document).querySelector(sel);
   }
@@ -12,7 +18,9 @@
   const navButtons = $all('.nav-item');
   const sections = $all('.app-section');
 
-  // Hide flash / alert elements that may persist across sections.
+  /* ---------------------------
+     Flash hide helper
+     --------------------------- */
   function hideFlash() {
     try {
       $all(
@@ -44,6 +52,9 @@
     }
   }
 
+  /* ---------------------------
+     Section management
+     --------------------------- */
   function showTarget(id, opts = {}) {
     sections.forEach((s) =>
       s.classList.toggle('app-section-hidden', s.id !== id)
@@ -81,19 +92,15 @@
     }
   }
 
-  /* ----------------------------
-     Helper: show an inner edit panel inside section-account-edit
-     - shows the parent section, reveals the correct inner panel,
-       focuses first input, and initializes account forms.
-     ---------------------------- */
+  /* ---------------------------
+     Show inner edit panel
+     --------------------------- */
   function showInnerPanel(innerId, opts = {}) {
     const wrapper = document.getElementById('section-account-edit');
     if (!wrapper) return;
 
-    // show the wrapper (don't push -- we'll handle state below)
     showTarget('section-account-edit', { push: opts.push !== false });
 
-    // hide all edit panels
     document.querySelectorAll('#edit-panels .edit-panel').forEach((p) => {
       p.style.display = 'none';
       p.setAttribute('aria-hidden', 'true');
@@ -105,7 +112,6 @@
     inner.style.display = '';
     inner.setAttribute('aria-hidden', 'false');
 
-    // focus first meaningful input/button
     const focusEl = inner.querySelector(
       'input:not([type="hidden"]), select, textarea, button'
     );
@@ -115,7 +121,6 @@
       } catch (e) {}
     }
 
-    // initialize account form handlers if available (for AJAX-loaded panels or to re-bind)
     if (
       window.initAccountFormHandlers &&
       typeof window.initAccountFormHandlers === 'function'
@@ -127,11 +132,9 @@
       }
     }
 
-    // --- ensure state options exist and populate LGAs for the revealed inner panel ---
+    // Populate states/LGAs when panels reveal, try to reuse available helpers/data
     try {
-      // helper: get pooled states data from location-picker loaded sources
       const getStatesData = () => {
-        // prefer the location-picker's cached data
         if (
           window.__LOCATION_PICKER_STATES &&
           Array.isArray(window.__LOCATION_PICKER_STATES) &&
@@ -139,10 +142,8 @@
         ) {
           return window.__LOCATION_PICKER_STATES;
         }
-        // then window.STATE_DATA
         if (Array.isArray(window.STATE_DATA) && window.STATE_DATA.length)
           return window.STATE_DATA;
-        // then try to parse #states-data dataset if present
         const sd = document.getElementById('states-data');
         if (sd && sd.dataset && sd.dataset.states) {
           try {
@@ -151,21 +152,17 @@
             /* ignore */
           }
         }
-        // nothing available synchronously
         return null;
       };
 
       const statesData = getStatesData();
 
-      // find state selects inside this inner panel (address partial uses #client-state)
       const stateSelects = Array.from(
         inner.querySelectorAll('select#client-state, select[name="state"]')
       );
 
-      // If we have statesData synchronously and the state select has only the placeholder, fill it
       if (statesData && statesData.length) {
         stateSelects.forEach((s) => {
-          // if server didn't render options (only 1 placeholder option), populate client-side
           if (!s.options || s.options.length <= 1) {
             s.innerHTML = '<option value="">Select state</option>';
             statesData.forEach((st) => {
@@ -175,7 +172,6 @@
               opt.textContent = name;
               s.appendChild(opt);
             });
-            // restore previously selected value (if any)
             const cur =
               typeof currentUser !== 'undefined' &&
               currentUser &&
@@ -190,7 +186,6 @@
               if (found) s.value = cur;
             }
           }
-          // after ensuring options, populate LGAs for this select using location-picker helpers if available
           if (
             window.populateLgasForSelect &&
             typeof window.populateLgasForSelect === 'function'
@@ -201,14 +196,12 @@
               console.warn('populateLgasForSelect failed', e);
             }
           } else {
-            // fallback: if location-picker not present, attempt to trigger a change event so other logic may handle it
             try {
               s.dispatchEvent(new Event('change', { bubbles: true }));
             } catch (e) {}
           }
         });
       } else {
-        // no sync states data — try to initialize the location picker (async); it will populate selects
         if (
           window.initLocationPicker &&
           typeof window.initLocationPicker === 'function'
@@ -217,9 +210,7 @@
             .initLocationPicker()
             .then(() => {
               const sList = Array.from(
-                inner.querySelectorAll(
-                  'select#client-state, select[name="state"]'
-                )
+                inner.querySelectorAll('select#client-state, select[name="state"]')
               );
               sList.forEach((s) => {
                 if (
@@ -245,8 +236,6 @@
       console.warn('Address panel population failed', e);
     }
 
-    // Update history/state so back/forward works.
-    // store the sub-panel in state but use a stable hash (we'll set hash to innerId for readability)
     try {
       history.pushState(
         { section: 'section-account-edit', sub: innerId },
@@ -258,7 +247,9 @@
     }
   }
 
-  // Attach click handlers to main nav buttons (top-level)
+  /* ---------------------------
+     Nav wiring and keyboard accessibility
+     --------------------------- */
   navButtons.forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -274,15 +265,12 @@
     });
   });
 
-  // wire account edit toggles (account-menu buttons, subnavs, any data-target attributes that reference account sections)
   function wireAccountEditToggles() {
-    // include icon-cards that use data-target so they behave like other toggles
     document
       .querySelectorAll(
         '.account-edit-toggle, .subnav-item, [data-target^="section-account"], .icon-card[data-target]'
       )
       .forEach((btn) => {
-        // avoid double-binding
         if (btn.__acctToggleBound) return;
         btn.__acctToggleBound = true;
 
@@ -291,17 +279,14 @@
           const target = btn.dataset.target;
           if (!target) return;
 
-          // If this is an inner-edit panel (e.g. section-account-edit-phone)
           if (target.startsWith('section-account-edit')) {
             showInnerPanel(target);
             return;
           }
 
-          // Otherwise, it's a top-level section (return to dashboard, etc.)
           showTarget(target, { push: true });
         });
 
-        // keyboard activate
         btn.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -310,7 +295,6 @@
         });
       });
 
-    // wire icon-cards that navigate to other pages using data-href
     document.querySelectorAll('.icon-card[data-href]').forEach((card) => {
       if (card.__hrefBound) return;
       card.__hrefBound = true;
@@ -330,23 +314,18 @@
     });
   }
 
-  // Also hide flash if user clicks anywhere on nav
   document.addEventListener('click', (e) => {
     const ancestor = e.target.closest && e.target.closest('.app-nav');
     if (ancestor) hideFlash();
   });
 
-  // Handle popstate (back/forward) — support inner sub-panel restore
   window.addEventListener('popstate', (e) => {
     const state = e.state || {};
-    // If state explicitly points to an edit sub-panel, restore it
     if (state.section === 'section-account-edit' && state.sub) {
-      // show parent without pushing history
       showInnerPanel(state.sub, { push: false });
       return;
     }
 
-    // fallback: if state.section is a top-level panel, show it
     const id =
       state.section ||
       (location.hash ? location.hash.replace('#', '') : null) ||
@@ -356,22 +335,19 @@
       return;
     }
 
-    // if hash looks like an inner panel id (e.g. #section-account-edit-phone), handle it
     const hash = location.hash ? location.hash.replace('#', '') : null;
     if (hash && hash.startsWith('section-account-edit')) {
       showInnerPanel(hash, { push: false });
       return;
     }
 
-    // final fallback
     if (document.getElementById('section-account'))
       showTarget('section-account', { push: false });
   });
 
-  /* ----------------------------
-     State / LGA datalist autocomplete
-     ... (unchanged)
-  ---------------------------- */
+  /* ---------------------------
+     State/LGA autocomplete
+     --------------------------- */
   function initStateLgaAutocomplete() {
     const STATES_URL = '/locations/Nigeria-State-Lga.json';
     const stateInput = document.getElementById('vendor-search-state');
@@ -437,6 +413,9 @@
       });
   }
 
+  /* ---------------------------
+     Vendor search clear button
+     --------------------------- */
   function wireVendorClear() {
     const clearBtn = document.getElementById('vendor-search-clear');
     const form = document.querySelector('.vendor-search-form');
@@ -461,7 +440,9 @@
     });
   }
 
-  // On load: determine initial section (state -> hash -> default)
+  /* ---------------------------
+     Initial load / restore behavior
+     --------------------------- */
   document.addEventListener('DOMContentLoaded', () => {
     try {
       initStateLgaAutocomplete();
@@ -474,14 +455,12 @@
       console.warn('wireVendorClear failed', e);
     }
 
-    // wire account edit toggles AFTER DOM ready
     try {
       wireAccountEditToggles();
     } catch (e) {
       console.warn('wireAccountEditToggles failed', e);
     }
 
-    // ensure icon-card keyboard activation (for any icon-card role="button")
     document.querySelectorAll('.icon-card[tabindex]').forEach((ic) => {
       if (ic.__kbdBound) return;
       ic.__kbdBound = true;
@@ -513,7 +492,6 @@
         finalPanel = 'section-vendors';
     }
 
-    // If hash is an inner panel (e.g. #section-account-edit-phone) prefer showing it.
     const hash = location.hash ? location.hash.replace('#', '') : null;
     if (hash && hash.startsWith('section-account-edit')) {
       if (document.getElementById(hash)) {
@@ -527,7 +505,9 @@
       showTarget('section-account', { push: false });
     }
 
-    // existing server-flag handlers (orders, weekly plans, wallet) remain unchanged...
+    /* ---------------------------
+       existing window.ORDER_ID / WEEKLY_PLAN handling (unchanged)
+       --------------------------- */
     if (
       window.ORDER_ID &&
       (finalPanel === 'section-orders' ||
@@ -616,9 +596,7 @@
           document.querySelector(
             '#section-wallet input[name="amount"], #section-wallet input[type="number"]'
           ),
-          document.querySelector(
-            '#section-wallet button, #section-wallet a.btn'
-          ),
+          document.querySelector('#section-wallet button, #section-wallet a.btn'),
         ];
         for (const el of candidates) {
           if (el) {
@@ -637,9 +615,7 @@
             document.querySelector(
               '#section-wallet input[name="amount"], #section-wallet input[type="number"]'
             ) ||
-            document.querySelector(
-              '#section-wallet button, #section-wallet a.btn'
-            );
+            document.querySelector('#section-wallet button, #section-wallet a.btn');
           if (el) {
             try {
               el.focus({ preventScroll: true });
@@ -656,36 +632,170 @@
 
     document.documentElement.classList.add('js-ready');
 
-    // Hash change support (handle inner-panel hashes too)
     window.addEventListener('hashchange', () => {
       const id = location.hash.replace('#', '');
       if (!id) return;
-      if (
-        id.startsWith('section-account-edit') &&
-        document.getElementById(id)
-      ) {
+      if (id.startsWith('section-account-edit') && document.getElementById(id)) {
         showInnerPanel(id, { push: false });
       } else if (document.getElementById(id)) {
         showTarget(id, { push: false });
       }
     });
-  });
-})();
 
-// public/js/client-dashboard.js (append if not already present)
-document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('.icon-card[data-href]').forEach(function (el) {
-    el.style.cursor = 'pointer';
-    el.addEventListener('click', function () {
-      const href = el.getAttribute('data-href');
-      if (!href) return;
-      window.location.href = href;
-    });
-    el.addEventListener('keypress', function (ev) {
-      if (ev.key === 'Enter' || ev.key === ' ') {
-        ev.preventDefault();
-        el.click();
+    /* ---------------------------
+       VENDOR AUTO-OPEN (handle ?vendorId=...) - run after initial panel selection
+       --------------------------- */
+
+    // helper: get query param safely
+    function safeQueryParam(name) {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      } catch (e) {
+        return null;
       }
+    }
+
+    function removeQueryParam(name) {
+      try {
+        const url = new URL(window.location);
+        url.searchParams.delete(name);
+        window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    function highlightElement(el) {
+      if (!el) return;
+      el.classList.add('vendor-highlight-temp');
+      setTimeout(() => el.classList.remove('vendor-highlight-temp'), 4500);
+    }
+
+    function prefillBookingForm(vendorId) {
+      let form = document.querySelector('#quick-order-form') || document.querySelector('form[action="/client/book"]');
+      if (!form) {
+        form = document.querySelector('.vendors-list form[action="/client/book"]') || null;
+      }
+      if (!form) return false;
+
+      let hid = form.querySelector('input[name="vendorId"]');
+      if (!hid) {
+        hid = document.createElement('input');
+        hid.type = 'hidden';
+        hid.name = 'vendorId';
+        form.prepend(hid);
+      }
+      hid.value = vendorId;
+
+      const quickModal = document.getElementById('quick-order-modal');
+      if (quickModal) {
+        quickModal.setAttribute('aria-hidden', 'false');
+        quickModal.style.display = 'flex';
+        const first = form.querySelector('input[type="text"], select, textarea, button');
+        if (first) first.focus();
+      }
+
+      return true;
+    }
+
+    function scrollToVendor(vendorId) {
+      if (!vendorId) return false;
+
+      let el = document.querySelector(`a[href="/vendor/${vendorId}"]`);
+      if (!el) el = document.querySelector(`article[data-vendor-id="${vendorId}"]`);
+      if (!el) el = document.querySelector(`form input[name="vendorId"][value="${vendorId}"]`);
+      if (el) {
+        if (el.tagName === 'INPUT') el = el.closest('article') || el.closest('.vendor-card') || el;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlightElement(el);
+        return true;
+      }
+      return false;
+    }
+
+    function tryAutoOpenForVendor(vendorId) {
+      if (!vendorId) return false;
+
+      // open orders section so booking UI is visible
+      showTarget('section-orders', { push: false });
+
+      const didPrefill = prefillBookingForm(vendorId);
+      const didScroll = scrollToVendor(vendorId);
+      return didPrefill || didScroll;
+    }
+
+    // run vendorId flow
+    try {
+      const vendorId = safeQueryParam('vendorId');
+      if (vendorId) {
+        const ok = tryAutoOpenForVendor(vendorId);
+        removeQueryParam('vendorId');
+
+        if (!ok) {
+          showTarget('section-vendors', { push: false });
+          const msg = document.createElement('div');
+          msg.className = 'vendor-prefill-toast';
+          msg.textContent = 'Ready to book — find the vendor under "Find local vendor" or use search.';
+          Object.assign(msg.style, {
+            position: 'fixed',
+            right: '16px',
+            bottom: '16px',
+            background: '#0b74ff',
+            color: '#fff',
+            padding: '10px 14px',
+            borderRadius: '10px',
+            zIndex: 9999,
+            boxShadow: '0 8px 22px rgba(2,10,50,0.18)',
+            fontWeight: 700,
+          });
+          document.body.appendChild(msg);
+          setTimeout(() => msg.remove(), 4200);
+        }
+      } else if (window.location.hash && window.location.hash.indexOf('section-orders') !== -1) {
+        showTarget('section-orders', { push: false });
+      }
+    } catch (err) {
+      console.warn('vendor auto-open error', err);
+    }
+  });
+
+  /* ---------------------------
+     Accessibility: icon-card click bindings (redundant safe append)
+     --------------------------- */
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.icon-card[data-href]').forEach(function (el) {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', function () {
+        const href = el.getAttribute('data-href');
+        if (!href) return;
+        window.location.href = href;
+      });
+      el.addEventListener('keypress', function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault();
+          el.click();
+        }
+      });
     });
   });
-});
+
+  /* ---------------------------
+     Small CSS injection for highlight + toast fallback
+     --------------------------- */
+  try {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .vendor-highlight-temp {
+        box-shadow: 0 16px 40px rgba(11,92,255,0.12) !important;
+        transform: translateY(-6px);
+        transition: all 0.25s ease;
+        border-radius: 12px;
+      }
+      .vendor-prefill-toast { font-family: inherit; }
+    `;
+    document.head.appendChild(style);
+  } catch (e) {
+    // ignore
+  }
+})();

@@ -1,203 +1,244 @@
 <!--views/index.ejs-->
-<% 
-// defensive locals + helpers
-const f = (typeof filters !== 'undefined' && filters) ? filters : {};
+<%
+  // defensive locals + helpers
+  const f = (typeof filters !== 'undefined' && filters) ? filters : {};
+  const initialVisible = 9;
+  const vendorsList = (typeof vendors !== 'undefined' && vendors) ? vendors : [];
+  const partnersList = (typeof partners !== 'undefined' && partners) ? partners : [];
+  const testimonialsList = (typeof testimonials !== 'undefined' && testimonials) ? testimonials : [];
+  const statsSafe = (typeof stats !== 'undefined' && stats) ? stats : {};
+  const currentUserSafe = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
 
-const fallbackSvg = encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">
-     <rect width="100%" height="100%" fill="#f6f7fb" />
-     <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="20" fill="#888">
-       Image unavailable
-     </text>
-   </svg>`
-);
+  // small SVG fallback encoded
+  const fallbackSvg = encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">
+       <rect width="100%" height="100%" fill="#f6f7fb"/>
+       <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="18" fill="#888">Image unavailable</text>
+     </svg>`
+  );
 
-const initialVisible = 9;
-const vendorsList = (typeof vendors !== 'undefined' && vendors) ? vendors : [];
-const partnersList = (typeof partners !== 'undefined' && partners) ? partners : [];
-const testimonialsList = (typeof testimonials !== 'undefined' && testimonials) ? testimonials : [];
-const statsSafe = (typeof stats !== 'undefined' && stats) ? stats : {};
-const currentUserSafe = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
+  // FOOD images map (place files under /public/images/food/)
+  const FOOD_IMAGES = {
+    jollof: '/images/food/jollof.jpg',
+    white_rice_stew: '/images/food/white_rice_stew.jpg',
+    fried_rice: '/images/food/fried_rice.jpg',
+    eba_egusi: '/images/food/eba_egusi.jpg',
+    amala_ewedu: '/images/food/amala_ewedu.jpg',
+    beans_ewa_riro: '/images/food/beans_ewa_riro.jpg',
+    akara: '/images/food/akara.jpg',
+    moi_moi: '/images/food/moi_moi.jpg',
+    pounded_yam_egusi: '/images/food/pounded_yam_egusi.jpg',
+    ofada_ayamase: '/images/food/ofada_ayamase.jpg',
+    suya: '/images/food/suya.jpg',
+    fish_pepper_soup: '/images/food/fish_pepper_soup.jpg',
+    plantain_stew: '/images/food/plantain_stew.jpg',
+    spaghetti_meat: '/images/food/spaghetti_meat.jpg',
+    okro_fufu: '/images/food/okro_fufu.jpg',
+    salad: '/images/food/salad.jpg',
+    grilled_chicken: '/images/food/grilled_chicken.jpg',
+    placeholder: '/images/food/placeholder.jpg'
+  };
 
-/**
- * Helper to produce a food-focused Unsplash URL
- */
-function foodImageUrl(term, w = 600, h = 400) {
-  const q = encodeURIComponent((term || 'local food').toString().replace(/\s+/g, '+'));
-  return `https://source.unsplash.com/${w}x${h}/?food,${q}`;
-}
+  function normalizeKey(s) {
+    if (!s) return '';
+    return String(s).toLowerCase()
+      .replace(/&/g, 'and')
+      .replace(/\s+/g, '_')
+      .replace(/[^\w_]/g, '');
+  }
+
+  function vendorImageFor(v) {
+    if (!v) return FOOD_IMAGES.placeholder;
+    const p = v.photo_url ? String(v.photo_url).trim() : '';
+    if (p && (/^https?:\/\//i.test(p) || p.startsWith('/'))) return p;
+    const key = normalizeKey(v.food_item || v.food || v.name || '');
+    if (key && FOOD_IMAGES[key]) return FOOD_IMAGES[key];
+    return FOOD_IMAGES.placeholder;
+  }
+
+  const heroImage = '/images/hero-food.jpg';
 %>
 
-<section class="hero container homepage">
-  <div class="hero-left">
-    <h1>Local Food Vendors in Your Area</h1>
-    <p class="lead">
-      Discover delicious, home-cooked meals from trusted local vendors. Fast
-      delivery or pickup — order in seconds.
-    </p>
+<!-- Full-bleed hero (replace previous hero section with this) -->
+<section class="hero homepage" aria-label="Hero">
+  <div class="hero-inner">
+    <!-- left column: heading, search, CTAs, metrics -->
+    <div class="hero-left">
+      <h1>Local Food Vendors in Your Area</h1>
+      <p class="lead">
+        Discover delicious, home-cooked meals from trusted local vendors. Fast
+        delivery or pickup — order in seconds.
+      </p>
 
-    <form class="hero-search" method="get" action="/">
-      <input
-        type="text"
-        name="q"
-        placeholder="Search vendor or food item"
-        value="<%= f.q ? f.q : '' %>"
-      />
-      <input
-        type="text"
-        name="state"
-        placeholder="State"
-        value="<%= f.state ? f.state : '' %>"
-      />
-      <input
-        type="text"
-        name="lga"
-        placeholder="LGA"
-        value="<%= f.lga ? f.lga : '' %>"
-      />
-      <button class="btn btn-primary" type="submit">Search</button>
-    </form>
+      <form class="hero-search" method="get" action="/">
+        <input
+          type="text"
+          name="q"
+          placeholder="Search vendor or food item"
+          value="<%= f.q ? f.q : '' %>"
+        />
+        <input
+          type="text"
+          name="state"
+          placeholder="State"
+          value="<%= f.state ? f.state : '' %>"
+        />
+        <input
+          type="text"
+          name="lga"
+          placeholder="LGA"
+          value="<%= f.lga ? f.lga : '' %>"
+        />
+        <button class="btn btn-primary" type="submit">Search</button>
+      </form>
 
-    <div class="hero-ctas">
-      <a class="btn btn-secondary" href="/signup">Join as Customer</a>
-      <a class="btn" href="/vendor/register">Register Your Food Stall</a>
-      <a class="btn btn-ghost" href="/invest">Invest / Partner</a>
+      <div class="hero-ctas">
+        <a class="btn btn-secondary" href="/signup">Join as Customer</a>
+        <a class="btn" href="/vendor/register">Register Your Food Stall</a>
+        <a class="btn btn-gold" href="/invest">Invest / Partner</a>
+      </div>
+
+      <div class="platform-metrics cards" aria-hidden="true">
+        <div class="metric-card">
+          <div class="metric-icon">👩‍🍳</div>
+          <div>
+            <strong><%= statsSafe.vendors || 0 %></strong>
+            <small>Vendors enrolled</small>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon">🧾</div>
+          <div>
+            <strong><%= statsSafe.orders || 0 %></strong>
+            <small>Orders made</small>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon">👥</div>
+          <div>
+            <strong><%= statsSafe.customers || 0 %></strong>
+            <small>Customers onboarded</small>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="platform-metrics" aria-hidden="true">
-      <div>
-        <strong><%= statsSafe.vendors || 0 %>+</strong><small>Vendors</small>
-      </div>
-      <div>
-        <strong><%= statsSafe.orders || 0 %>+</strong><small>Orders</small>
-      </div>
-      <div>
-        <strong><%= statsSafe.customers || 0 %>+</strong
-        ><small>Customers</small>
+    <!-- right column: hero media (aspect box) -->
+    <div class="hero-right">
+      <div class="hero-media" role="img" aria-label="Delicious local food">
+        <img
+          src="<%= heroImage %>"
+          alt="Delicious local food"
+          onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
+        />
       </div>
     </div>
-  </div>
-
-  <div class="hero-right">
-    <!-- more food-focused image; fallback to SVG -->
-    <img
-      class="hero-image"
-      alt="Local food"
-      src="<%= foodImageUrl('african+food',900,520) %>"
-      onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
-    />
   </div>
 </section>
 
 <!-- Featured vendors (horizontal scroll) -->
 <section class="featured container homepage" aria-label="Featured vendors">
   <h2>Featured vendors</h2>
-  <div class="featured-scroller" tabindex="0">
-    <% (vendorsList || []).slice(0,6).forEach(function(v) { const img =
-    foodImageUrl(v.food_item || v.name || 'meal', 520, 340); %>
-    <a class="featured-item" href="/vendor/<%= v.id %>">
-      <div class="featured-thumb">
-        <img
-          alt="<%= v.food_item || 'meal' %>"
-          src="<%= img %>"
-          onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
-          loading="lazy"
-        />
-      </div>
-      <div class="featured-meta">
-        <strong><%= v.name %></strong>
-        <small
-          ><%= v.food_item %>
-          • ₦<%= v.base_price %></small
-        >
-      </div>
-    </a>
+
+  <div class="featured-scroller" tabindex="0" role="list">
+    <% (vendorsList || []).slice(0,6).forEach(function(v) { %>
+      <% const imgSrc = vendorImageFor(v); %>
+
+      <!-- entire card is clickable; include aria-label for screen readers -->
+      <a class="featured-item" href="/vendor/<%= v.id %>" role="listitem" aria-label="<%= v.name %> — <%= v.food_item %>">
+        <div class="featured-thumb" aria-hidden="true">
+          <img
+            alt="<%= v.food_item || 'meal' %>"
+            src="<%= imgSrc %>"
+            onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
+            loading="lazy"
+          />
+          <!-- price badge -->
+          <div class="featured-price">₦<%= v.base_price %></div>
+        </div>
+
+        <div class="featured-meta">
+          <div class="featured-title"><%= v.name %></div>
+          <div class="featured-sub"><%= v.food_item %></div>
+        </div>
+      </a>
     <% }) %>
+
+    <% if (!(vendorsList && vendorsList.length)) { %>
+      <div class="featured-empty muted">No featured vendors yet.</div>
+    <% } %>
   </div>
 </section>
+
 
 <!-- Vendors grid -->
 <section class="vendors container homepage">
   <h2>Nearby Vendors</h2>
 
   <% if (!vendorsList.length) { %>
-  <p>No vendors found. Try another location.</p>
+    <p>No vendors found. Try another location.</p>
   <% } else { %>
-  <div
-    id="vendors-grid"
-    class="vendors-grid"
-    data-initial="<%= initialVisible %>"
-  >
-    <% vendorsList.forEach(function(v, index) { const avg = ((v.reviewsSummary
-    && v.reviewsSummary.avg_rating) || 0); const rounded = Math.round(Number(avg
-    || 0)); const img = foodImageUrl(v.food_item || v.name || 'meal', 600, 400);
-    %>
-    <article
-      class="vendor-card <%= index >= initialVisible ? 'vendor-hidden' : '' %>"
-      data-index="<%= index %>"
-    >
-      <div class="vendor-media">
-        <img
-          class="vendor-photo"
-          alt="Photo of <%= v.food_item %> by <%= v.name %>"
-          src="<%= img %>"
-          onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
-          loading="lazy"
-        />
-        <button
-          class="fav-btn"
-          title="Save vendor"
-          aria-pressed="false"
-          data-vendor-id="<%= v.id %>"
-        >
-          ♡
-        </button>
-      </div>
 
-      <div class="vendor-body">
-        <h3 class="vendor-title">
-          <a href="/vendor/<%= v.id %>"><%= v.name %></a>
-        </h3>
-        <p class="vendor-food">
-          <strong>Food:</strong>
-          <%= v.food_item %>
-        </p>
-        <p class="vendor-price"><strong>Price:</strong> ₦<%= v.base_price %></p>
-        <p class="vendor-address"><%= v.lga %>, <%= v.state %></p>
+    <div id="vendors-grid" class="vendors-grid" data-initial="<%= initialVisible %>">
+      <% vendorsList.forEach(function(v, index) { %>
+        <% const avg = (v.reviewsSummary && v.reviewsSummary.avg_rating) || 0; %>
+        <% const rounded = Math.round(Number(avg || 0)); %>
+        <% const vImg = vendorImageFor(v); %>
 
-        <div class="rating-inline" aria-hidden="true">
-          <span class="stars" title="<%= avg.toFixed ? avg.toFixed(2) : avg %>">
-            <% for (let i=1;i<=5;i++){ %><%= i<=rounded ? '★' : '☆' %><% } %>
-          </span>
-          <small class="muted"
-            ><%= (v.reviewsSummary && v.reviewsSummary.review_count) || 0 %>
-            reviews</small
-          >
-        </div>
+        <% const classes = ['vendor-card']; if (index >= initialVisible) classes.push('vendor-hidden'); %>
+<article class="<%= classes.join(' ') %>" data-vendor-id="<%= v.id %>" data-index="<%= index %>">
 
-        <div class="card-actions">
-          <button
-            class="btn btn-primary quick-order"
-            data-vendor-id="<%= v.id %>"
-            data-vendor-name="<%= v.name %>"
-            data-logged-in="<%= currentUserSafe ? '1' : '' %>"
-          >
-            Quick order
-          </button>
+          <div class="vendor-media">
+            <img
+              class="vendor-photo"
+              alt="Photo of <%= v.food_item %> by <%= v.name %>"
+              src="<%= vImg %>"
+              onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
+              loading="lazy"
+            />
+            <button class="fav-btn" title="Save vendor" aria-pressed="false" data-vendor-id="<%= v.id %>">♡</button>
+          </div>
 
-          <a class="btn btn-muted" href="/vendor/<%= v.id %>">View vendor</a>
-        </div>
-      </div>
-    </article>
-    <% }) %>
-  </div>
+          <div class="vendor-body">
+            <h3 class="vendor-title">
+              <a href="/vendor/<%= v.id %>"><%= v.name %></a>
+            </h3>
+            <p class="vendor-food"><strong>Food:</strong> <%= v.food_item %></p>
+            <p class="vendor-price"><strong>Price:</strong> ₦<%= v.base_price %></p>
+            <p class="vendor-address"><%= v.lga %>, <%= v.state %></p>
 
-  <div class="vendors-actions container">
-    <button id="show-more" class="btn">Show more vendors</button>
-    <small class="muted" id="infinite-hint"
-      >Scroll to load more (auto enabled)</small
-    >
-  </div>
+            <div class="rating-inline" aria-hidden="true">
+              <span class="stars" title="<%= typeof avg.toFixed === 'function' ? avg.toFixed(2) : avg %>">
+                <% for (let i = 1; i <= 5; i++) { %><%= i <= rounded ? '★' : '☆' %><% } %>
+              </span>
+              <small class="muted"><%= (v.reviewsSummary && v.reviewsSummary.review_count) || 0 %> reviews</small>
+            </div>
+
+            <div class="card-actions">
+              <button
+                class="btn btn-gold quick-order"
+                data-vendor-id="<%= v.id %>"
+                data-vendor-name="<%= v.name %>"
+                data-logged-in="<%= currentUserSafe ? '1' : '' %>"
+              >
+                Quick order
+              </button>
+
+              <a class="btn btn-muted" href="/vendor/<%= v.id %>">View vendor</a>
+            </div>
+          </div>
+        </article>
+
+      <% }) /* end vendors foreach */ %>
+    </div>
+
+    <div class="vendors-actions container">
+      <button id="show-more" class="btn">Show more vendors</button>
+      <small class="muted" id="infinite-hint">Scroll to load more (auto enabled)</small>
+    </div>
+
   <% } %>
 </section>
 
@@ -205,83 +246,62 @@ function foodImageUrl(term, w = 600, h = 400) {
 <section class="partners container homepage" aria-label="Partners & supporters">
   <h2>Our Partners</h2>
   <div class="partners-row" role="list">
-    <% partnersList.forEach(p => { %>
-    <div class="partner" role="listitem">
-      <img
-        src="<%= p.logo_url || '/images/partner-placeholder.png' %>"
-        alt="<%= p.name %>"
-        onerror="this.onerror=null;this.src='/images/partner-placeholder.png'"
-      />
-    </div>
-    <% }) %>
-    <% if (!partnersList || partnersList.length === 0) { %>
-    <div class="partner">
-      <img src="/images/partner-placeholder.png" alt="No partners yet" />
-    </div>
+    <% if (partnersList && partnersList.length) { %>
+      <% partnersList.forEach(function(p) { %>
+        <div class="partner" role="listitem">
+          <img
+            src="<%= p.logo_url || '/images/partner-placeholder.png' %>"
+            alt="<%= p.name %>"
+            onerror="this.onerror=null;this.src='/images/partner-placeholder.png'"
+          />
+        </div>
+      <% }) %>
+    <% } else { %>
+      <div class="partner">
+        <img src="/images/partner-placeholder.png" alt="No partners yet" />
+      </div>
     <% } %>
   </div>
+
   <p class="partners-note">
     Want your brand here?
-    <a href="mailto:support@mypadifood.com?subject=Partner%20with%20MyPadiFood"
-      >Partner with us</a
-    >.
+    <a href="mailto:support@mypadifood.com?subject=Partner%20with%20MyPadiFood">Partner with us</a>.
   </p>
 </section>
 
-<!-- Testimonials block (updated) -->
-<section
-  class="testimonials container homepage"
-  aria-label="Customer testimonials"
->
+<!-- Testimonials -->
+<section class="testimonials container homepage" aria-label="Customer testimonials">
   <h2>What our customers say</h2>
 
   <div class="testi-grid">
     <% if (Array.isArray(testimonialsList) && testimonialsList.length) { %>
-      <% testimonialsList.forEach(function(t){ 
-           // prefer an explicit avatar set server-side, then uploaded photo_url,
-           // then gender-based image, else placeholder
-           const avatarSrc =
-             (t && t.avatar) ||
-             (t && t.photo_url) ||
-             (t && t.gender === 'female'
-               ? '/images/avatar-female.png'
-               : t && t.gender === 'male'
-               ? '/images/avatar-male.png'
-               : '/images/avatar-placeholder.png');
-      %>
+      <% testimonialsList.forEach(function(t) { %>
+        <% const avatarSrc = (t && t.avatar) || (t && t.photo_url) || (t && t.gender === 'female' ? '/images/avatars/human-female.jpg' : t && t.gender === 'male' ? '/images/avatars/human-male.jpg' : '/images/avatars/human-generic.jpg'); %>
+        <blockquote class="testi-card" tabindex="0" aria-label="Customer testimonial">
+          <div class="testi-photo" aria-hidden="false">
+            <img
+              src="<%= avatarSrc %>"
+              alt="<%= (t && (t.name || 'Customer')) %>'s avatar"
+              width="64" height="64"
+              onerror="this.onerror=null;this.src='/images/avatars/human-generic.jpg';"
+              class="testimonial-avatar"
+            />
+          </div>
 
-      <blockquote class="testi-card" tabindex="0" aria-label="Customer testimonial">
-        <div class="testi-photo" aria-hidden="false">
-          <img
-            src="<%= avatarSrc %>"
-            alt="<%= (t && (t.name || 'Customer')) %>'s avatar"
-            width="64"
-            height="64"
-            onerror="this.onerror=null;this.src='/images/avatar-placeholder.png';"
-            class="testimonial-avatar"
-          />
-        </div>
-
-        <div class="testi-body">
-          <p class="quote">“<%= (t && t.quote) ? t.quote : '' %>”</p>
-          <footer class="testi-meta">
-            <strong><%= (t && t.name) ? t.name : 'Anonymous' %></strong>
-            <% if (t && t.city) { %>
-              <small><%= t.city %></small>
-            <% } %>
-          </footer>
-        </div>
-      </blockquote>
-
-    <% }) /* end forEach */ %>
+          <div class="testi-body">
+            <p class="quote">“<%= (t && t.quote) ? t.quote : '' %>”</p>
+            <footer class="testi-meta">
+              <strong><%= (t && t.name) ? t.name : 'Anonymous' %></strong>
+              <% if (t && t.city) { %><small><%= t.city %></small><% } %>
+            </footer>
+          </div>
+        </blockquote>
+      <% }) %>
     <% } else { %>
-      <p class="muted">
-        No testimonials yet — ask customers to leave feedback after ordering.
-      </p>
+      <p class="muted">No testimonials yet — ask customers to leave feedback after ordering.</p>
     <% } %>
   </div>
 </section>
-
 
 <!-- Investor / Footer CTA -->
 <section class="investor-cta container homepage">
@@ -295,8 +315,8 @@ function foodImageUrl(term, w = 600, h = 400) {
       </p>
     </div>
     <div class="investor-actions">
-      <a href="/invest" class="btn btn-primary">See pitch deck</a>
-      <a href="/contact" class="btn btn-muted">Contact sales</a>
+      <a href="/invest" class="btn btn-gold">See pitch deck</a>
+      <a href="/contact" class="btn btn-gold">Contact sales</a>
     </div>
   </div>
 </section>
@@ -311,12 +331,7 @@ function foodImageUrl(term, w = 600, h = 400) {
       <input type="hidden" name="vendorId" id="qo-vendorId" value="" />
       <label>
         Item (optional)
-        <input
-          type="text"
-          name="item"
-          id="qo-item"
-          placeholder="E.g. 2 plates, extra pepper"
-        />
+        <input type="text" name="item" id="qo-item" placeholder="E.g. 2 plates, extra pepper" />
       </label>
       <label>
         Payment method
@@ -328,7 +343,7 @@ function foodImageUrl(term, w = 600, h = 400) {
       </label>
 
       <div class="modal-actions">
-        <button type="submit" class="btn btn-primary">Place order</button>
+        <button type="submit" class="btn btn-gold">Place order</button>
         <button type="button" class="btn btn-muted modal-cancel">Cancel</button>
       </div>
     </form>

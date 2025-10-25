@@ -1,13 +1,13 @@
 <!-- views/partials/testimonial-card.ejs -->
 <article class="testimonial-card">
   <img
-    class="testimonial-avatar"
-    src="<%= testimonial.avatar %>"
-    alt="<%= testimonial.name ? (testimonial.name + ' avatar') : 'User avatar' %>"
-    width="64"
-    height="64"
-    onerror="this.onerror=null;this.src='/images/avatar-placeholder.png';"
-  />
+  class="testimonial-avatar"
+  src="<%= testimonial.avatar || testimonial.photo_url || '/images/avatars/human-generic.jpg' %>"
+  alt="<%= testimonial.name ? testimonial.name + ' avatar' : 'User avatar' %>"
+  width="64" height="64"
+  onerror="this.onerror=null;this.src='/images/avatars/human-generic.jpg';"
+/>
+
   <div class="testimonial-body">
     <strong class="testimonial-name"><%= testimonial.name || 'Anonymous' %></strong>
     <% if (testimonial.city) { %>
