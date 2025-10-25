@@ -84,6 +84,20 @@ async function updatePassword(adminId, password_hash) {
   return rows[0] || null;
 }
 
+async function countPendingTestimonials() {
+  const { rows } = await pool.query(
+    "SELECT COUNT(*)::int AS count FROM testimonials WHERE approved = false"
+  );
+  return rows[0].count;
+}
+
+async function countPartners() {
+  const { rows } = await pool.query(
+    "SELECT COUNT(*)::int AS count FROM partners"
+  );
+  return rows[0].count;
+}
+
 module.exports = {
   findByEmail,
   findById,
@@ -91,5 +105,7 @@ module.exports = {
   countPendingVendors,
   countPendingOrders,
   countPendingRiders,
+  countPendingTestimonials,
+  countPartners,
   updatePassword,
 };

@@ -255,13 +255,24 @@ exports.reset = async (req, res) => {
   }
 };
 
-// Admin dashboard: simple counters for pending vendors/orders + weeklyPlansCount + pending riders
+// Admin dashboard: simple counters for pending vendors/orders + weeklyPlansCount + pending riders + partners + testimonials
 exports.dashboard = async (req, res) => {
   try {
-    const vendorsCount = await adminModel.countPendingVendors();
-    const ordersCount = await adminModel.countPendingOrders();
+    // vendors & orders (these are expected to exist)
+    let vendorsCount = 0;
+    let ordersCount = 0;
+    try {
+      if (typeof adminModel.countPendingVendors === 'function') {
+        vendorsCount = await adminModel.countPendingVendors();
+      }
+      if (typeof adminModel.countPendingOrders === 'function') {
+        ordersCount = await adminModel.countPendingOrders();
+      }
+    } catch (e) {
+      console.warn('Could not load basic admin counters (vendors/orders):', e);
+    }
 
-    // pending riders count
+    // pending riders
     let ridersCount = 0;
     try {
       if (typeof adminModel.countPendingRiders === 'function') {
@@ -271,26 +282,50 @@ exports.dashboard = async (req, res) => {
       console.warn('Could not compute ridersCount', e);
     }
 
-    // compute weekly plans pending count (best-effort)
+    // weekly plans pending (best-effort)
     let weeklyPlansCount = 0;
     try {
-      const pendingPlans = await weeklyPlanModel.getPendingPlansForAdmin();
-      weeklyPlansCount = Array.isArray(pendingPlans) ? pendingPlans.length : 0;
+      if (weeklyPlanModel && typeof weeklyPlanModel.getPendingPlansForAdmin === 'function') {
+        const pendingPlans = await weeklyPlanModel.getPendingPlansForAdmin();
+        weeklyPlansCount = Array.isArray(pendingPlans) ? pendingPlans.length : 0;
+      }
     } catch (e) {
-      // non-fatal — still render dashboard
       console.warn('Could not compute weeklyPlansCount', e);
     }
 
+    // partners & pending testimonials (safe)
+    let partnersCount = 0;
+    let pendingTestimonialsCount = 0;
+    try {
+      if (typeof adminModel.countPartners === 'function') {
+        partnersCount = await adminModel.countPartners();
+      }
+    } catch (e) {
+      console.warn('Could not load partnersCount', e);
+    }
+    try {
+      if (typeof adminModel.countPendingTestimonials === 'function') {
+        pendingTestimonialsCount = await adminModel.countPendingTestimonials();
+      }
+    } catch (e) {
+      console.warn('Could not load pendingTestimonialsCount', e);
+    }
+
+    // render dashboard
     return res.render('admin/dashboard', {
-      vendorsCount,
-      ordersCount,
-      weeklyPlansCount,
-      ridersCount,
+      vendorsCount: vendorsCount || 0,
+      ordersCount: ordersCount || 0,
+      ridersCount: ridersCount || 0,
+      weeklyPlansCount: weeklyPlansCount || 0,
+      partnersCount: partnersCount || 0,
+      pendingTestimonialsCount: pendingTestimonialsCount || 0,
+      currentUser: res.locals.currentUser || req.user || (req.session && req.session.user) || null,
     });
   } catch (err) {
     console.error('Error loading admin dashboard:', err);
-    req.session.error = 'Error loading admin dashboard';
-    return res.redirect('/');
+    // safe fallback: set a flash and redirect to login (or root)
+    if (req && req.flash) req.flash('error', 'Could not load dashboard. Try again.');
+    return res.redirect('/admin/login');
   }
 };
 

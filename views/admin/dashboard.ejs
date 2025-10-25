@@ -1,42 +1,57 @@
 <!--views/admin/dashboard.ejs-->
 <h2>Admin Dashboard</h2>
-<p>Pending vendors: <%= vendorsCount %></p>
-<p>
-  Pending riders: <%= typeof ridersCount !== 'undefined' ? ridersCount : 0 %>
-</p>
-<p>Pending orders: <%= ordersCount %></p>
-<p>
-  Pending weekly plans: <%= typeof weeklyPlansCount !== 'undefined' ?
-  weeklyPlansCount : 0 %>
-</p>
 
-<nav>
+<div class="dashboard-metrics" style="display:flex;gap:16px;margin-bottom:12px;">
+  <div class="metric-card card" style="padding:12px;">
+    <div class="metric-title">Pending vendors</div>
+    <div class="metric-value" style="font-size:1.25rem;"><%= typeof vendorsCount !== 'undefined' ? vendorsCount : 0 %></div>
+  </div>
+
+  <div class="metric-card card" style="padding:12px;">
+    <div class="metric-title">Pending riders</div>
+    <div class="metric-value" style="font-size:1.25rem;"><%= typeof ridersCount !== 'undefined' ? ridersCount : 0 %></div>
+  </div>
+
+  <div class="metric-card card" style="padding:12px;">
+    <div class="metric-title">Pending orders</div>
+    <div class="metric-value" style="font-size:1.25rem;"><%= typeof ordersCount !== 'undefined' ? ordersCount : 0 %></div>
+  </div>
+
+  <div class="metric-card card" style="padding:12px;">
+    <div class="metric-title">Pending weekly plans</div>
+    <div class="metric-value" style="font-size:1.25rem;"><%= typeof weeklyPlansCount !== 'undefined' ? weeklyPlansCount : 0 %></div>
+  </div>
+
+  <div class="metric-card card" style="padding:12px;">
+    <div class="metric-title">Partners</div>
+    <div class="metric-value" style="font-size:1.25rem;"><%= typeof partnersCount !== 'undefined' ? partnersCount : 0 %></div>
+    <div style="margin-top:6px"><a href="/admin/partners">Manage partners</a></div>
+  </div>
+
+  <div class="metric-card card" style="padding:12px;">
+    <div class="metric-title">Pending testimonials</div>
+    <div class="metric-value" style="font-size:1.25rem;"><%= typeof pendingTestimonialsCount !== 'undefined' ? pendingTestimonialsCount : 0 %></div>
+    <div style="margin-top:6px"><a href="/admin/testimonials/pending">Review testimonials</a></div>
+  </div>
+</div>
+
+<nav style="margin-bottom: 12px;">
   <a href="/admin/vendors/pending">Review Vendor Requests</a>
   <% if (currentUser && currentUser.type === 'super') { %>
-  | <a href="/admin/create">Create Admin</a>
+    | <a href="/admin/create">Create Admin</a>
   <% } %>
-  | <a href="/admin/resources">Resources</a> |
-  <a href="/admin/resources/riders/pending">Review Rider Applications</a> |
-  <a href="#" id="nav-pending-orders">Pending Orders (live)</a> |
-  <a href="#" id="nav-completed-orders">Completed Orders</a> |
-  <a href="/admin/food-orders">Weekly Plans</a> |
-  <a href="#" id="nav-notifications"
-    >Notifications
-    <span
-      id="notifBadge"
-      style="
-        background: #ff4d4f;
-        color: #fff;
-        padding: 2px 6px;
-        border-radius: 12px;
-        font-size: 0.9em;
-        margin-left: 6px;
-      "
-      >0</span
-    ></a
-  >
-  <!-- add into the nav list in views/admin/dashboard.ejs -->
+  | <a href="/admin/resources">Resources</a>
+  | <a href="/admin/resources/riders/pending">Review Rider Applications</a>
+  | <a href="#" id="nav-pending-orders">Pending Orders (live)</a>
+  | <a href="#" id="nav-completed-orders">Completed Orders</a>
+  | <a href="/admin/food-orders">Weekly Plans</a>
+  | <a href="#" id="nav-notifications">
+      Notifications
+      <span id="notifBadge" style="background:#ff4d4f;color:#fff;padding:2px 6px;border-radius:12px;font-size:0.9em;margin-left:6px;">0</span>
+    </a>
   | <a href="/admin/withdrawals">Withdrawals</a>
+  | <a href="/admin/partners">Partners</a>
+  | <a href="/admin/testimonials/pending">Testimonials</a>
 </nav>
 
 <div id="notificationsPanel" style="margin-top: 1rem; display: none"></div>
@@ -56,6 +71,21 @@
   <p style="font-size: 0.9em; color: #666">
     New weekly plans will appear here for review.
   </p>
+</div>
+
+<!-- NEW: small admin quick panels (partners/testimonials) -->
+<div id="adminQuickPanels" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;">
+  <section class="card" style="flex:1;min-width:320px;padding:12px;">
+    <h4>Partners</h4>
+    <p class="muted">Manage partner logos and links shown on the homepage.</p>
+    <p><a href="/admin/partners" class="btn">Open Partners</a></p>
+  </section>
+
+  <section class="card" style="flex:1;min-width:320px;padding:12px;">
+    <h4>Testimonials</h4>
+    <p class="muted">Approve or reject user-submitted testimonials.</p>
+    <p><a href="/admin/testimonials/pending" class="btn">Review Testimonials</a></p>
+  </section>
 </div>
 
 <div id="completedOrdersPanel" style="margin-top: 1rem; display: none">

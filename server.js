@@ -198,8 +198,9 @@ app.use('/rider', require('./routes/rider'));
 app.use('/api/gpt4all', require('./routes/api/gpt4all'));
 
 // Admin partners management
-// (ensure ./routes/adminPartners.js exists and handles uploads; route will check req.user for admin)
 app.use('/admin/partners', require('./routes/adminPartners'));
+app.use('/testimonials', require('./routes/testimonials'));
+app.use('/admin/testimonials', require('./routes/adminTestimonials'));
 
 // ===== Socket.IO setup: create HTTP server, attach socket.io, expose to controllers via utils/socket =====
 const http = require('http');
