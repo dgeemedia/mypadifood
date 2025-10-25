@@ -8,7 +8,6 @@ const auth = require('../middleware/auth'); // expects requireClient
 const testimonialModel = require('../models/testimonialModel');
 const { pool } = require('../database/database');
 
-
 // upload directory (ensure exists)
 const uploadDir = path.join(__dirname, '../public/uploads/testimonials');
 try {
@@ -50,9 +49,10 @@ router.post('/', auth.requireClient, upload.single('photo'), async (req, res) =>
 
     const rawQuote = req.body.quote ? String(req.body.quote) : '';
     const quoteTrim = rawQuote.trim();
-    const charCount = Array.from(quoteTrim).length; // counts codepoints (handles emoji)
-    const consentGiven = !!req.body.consent; // checkbox value 'yes' or 'on' -> truthy
+    const charCount = Array.from(quoteTrim).length; // counts code points (emoji-safe)
+    const consentGiven = !!req.body.consent; // checkbox
 
+    // Server-side validations
     if (!quoteTrim || charCount < 8) {
       pushMessage(req, 'error', 'Please provide a testimonial (at least 8 characters).');
       return res.redirect(req.get('Referrer') || '/client/dashboard');
@@ -65,15 +65,23 @@ router.post('/', auth.requireClient, upload.single('photo'), async (req, res) =>
 
     const photo_url = req.file ? `/uploads/testimonials/${req.file.filename}` : null;
 
-    // Use model to create (returns id)
-    await testimonialModel.create({
-      name,
-      photo_url,
-      city,
-      quote: quoteTrim,
-      consent: true,      // stored for audit
-      approved: false     // pending approval
-    });
+    // Persist (use model.create if available)
+    if (testimonialModel && typeof testimonialModel.create === 'function') {
+      await testimonialModel.create({
+        name,
+        photo_url,
+        city,
+        quote: quoteTrim,
+        consent: true,
+        approved: false
+      });
+    } else {
+      // fallback raw SQL (ensure pool is available)
+      await pool.query(
+        'INSERT INTO testimonials (name, photo_url, city, quote, consent, approved, created_at) VALUES ($1,$2,$3,$4,$5,$6,NOW())',
+        [name, photo_url, city, quoteTrim, true, false]
+      );
+    }
 
     pushMessage(req, 'success', 'Thank you! Your testimonial will be reviewed before publishing.');
     return res.redirect('/client/dashboard');
