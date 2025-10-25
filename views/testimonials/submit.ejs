@@ -1,28 +1,39 @@
 <!-- views/testimonials/submit.ejs -->
 
-<div class="container" style="max-width:760px;margin:28px auto;">
+<div class="container" style="max-width: 760px; margin: 28px auto">
   <a href="/client/dashboard" class="btn btn-link">← Back to dashboard</a>
 
-  <section class="testimonial-submit card" aria-label="Submit testimonial" style="margin-top:12px;padding:16px;">
+  <section
+    class="testimonial-submit card"
+    aria-label="Submit testimonial"
+    style="margin-top: 12px; padding: 16px"
+  >
     <h2>Share your experience</h2>
-    <p class="muted">Your testimonial helps local vendors grow. Submitted testimonials are reviewed before publication.</p>
+    <p class="muted">
+      Your testimonial helps local vendors grow. Submitted testimonials are
+      reviewed before publication.
+    </p>
 
     <form method="post" action="/testimonials" enctype="multipart/form-data">
-      <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-row" style="margin-bottom: 8px">
         <label>
           Your name
-          <input type="text" name="name" value="<%= currentUser && (currentUser.name || currentUser.full_name) ? (currentUser.name || currentUser.full_name) : '' %>" />
+          <input
+            type="text"
+            name="name"
+            value="<%= currentUser && (currentUser.name || currentUser.full_name) ? (currentUser.name || currentUser.full_name) : '' %>"
+          />
         </label>
       </div>
 
-      <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-row" style="margin-bottom: 8px">
         <label>
           City (optional)
           <input type="text" name="city" value="" />
         </label>
       </div>
 
-      <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-row" style="margin-bottom: 8px">
         <label>
           Gender (optional)
           <select name="gender">
@@ -33,33 +44,51 @@
         </label>
       </div>
 
-      <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-row" style="margin-bottom: 8px">
         <label>
           Testimonial (short)
-          <textarea name="quote" rows="4" required placeholder="What did you like?"></textarea>
+          <textarea
+            name="quote"
+            rows="4"
+            required
+            placeholder="What did you like?"
+          ></textarea>
         </label>
       </div>
 
-      <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-row" style="margin-bottom: 8px">
         <label>
           Photo (optional) — upload a JPG/PNG/WebP (max 2MB)
           <input type="file" name="photo" accept="image/*" />
         </label>
       </div>
 
-      <div class="form-row" style="margin-bottom:8px;">
-        <label style="display:flex; align-items:center; gap:8px;">
+      <div class="form-row" style="margin-bottom: 8px">
+        <label style="display: flex; align-items: center; gap: 8px">
           <input type="checkbox" name="consent" value="yes" />
-          <span>I consent to have this testimonial reviewed and published (if approved).</span>
+          <span
+            >I consent to have this testimonial reviewed and published (if
+            approved).</span
+          >
         </label>
       </div>
 
-      <div style="margin-top:8px;">
-        <button class="btn btn-primary" type="submit">Submit testimonial</button>
-        <a class="btn btn-link" href="/client/dashboard" style="margin-left:12px;">Cancel</a>
-        <div style="margin-top:8px;"><small class="muted">Submissions are reviewed before appearing publicly.</small></div>
+      <div style="margin-top: 8px">
+        <button class="btn btn-primary" type="submit">
+          Submit testimonial
+        </button>
+        <a
+          class="btn btn-link"
+          href="/client/dashboard"
+          style="margin-left: 12px"
+          >Cancel</a
+        >
+        <div style="margin-top: 8px">
+          <small class="muted"
+            >Submissions are reviewed before appearing publicly.</small
+          >
+        </div>
       </div>
     </form>
   </section>
 </div>
-

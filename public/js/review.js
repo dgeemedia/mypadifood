@@ -39,12 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
           return window.location.reload();
         } else {
           const txt = await resp.text().catch(() => null);
-  if (resp.status === 403) {
-    alert('Please login, order, and post your review.');
-  } else {
-    alert('Could not post review. ' + (txt || ''));
-  }
-}
+          if (resp.status === 403) {
+            alert('Please login, order, and post your review.');
+          } else {
+            alert('Could not post review. ' + (txt || ''));
+          }
+        }
       } catch (e) {
         console.error(e);
         // fallback to default submit
@@ -55,7 +55,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // handle any reply forms (client/admin)
   document
-    .querySelectorAll('form.reply-form-client, form.reply-form-admin, form.reply-form')
+    .querySelectorAll(
+      'form.reply-form-client, form.reply-form-admin, form.reply-form'
+    )
     .forEach((form) => {
       form.addEventListener('submit', async (ev) => {
         ev.preventDefault();

@@ -141,12 +141,10 @@ exports.verifyPayment = async (req, res) => {
     if (provider === 'paystack') {
       const result = await paymentsUtil.verifyPaystack(reference);
       if (!result || !result.success) {
-        return res
-          .status(400)
-          .json({
-            error: 'Verification failed',
-            raw: result && result.raw ? result.raw : result,
-          });
+        return res.status(400).json({
+          error: 'Verification failed',
+          raw: result && result.raw ? result.raw : result,
+        });
       }
 
       const metadata = (result.data && result.data.metadata) || {};
@@ -210,12 +208,10 @@ exports.verifyPayment = async (req, res) => {
       // flutterwave verify may accept transaction id; paymentsUtil.verifyFlutterwave tries that
       const result = await paymentsUtil.verifyFlutterwave(reference);
       if (!result || !result.success) {
-        return res
-          .status(400)
-          .json({
-            error: 'Verification failed',
-            raw: result && result.raw ? result.raw : result,
-          });
+        return res.status(400).json({
+          error: 'Verification failed',
+          raw: result && result.raw ? result.raw : result,
+        });
       }
 
       const meta = (result.data && result.data.meta) || {};

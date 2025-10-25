@@ -32,9 +32,12 @@ module.exports = function flashMiddleware(req, res, next) {
     }
 
     // expose current session values to templates (one-time)
-    res.locals.currentUser = req.session && req.session.user ? req.session.user : null;
-    res.locals.success = req.session && req.session.success ? req.session.success : null;
-    res.locals.error = req.session && req.session.error ? req.session.error : null;
+    res.locals.currentUser =
+      req.session && req.session.user ? req.session.user : null;
+    res.locals.success =
+      req.session && req.session.success ? req.session.success : null;
+    res.locals.error =
+      req.session && req.session.error ? req.session.error : null;
     res.locals.title = res.locals.title || 'MyPadiFood';
 
     if (req.session && req.session.verification_link) {

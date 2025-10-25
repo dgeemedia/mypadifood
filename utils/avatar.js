@@ -3,20 +3,29 @@
 
 function initialsOf(name = '') {
   if (!name) return 'U';
-  return String(name)
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(s => s[0].toUpperCase())
-    .join('') || 'U';
+  return (
+    String(name)
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((s) => s[0].toUpperCase())
+      .join('') || 'U'
+  );
 }
 
 function colorForName(name = '') {
   const palette = [
-    '#6EE7B7', '#7DD3FC', '#FDBA74', '#FBCFE8',
-    '#C7B3FF', '#FECACA', '#D1FAE5', '#FEF08A',
-    '#BFE3FF', '#CDE6C9'
+    '#6EE7B7',
+    '#7DD3FC',
+    '#FDBA74',
+    '#FBCFE8',
+    '#C7B3FF',
+    '#FECACA',
+    '#D1FAE5',
+    '#FEF08A',
+    '#BFE3FF',
+    '#CDE6C9',
   ];
   let h = 0;
   for (let i = 0; i < name.length; i++) {
@@ -38,8 +47,14 @@ function svgDataUri(initials, bg, size = 128, fg = '#ffffff') {
 }
 
 function escapeXml(s = '') {
-  return String(s).replace(/[&<>'"]/g, c => {
-    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c];
+  return String(s).replace(/[&<>'"]/g, (c) => {
+    return {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;',
+    }[c];
   });
 }
 

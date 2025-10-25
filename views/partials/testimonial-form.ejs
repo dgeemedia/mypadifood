@@ -1,24 +1,31 @@
 <!-- views/partials/testimonial-form.ejs -->
 <section class="testimonial-form card" aria-label="Leave a testimonial">
   <h3>Share your experience</h3>
-  <p class="muted">Your testimonial helps local vendors grow. Submitted testimonials are reviewed before publication.</p>
+  <p class="muted">
+    Your testimonial helps local vendors grow. Submitted testimonials are
+    reviewed before publication.
+  </p>
 
   <form method="post" action="/testimonials" enctype="multipart/form-data">
-    <div class="form-row" style="margin-bottom:8px;">
+    <div class="form-row" style="margin-bottom: 8px">
       <label>
         Your name
-        <input type="text" name="name" value="<%= (currentUser && (currentUser.name || currentUser.full_name)) ? (currentUser.name || currentUser.full_name) : '' %>" />
+        <input
+          type="text"
+          name="name"
+          value="<%= (currentUser && (currentUser.name || currentUser.full_name)) ? (currentUser.name || currentUser.full_name) : '' %>"
+        />
       </label>
     </div>
 
-    <div class="form-row" style="margin-bottom:8px;">
+    <div class="form-row" style="margin-bottom: 8px">
       <label>
         City (optional)
         <input type="text" name="city" value="" />
       </label>
     </div>
 
-    <div class="form-row" style="margin-bottom:8px;">
+    <div class="form-row" style="margin-bottom: 8px">
       <label>
         Gender (optional)
         <select name="gender">
@@ -29,34 +36,48 @@
       </label>
     </div>
 
-    <div class="form-row" style="margin-bottom:8px;">
+    <div class="form-row" style="margin-bottom: 8px">
       <label>
         Testimonial (short)
-        <textarea name="quote" rows="3" required placeholder="What did you like?"></textarea>
+        <textarea
+          name="quote"
+          rows="3"
+          required
+          placeholder="What did you like?"
+        ></textarea>
       </label>
     </div>
 
-    <div class="form-row" style="margin-bottom:8px;">
+    <div class="form-row" style="margin-bottom: 8px">
       <label>
         Photo (optional) — upload a JPG/PNG/WebP (max 2MB)
         <input type="file" name="photo" accept="image/*" />
       </label>
     </div>
 
-    <div class="form-row" style="margin-bottom:8px;">
-        <label style="display:flex; align-items:center; gap:8px;">
+    <div class="form-row" style="margin-bottom: 8px">
+      <label style="display: flex; align-items: center; gap: 8px">
         <input type="checkbox" name="consent" value="yes" />
-        <span>I consent to have this testimonial reviewed and published (if approved).</span>
-        </label>
+        <span
+          >I consent to have this testimonial reviewed and published (if
+          approved).</span
+        >
+      </label>
     </div>
 
-    <div style="margin-top:8px">
+    <div style="margin-top: 8px">
       <% if (currentUser && currentUser.type === 'client') { %>
-        <button class="btn btn-primary" type="submit">Submit testimonial</button>
+      <button class="btn btn-primary" type="submit">Submit testimonial</button>
       <% } else { %>
-        <a class="btn btn-primary" href="/login?next=<%= encodeURIComponent(request && request.originalUrl ? request.originalUrl : '/') %>">Login to submit</a>
+      <a
+        class="btn btn-primary"
+        href="/login?next=<%= encodeURIComponent(request && request.originalUrl ? request.originalUrl : '/') %>"
+        >Login to submit</a
+      >
       <% } %>
-      <small class="muted" style="margin-left:10px">Submissions are reviewed before appearing publicly.</small>
+      <small class="muted" style="margin-left: 10px"
+        >Submissions are reviewed before appearing publicly.</small
+      >
     </div>
   </form>
 </section>

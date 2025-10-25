@@ -29,7 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const vendorName = btn.dataset.vendorName || '';
     const loggedIn = btn.dataset.loggedIn; // set by template
     if (!loggedIn) {
-      const next = encodeURIComponent(btn.dataset.next || `/vendor/${vendorId}`);
+      const next = encodeURIComponent(
+        btn.dataset.next || `/vendor/${vendorId}`
+      );
       window.location.href = `/login?next=${next}`;
       return;
     }
@@ -38,16 +40,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // modal close / cancel
   document.addEventListener('click', (ev) => {
-    if (ev.target.closest && ev.target.closest('.modal-close')) closeQuickOrder();
-    if (ev.target.closest && ev.target.closest('.modal-cancel')) closeQuickOrder();
+    if (ev.target.closest && ev.target.closest('.modal-close'))
+      closeQuickOrder();
+    if (ev.target.closest && ev.target.closest('.modal-cancel'))
+      closeQuickOrder();
   });
   if (modal) {
-    modal.addEventListener('click', (ev) => { if (ev.target === modal) closeQuickOrder(); });
+    modal.addEventListener('click', (ev) => {
+      if (ev.target === modal) closeQuickOrder();
+    });
   }
 
   // ESC close
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal && modal.getAttribute('aria-hidden') === 'false') closeQuickOrder();
+    if (
+      e.key === 'Escape' &&
+      modal &&
+      modal.getAttribute('aria-hidden') === 'false'
+    )
+      closeQuickOrder();
   });
 
   // favorite button toggle (UI-only; can POST to server endpoint if implemented)
@@ -76,7 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!c) break;
         c.classList.remove('vendor-hidden');
       }
-      if (hiddenQueue.length === 0 && showMoreBtn) showMoreBtn.style.display = 'none';
+      if (hiddenQueue.length === 0 && showMoreBtn)
+        showMoreBtn.style.display = 'none';
     }
 
     if (showMoreBtn) {
@@ -87,11 +99,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const sentinel = document.createElement('div');
     sentinel.id = 'vendor-sentinel';
     grid.parentNode.appendChild(sentinel);
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach(en => {
-        if (en.isIntersecting && hiddenQueue.length) revealNext(6);
-      });
-    }, { root: null, rootMargin: '400px', threshold: 0 });
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((en) => {
+          if (en.isIntersecting && hiddenQueue.length) revealNext(6);
+        });
+      },
+      { root: null, rootMargin: '400px', threshold: 0 }
+    );
     io.observe(sentinel);
   })();
 
@@ -118,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
           method: qoForm.method || 'POST',
           body: formData,
           credentials: 'same-origin',
-          headers: { 'Accept': 'application/json' },
+          headers: { Accept: 'application/json' },
         });
         if (resp.ok) {
           const j = await resp.json().catch(() => null);
@@ -148,7 +163,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 (function setupMarquees() {
   // small helper to create a continuous horizontal marquee from a container's direct children
-  function createMarquee(containerSelector, speed = 40 /* px/s */, reverse = false) {
+  function createMarquee(
+    containerSelector,
+    speed = 40 /* px/s */,
+    reverse = false
+  ) {
     const container = document.querySelector(containerSelector);
     if (!container) return;
 
@@ -212,8 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // wrap
         if (pos > contentWidth) pos -= contentWidth;
         if (pos < 0) pos += contentWidth;
-        inner.style.transform = `translateX(${ -pos }px)`;
-        innerClone.style.transform = `translateX(${ -pos }px)`;
+        inner.style.transform = `translateX(${-pos}px)`;
+        innerClone.style.transform = `translateX(${-pos}px)`;
       }
       requestAnimationFrame(step);
     }

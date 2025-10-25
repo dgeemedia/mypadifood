@@ -178,14 +178,14 @@
           </div>
         </div>
       </div>
-      
-        <!-- include testimonial form so logged-in clients can submit -->
-  <p class="muted">
-  Want to share your experience with us?
-  <a href="/testimonials/submit" id="open-testimonial-modal">Click here</a>
-</p>
 
-
+      <!-- include testimonial form so logged-in clients can submit -->
+      <p class="muted">
+        Want to share your experience with us?
+        <a href="/testimonials/submit" id="open-testimonial-modal"
+          >Click here</a
+        >
+      </p>
 
       <!-- QUICK ACTIONS (appears under Manage account) -->
       <div
@@ -781,7 +781,6 @@
       </div>
     </section>
 
-
     <%- include('../partials/chat-modal') %>
   </main>
 </div>
@@ -802,5 +801,3 @@
     window.WALLET_TX_ID = "<%= recentWalletTxId %>";
   <% } %>
 </script>
-
-

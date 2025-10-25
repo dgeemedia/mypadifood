@@ -285,9 +285,14 @@ exports.dashboard = async (req, res) => {
     // weekly plans pending (best-effort)
     let weeklyPlansCount = 0;
     try {
-      if (weeklyPlanModel && typeof weeklyPlanModel.getPendingPlansForAdmin === 'function') {
+      if (
+        weeklyPlanModel &&
+        typeof weeklyPlanModel.getPendingPlansForAdmin === 'function'
+      ) {
         const pendingPlans = await weeklyPlanModel.getPendingPlansForAdmin();
-        weeklyPlansCount = Array.isArray(pendingPlans) ? pendingPlans.length : 0;
+        weeklyPlansCount = Array.isArray(pendingPlans)
+          ? pendingPlans.length
+          : 0;
       }
     } catch (e) {
       console.warn('Could not compute weeklyPlansCount', e);
@@ -319,12 +324,17 @@ exports.dashboard = async (req, res) => {
       weeklyPlansCount: weeklyPlansCount || 0,
       partnersCount: partnersCount || 0,
       pendingTestimonialsCount: pendingTestimonialsCount || 0,
-      currentUser: res.locals.currentUser || req.user || (req.session && req.session.user) || null,
+      currentUser:
+        res.locals.currentUser ||
+        req.user ||
+        (req.session && req.session.user) ||
+        null,
     });
   } catch (err) {
     console.error('Error loading admin dashboard:', err);
     // safe fallback: set a flash and redirect to login (or root)
-    if (req && req.flash) req.flash('error', 'Could not load dashboard. Try again.');
+    if (req && req.flash)
+      req.flash('error', 'Could not load dashboard. Try again.');
     return res.redirect('/admin/login');
   }
 };

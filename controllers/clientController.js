@@ -525,13 +525,19 @@ exports.dashboard = async (req, res) => {
     // --- NEW: load testimonials for dashboard and attach avatar urls
     let testimonials = [];
     try {
-      const testimonialModel = models.testimonial || require('../models/testimonialModel');
-      if (testimonialModel && typeof testimonialModel.getApproved === 'function') {
+      const testimonialModel =
+        models.testimonial || require('../models/testimonialModel');
+      if (
+        testimonialModel &&
+        typeof testimonialModel.getApproved === 'function'
+      ) {
         testimonials = await testimonialModel.getApproved(12);
         if (Array.isArray(testimonials) && testimonials.length) {
-          testimonials = testimonials.map(t => Object.assign({}, t, {
-            avatar: avatarUtil.avatarFor(t, 128)
-          }));
+          testimonials = testimonials.map((t) =>
+            Object.assign({}, t, {
+              avatar: avatarUtil.avatarFor(t, 128),
+            })
+          );
         }
       }
     } catch (e) {
@@ -544,7 +550,7 @@ exports.dashboard = async (req, res) => {
       title: 'Dashboard',
       layout: 'layouts/layout',
       user: client,
-      currentUser: currentUser,   // use the variable you defined above
+      currentUser: currentUser, // use the variable you defined above
       statesLGAs,
       displayName: displayName || '—',
       wallet,
@@ -556,7 +562,7 @@ exports.dashboard = async (req, res) => {
       recentWeeklyPlanId,
       recentWalletTxId,
       testimonials,
-      request: req               // <- moved HERE (inside render object)
+      request: req, // <- moved HERE (inside render object)
     });
   } catch (err) {
     console.error('Error loading client dashboard:', err);
@@ -564,7 +570,6 @@ exports.dashboard = async (req, res) => {
     return res.redirect('/');
   }
 };
-
 
 // Client posts menu/update to an existing order (so admin sees it)
 exports.postOrderMenu = async (req, res) => {

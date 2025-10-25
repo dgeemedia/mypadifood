@@ -5,7 +5,8 @@ const models = require('../models');
 const vendorModel = models.vendor;
 const reviewModel = models.review || require('../models/reviewModel'); // guard if exported differently
 const partnerModel = models.partner || require('../models/partnerModel');
-const testimonialModel = models.testimonial || require('../models/testimonialModel');
+const testimonialModel =
+  models.testimonial || require('../models/testimonialModel');
 
 // avatar helper for testimonial avatars
 const avatarUtil = require('../utils/avatar');
@@ -22,16 +23,25 @@ router.get('/', async (req, res) => {
 
     // Add review summaries for each vendor if review model exists
     let vendorsWithSummaries = vendors;
-    if (vendors && vendors.length && reviewModel && typeof reviewModel.getRatingSummaryForVendor === 'function') {
+    if (
+      vendors &&
+      vendors.length &&
+      reviewModel &&
+      typeof reviewModel.getRatingSummaryForVendor === 'function'
+    ) {
       try {
         vendorsWithSummaries = await Promise.all(
           vendors.map(async (v) => {
             try {
               const sum = await reviewModel.getRatingSummaryForVendor(v.id);
-              return Object.assign({}, v, { reviewsSummary: sum || { review_count: 0, avg_rating: 0 } });
+              return Object.assign({}, v, {
+                reviewsSummary: sum || { review_count: 0, avg_rating: 0 },
+              });
             } catch (e) {
               console.warn('Could not load review summary for vendor', v.id, e);
-              return Object.assign({}, v, { reviewsSummary: { review_count: 0, avg_rating: 0 } });
+              return Object.assign({}, v, {
+                reviewsSummary: { review_count: 0, avg_rating: 0 },
+              });
             }
           })
         );
@@ -53,11 +63,16 @@ router.get('/', async (req, res) => {
       partners = [];
     }
     try {
-      if (testimonialModel && typeof testimonialModel.getApproved === 'function') {
+      if (
+        testimonialModel &&
+        typeof testimonialModel.getApproved === 'function'
+      ) {
         testimonials = await testimonialModel.getApproved(12);
         // attach avatar for each testimonial (falls back to photo_url inside avatarFor)
         if (Array.isArray(testimonials) && testimonials.length) {
-          testimonials = testimonials.map(t => Object.assign({}, t, { avatar: avatarUtil.avatarFor(t, 128) }));
+          testimonials = testimonials.map((t) =>
+            Object.assign({}, t, { avatar: avatarUtil.avatarFor(t, 128) })
+          );
         }
       }
     } catch (e) {
@@ -111,7 +126,12 @@ router.get(`/vendor/:id(${uuidPattern})`, async (req, res) => {
       console.warn('Could not load reviews for vendor', id, e);
     }
 
-    res.render('vendor/detail', { vendor, menuItems, reviews, currentUser: res.locals.currentUser || null });
+    res.render('vendor/detail', {
+      vendor,
+      menuItems,
+      reviews,
+      currentUser: res.locals.currentUser || null,
+    });
   } catch (err) {
     console.error('Error loading vendor detail:', err);
     res.status(500).send('Server error');

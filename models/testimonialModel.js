@@ -5,13 +5,27 @@ const { pool } = require('../database/database');
  * Generic create function (allows approved flag and consent).
  * Returns created row.
  */
-async function create({ name, photo_url = null, city = null, quote, consent = false, approved = false }) {
+async function create({
+  name,
+  photo_url = null,
+  city = null,
+  quote,
+  consent = false,
+  approved = false,
+}) {
   const sql = `
     INSERT INTO testimonials (name, photo_url, city, quote, consent, approved, created_at)
     VALUES ($1,$2,$3,$4,$5,$6,NOW())
     RETURNING *;
   `;
-  const { rows } = await pool.query(sql, [name, photo_url, city, quote, consent, approved]);
+  const { rows } = await pool.query(sql, [
+    name,
+    photo_url,
+    city,
+    quote,
+    consent,
+    approved,
+  ]);
   return rows[0] || null;
 }
 
@@ -19,8 +33,21 @@ async function create({ name, photo_url = null, city = null, quote, consent = fa
  * Backwards-compatible helper that mirrors your prior createTestimonial API
  * (returns inserted id for minimal callers).
  */
-async function createTestimonial({ name, photo_url = null, city = null, quote, consent = false }) {
-  const row = await create({ name, photo_url, city, quote, consent, approved: false });
+async function createTestimonial({
+  name,
+  photo_url = null,
+  city = null,
+  quote,
+  consent = false,
+}) {
+  const row = await create({
+    name,
+    photo_url,
+    city,
+    quote,
+    consent,
+    approved: false,
+  });
   return row ? row.id : null;
 }
 

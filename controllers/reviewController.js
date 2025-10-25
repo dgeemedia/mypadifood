@@ -24,10 +24,10 @@ exports.postReview = async (req, res) => {
   try {
     const clientId = req.session.user && req.session.user.id;
     if (!clientId)
-  return res.status(403).json({
-    ok: false,
-    error: 'Please login, order, and post your review.'
-  });
+      return res.status(403).json({
+        ok: false,
+        error: 'Please login, order, and post your review.',
+      });
 
     // Accept vendorId either from body (AJAX) or from URL params (/vendor/:vendorId/reviews)
     const vendorId = req.body.vendorId || (req.params && req.params.vendorId);

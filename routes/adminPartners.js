@@ -28,7 +28,10 @@ router.get('/', auth.requireAdmin, async (req, res) => {
     const { rows } = await pool.query(
       'SELECT id, name, logo_url, website, created_at FROM partners ORDER BY created_at DESC'
     );
-    res.render('admin/partners-list', { partners: rows, currentUser: res.locals.currentUser });
+    res.render('admin/partners-list', {
+      partners: rows,
+      currentUser: res.locals.currentUser,
+    });
   } catch (err) {
     console.error('partners list error', err);
     req.flash('error', 'Could not load partners');
@@ -37,23 +40,29 @@ router.get('/', auth.requireAdmin, async (req, res) => {
 });
 
 // add partner
-router.post('/add', auth.requireAdmin, upload.single('logo'), async (req, res) => {
-  try {
-    const { name, website } = req.body;
-    const logo_url = req.file ? `/uploads/partners/${req.file.filename}` : null;
-    await pool.query('INSERT INTO partners (name, logo_url, website) VALUES ($1,$2,$3)', [
-      name,
-      logo_url,
-      website,
-    ]);
-    req.flash('success', 'Partner added');
-    res.redirect('/admin/partners');
-  } catch (err) {
-    console.error('partner add error', err);
-    req.flash('error', 'Error adding partner');
-    res.redirect('/admin/partners');
+router.post(
+  '/add',
+  auth.requireAdmin,
+  upload.single('logo'),
+  async (req, res) => {
+    try {
+      const { name, website } = req.body;
+      const logo_url = req.file
+        ? `/uploads/partners/${req.file.filename}`
+        : null;
+      await pool.query(
+        'INSERT INTO partners (name, logo_url, website) VALUES ($1,$2,$3)',
+        [name, logo_url, website]
+      );
+      req.flash('success', 'Partner added');
+      res.redirect('/admin/partners');
+    } catch (err) {
+      console.error('partner add error', err);
+      req.flash('error', 'Error adding partner');
+      res.redirect('/admin/partners');
+    }
   }
-});
+);
 
 // optional delete handler
 router.post('/delete', auth.requireAdmin, async (req, res) => {
@@ -65,7 +74,10 @@ router.post('/delete', auth.requireAdmin, async (req, res) => {
     }
 
     // fetch partner to remove file if any
-    const { rows } = await pool.query('SELECT logo_url FROM partners WHERE id=$1 LIMIT 1', [id]);
+    const { rows } = await pool.query(
+      'SELECT logo_url FROM partners WHERE id=$1 LIMIT 1',
+      [id]
+    );
     if (rows && rows[0] && rows[0].logo_url) {
       const logoUrl = rows[0].logo_url;
       // only remove files under /uploads/partners for safety

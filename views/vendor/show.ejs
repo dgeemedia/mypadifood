@@ -1,20 +1,26 @@
-<% 
-// helpers
-const imgTerm = ((vendor && (vendor.food_item || vendor.name)) || 'meal').toString().replace(/\s+/g,'+');
-const fallbackHero = encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400">' +
-  '<rect width="100%" height="100%" fill="#f6f7fb"/>' +
-  '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="28" fill="#888">Image unavailable</text>' +
-  '</svg>'
-);
-function foodImageUrl(term, w=1200, h=400) {
-  const q = encodeURIComponent((term || 'local food').toString().replace(/\s+/g,'+'));
-  return `https://source.unsplash.com/${w}x${h}/?food,${q}`;
-}
-%>
+<% // helpers const imgTerm = ((vendor && (vendor.food_item || vendor.name)) ||
+'meal').toString().replace(/\s+/g,'+'); const fallbackHero = encodeURIComponent(
+'<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400">
+  ' + '
+  <rect width="100%" height="100%" fill="#f6f7fb" />
+  ' + '
+  <text
+    x="50%"
+    y="50%"
+    dominant-baseline="middle"
+    text-anchor="middle"
+    font-size="28"
+    fill="#888"
+  >
+    Image unavailable
+  </text>
+  ' + '</svg
+>' ); function foodImageUrl(term, w=1200, h=400) { const q =
+encodeURIComponent((term || 'local food').toString().replace(/\s+/g,'+'));
+return `https://source.unsplash.com/${w}x${h}/?food,${q}`; } %>
 
 <section class="vendor-profile container">
-  <div class="vendor-hero" style="position:relative;">
+  <div class="vendor-hero" style="position: relative">
     <img
       class="vendor-hero-img"
       alt="Food by <%= vendor.name %>"
@@ -27,45 +33,54 @@ function foodImageUrl(term, w=1200, h=400) {
   <header class="vendor-header">
     <div class="vendor-info">
       <h2><%= vendor.name %></h2>
-      <p class="vendor-location"><i class="fa fa-map-marker-alt"></i> <%= vendor.state || 'Unknown location' %></p>
+      <p class="vendor-location">
+        <i class="fa fa-map-marker-alt"></i>
+        <%= vendor.state || 'Unknown location' %>
+      </p>
     </div>
     <div class="vendor-actions">
-      <button 
-        class="btn btn-sm btn-leave-review" 
-        data-vendor-id="<%= vendor.id %>" 
-        data-vendor-name="<%= vendor.name %>">
+      <button
+        class="btn btn-sm btn-leave-review"
+        data-vendor-id="<%= vendor.id %>"
+        data-vendor-name="<%= vendor.name %>"
+      >
         <i class="fa fa-star"></i> Review
       </button>
     </div>
   </header>
 
   <section class="vendor-about">
-    <h3>About <%= vendor.name %></h3>
+    <h3>
+      About
+      <%= vendor.name %>
+    </h3>
     <% if (vendor.description && vendor.description.length > 25) { %>
-      <p><%= vendor.description %></p>
+    <p><%= vendor.description %></p>
     <% } else { %>
-      <p>
-        <%= vendor.name %> is a trusted local food vendor in <%= vendor.state || 'Nigeria' %>, specializing in delicious, freshly prepared meals served with care.
-      </p>
+    <p>
+      <%= vendor.name %> is a trusted local food vendor in <%= vendor.state ||
+      'Nigeria' %>, specializing in delicious, freshly prepared meals served
+      with care.
+    </p>
     <% } %>
   </section>
 
   <section class="vendor-menu">
     <h3>Menu</h3>
     <% if (menuItems && menuItems.length) { %>
-      <ul class="menu-list">
-        <% menuItems.forEach(item => { %>
-          <li class="menu-item">
-            <div class="item-info">
-              <strong><%= item.name %></strong>
-              <p><%= item.description || '' %></p>
-            </div>
-            <span class="item-price">₦<%= item.price %></span>
-          </li>
-        <% }) %>
-      </ul>
+    <ul class="menu-list">
+      <% menuItems.forEach(item => { %>
+      <li class="menu-item">
+        <div class="item-info">
+          <strong><%= item.name %></strong>
+          <p><%= item.description || '' %></p>
+        </div>
+        <span class="item-price">₦<%= item.price %></span>
+      </li>
+      <% }) %>
+    </ul>
     <% } else { %>
-      <p>No menu items found for this vendor.</p>
+    <p>No menu items found for this vendor.</p>
     <% } %>
   </section>
 

@@ -107,7 +107,8 @@ app.use('/locations', express.static(path.join(__dirname, 'locations')));
 
 // expose currentUser (from JWT/session) to templates
 app.use((req, res, next) => {
-  res.locals.currentUser = req.user || (req.session && req.session.user) || null;
+  res.locals.currentUser =
+    req.user || (req.session && req.session.user) || null;
   next();
 });
 
@@ -127,10 +128,16 @@ app.use(async (req, res, next) => {
 
       // 1) stats (safe queries)
       const vendorsQ = await pool
-        .query("SELECT COUNT(*)::int AS count FROM vendors WHERE status = 'approved'")
+        .query(
+          "SELECT COUNT(*)::int AS count FROM vendors WHERE status = 'approved'"
+        )
         .catch(() => ({ rows: [{ count: 0 }] }));
-      const ordersQ = await pool.query('SELECT COUNT(*)::int AS count FROM orders').catch(() => ({ rows: [{ count: 0 }] }));
-      const customersQ = await pool.query('SELECT COUNT(*)::int AS count FROM clients').catch(() => ({ rows: [{ count: 0 }] }));
+      const ordersQ = await pool
+        .query('SELECT COUNT(*)::int AS count FROM orders')
+        .catch(() => ({ rows: [{ count: 0 }] }));
+      const customersQ = await pool
+        .query('SELECT COUNT(*)::int AS count FROM clients')
+        .catch(() => ({ rows: [{ count: 0 }] }));
 
       _homeCache.data.stats = {
         vendors: (vendorsQ.rows[0] && vendorsQ.rows[0].count) || 0,

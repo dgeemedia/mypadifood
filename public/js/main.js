@@ -343,7 +343,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // remove from DOM after transition (defensive)
   document.addEventListener('transitionend', (ev) => {
-    if (ev.target && ev.target.classList && ev.target.classList.contains('flash--fadeout')) {
+    if (
+      ev.target &&
+      ev.target.classList &&
+      ev.target.classList.contains('flash--fadeout')
+    ) {
       ev.target.remove();
     }
   });

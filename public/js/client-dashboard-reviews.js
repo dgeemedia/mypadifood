@@ -29,11 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const vendorId = btn.dataset.vendorId;
         const vendorName = btn.dataset.vendorName || '';
         const orderId = btn.dataset.orderId;
-        if (typeof openModal === 'function') openModal({ vendorId, vendorName, orderId });
+        if (typeof openModal === 'function')
+          openModal({ vendorId, vendorName, orderId });
         else {
           // openModal defined below in same file; call it directly if already defined
           try {
-            window.__openReviewModal && window.__openReviewModal({ vendorId, vendorName, orderId });
+            window.__openReviewModal &&
+              window.__openReviewModal({ vendorId, vendorName, orderId });
           } catch (err) {
             console.warn('openModal not defined', err);
           }
@@ -114,7 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (form) {
     form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
-      const vendorId = (document.getElementById('review-vendor-id') || {}).value;
+      const vendorId = (document.getElementById('review-vendor-id') || {})
+        .value;
       const orderId = (document.getElementById('review-order-id') || {}).value;
       const rating = (document.getElementById('review-rating') || {}).value;
       const comment = (document.getElementById('review-comment') || {}).value;
@@ -162,7 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = await resp.text().catch(() => null);
         if (msg) {
           msg.style.color = 'crimson';
-          msg.textContent = text && text.length ? `Error: ${text}` : 'Could not post review';
+          msg.textContent =
+            text && text.length ? `Error: ${text}` : 'Could not post review';
         }
       } catch (err) {
         console.error(err);

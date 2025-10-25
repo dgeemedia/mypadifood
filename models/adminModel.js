@@ -86,14 +86,14 @@ async function updatePassword(adminId, password_hash) {
 
 async function countPendingTestimonials() {
   const { rows } = await pool.query(
-    "SELECT COUNT(*)::int AS count FROM testimonials WHERE approved = false"
+    'SELECT COUNT(*)::int AS count FROM testimonials WHERE approved = false'
   );
   return rows[0].count;
 }
 
 async function countPartners() {
   const { rows } = await pool.query(
-    "SELECT COUNT(*)::int AS count FROM partners"
+    'SELECT COUNT(*)::int AS count FROM partners'
   );
   return rows[0].count;
 }
