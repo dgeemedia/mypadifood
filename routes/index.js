@@ -8,6 +8,9 @@ const reviewModel = models.review || require('../models/reviewModel'); // guard 
 const partnerModel = models.partner || require('../models/partnerModel');
 const testimonialModel = models.testimonial || require('../models/testimonialModel');
 
+// avatar helper for testimonial avatars
+const avatarUtil = require('../utils/avatar');
+
 // Home
 router.get('/', async (req, res) => {
   try {
@@ -53,6 +56,10 @@ router.get('/', async (req, res) => {
     try {
       if (testimonialModel && typeof testimonialModel.getApproved === 'function') {
         testimonials = await testimonialModel.getApproved(12);
+        // attach avatar for each testimonial (falls back to photo_url inside avatarFor)
+        if (Array.isArray(testimonials) && testimonials.length) {
+          testimonials = testimonials.map(t => Object.assign({}, t, { avatar: avatarUtil.avatarFor(t, 128) }));
+        }
       }
     } catch (e) {
       console.warn('Failed to load testimonials:', e);
@@ -155,3 +162,4 @@ router.get('/terms', (req, res) => res.render('pages/terms'));
 router.get('/privacy', (req, res) => res.render('pages/privacy'));
 
 module.exports = router;
+

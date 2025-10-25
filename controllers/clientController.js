@@ -22,6 +22,8 @@ const weeklyPlanModel =
 const weeklyPlanMessageModel =
   models.weeklyPlanMessages || require('../models/weeklyPlanMessageModel');
 
+const avatarUtil = require('../utils/avatar');
+
 const { sendMail } = require('../utils/mailer');
 const { toLocal10, maskLocalId } = require('../utils/phone');
 
@@ -520,12 +522,30 @@ exports.dashboard = async (req, res) => {
       statesLGAs = [];
     }
 
+    // --- NEW: load testimonials for dashboard and attach avatar urls
+    let testimonials = [];
+    try {
+      const testimonialModel = models.testimonial || require('../models/testimonialModel');
+      if (testimonialModel && typeof testimonialModel.getApproved === 'function') {
+        testimonials = await testimonialModel.getApproved(12);
+        if (Array.isArray(testimonials) && testimonials.length) {
+          testimonials = testimonials.map(t => Object.assign({}, t, {
+            avatar: avatarUtil.avatarFor(t, 128)
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn('Could not load testimonials for dashboard', e);
+      testimonials = [];
+    }
+
+    // --- IMPORTANT: include `request: req` inside the render data (and use the currentUser var)
     return res.render('client/dashboard', {
       title: 'Dashboard',
       layout: 'layouts/layout',
       user: client,
-      currentUser, // NEW
-      statesLGAs, // NEW
+      currentUser: currentUser,   // use the variable you defined above
+      statesLGAs,
       displayName: displayName || '—',
       wallet,
       orders,
@@ -535,6 +555,8 @@ exports.dashboard = async (req, res) => {
       recentOrderId,
       recentWeeklyPlanId,
       recentWalletTxId,
+      testimonials,
+      request: req               // <- moved HERE (inside render object)
     });
   } catch (err) {
     console.error('Error loading client dashboard:', err);
@@ -542,6 +564,7 @@ exports.dashboard = async (req, res) => {
     return res.redirect('/');
   }
 };
+
 
 // Client posts menu/update to an existing order (so admin sees it)
 exports.postOrderMenu = async (req, res) => {

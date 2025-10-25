@@ -1,91 +1,92 @@
 // middleware/flash.js
+// Simple flash/messages helper middleware used by EJS templates.
+// Adds req.flash(type, msg) compatibility for code expecting connect-flash.
+
 function _escapeHtml(str) {
   if (str === undefined || str === null) return '';
   return String(str).replace(/[&<>"']/g, (s) => {
-    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s];
+    return {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }[s];
   });
 }
 
 module.exports = function flashMiddleware(req, res, next) {
   try {
-    // ensure session exists
-    req.session = req.session || {};
-
-    // normalize free-form legacy fields into structured session.flash
-    req.session.flash = req.session.flash || {};
-
-    if (req.session.success) {
-      req.session.flash.success = req.session.flash.success || [];
-      req.session.flash.success.push(String(req.session.success));
-      delete req.session.success;
-    }
-    if (req.session.error) {
-      req.session.flash.error = req.session.flash.error || [];
-      req.session.flash.error.push(String(req.session.error));
-      delete req.session.error;
+    // provide req.flash(type, msg) convenience if missing
+    if (!req.flash || typeof req.flash !== 'function') {
+      req.flash = function (type, msg) {
+        if (!req.session) return;
+        if (type === 'error') req.session.error = msg;
+        else if (type === 'success') req.session.success = msg;
+        else {
+          // generic store for other types
+          req.session._custom_flash = req.session._custom_flash || {};
+          req.session._custom_flash[type] = msg;
+        }
+      };
     }
 
-    // Copy flash to locals (one-time)
-    const copied = {};
-    Object.keys(req.session.flash).forEach((k) => {
-      const v = req.session.flash[k];
-      copied[k] = Array.isArray(v) ? v.slice() : [String(v)];
-    });
-
-    res.locals.flash = copied;
-    res.locals.success = (copied.success && copied.success[0]) || null;
-    res.locals.error = (copied.error && copied.error[0]) || null;
+    // expose current session values to templates (one-time)
+    res.locals.currentUser = req.session && req.session.user ? req.session.user : null;
+    res.locals.success = req.session && req.session.success ? req.session.success : null;
+    res.locals.error = req.session && req.session.error ? req.session.error : null;
     res.locals.title = res.locals.title || 'MyPadiFood';
 
-    // helper used by templates (<%- messages() %>)
+    if (req.session && req.session.verification_link) {
+      res.locals.verification_link = req.session.verification_link;
+      delete req.session.verification_link;
+    }
+
+    // build unified `flash` object (arrays) for templates that expect flash.success/flash.error
+    res.locals.flash = {};
+    if (res.locals.success) {
+      res.locals.flash.success = Array.isArray(res.locals.success)
+        ? res.locals.success
+        : [res.locals.success];
+    }
+    if (res.locals.error) {
+      res.locals.flash.error = Array.isArray(res.locals.error)
+        ? res.locals.error
+        : [res.locals.error];
+    }
+
+    // include any custom flash stored in session (already stored as single values)
+    if (req.session && req.session._custom_flash) {
+      for (const k of Object.keys(req.session._custom_flash)) {
+        const v = req.session._custom_flash[k];
+        res.locals.flash[k] = Array.isArray(v) ? v : [v];
+      }
+    }
+
+    // messages() helper expected by EJS files (<%- messages() %>)
     res.locals.messages = function () {
       let html = '';
-      if (res.locals.flash) {
-        if (res.locals.flash.success && res.locals.flash.success.length) {
-          for (const m of res.locals.flash.success) {
-            html += `<div class="flash flash-success" role="status">${_escapeHtml(m)}</div>`;
-          }
+      if (res.locals.success) {
+        html += `<div class="flash flash-success" role="status">${_escapeHtml(res.locals.success)}</div>`;
+      }
+      if (res.locals.error) {
+        html += `<div class="flash flash-error" role="alert">${_escapeHtml(res.locals.error)}</div>`;
+      }
+      // include custom flash types if any
+      if (req.session && req.session._custom_flash) {
+        for (const t in req.session._custom_flash) {
+          html += `<div class="flash flash-${_escapeHtml(t)}" role="status">${_escapeHtml(req.session._custom_flash[t])}</div>`;
         }
-        if (res.locals.flash.error && res.locals.flash.error.length) {
-          for (const m of res.locals.flash.error) {
-            html += `<div class="flash flash-error" role="alert">${_escapeHtml(m)}</div>`;
-          }
-        }
-        // other types
-        Object.keys(res.locals.flash).forEach((type) => {
-          if (type === 'success' || type === 'error') return;
-          const arr = res.locals.flash[type];
-          if (Array.isArray(arr) && arr.length) {
-            for (const m of arr) {
-              html += `<div class="flash flash-${_escapeHtml(type)}">${_escapeHtml(m)}</div>`;
-            }
-          }
-        });
       }
       return html;
     };
 
-    // Clear session flash so messages are one-time (they live in res.locals now)
-    delete req.session.flash;
-
-    // req.flash API: setter/getter
-    req.flash = function (type, msg) {
-      if (!type) return null;
-      // getter (from the copy we made)
-      if (typeof msg === 'undefined') {
-        const arr = res.locals.flash && res.locals.flash[type] ? res.locals.flash[type].slice() : [];
-        // consumed already in this request (res.locals copy), don't modify session here
-        return arr;
-      }
-      // setter: create session.flash so message survives redirect to next page
-      req.session.flash = req.session.flash || {};
-      req.session.flash[type] = req.session.flash[type] || [];
-      req.session.flash[type].push(String(msg));
-      return req.session.flash[type];
-    };
-
-    // also expose the currentUser as you previously did
-    res.locals.currentUser = req.session && req.session.user ? req.session.user : null;
+    // Clear session flash values (one-time)
+    if (req.session) {
+      delete req.session.success;
+      delete req.session.error;
+      delete req.session._custom_flash;
+    }
   } catch (e) {
     console.error('flash middleware error', e);
   }

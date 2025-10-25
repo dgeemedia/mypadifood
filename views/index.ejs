@@ -157,8 +157,13 @@ function foodImageUrl(term, w=600, h=400) {
     %>
       <blockquote class="testi-card" tabindex="0">
         <div class="testi-photo">
-          <img src="<%= avatar %>" alt="<%= t.name %>" onerror="this.onerror=null;this.src='/images/avatar-placeholder.png'"/>
-        </div>
+  <img
+    src="<%= t.photo_url || t.avatar || '/images/avatar-placeholder.png' %>"
+    alt="<%= t.name || 'Customer' %>"
+    onerror="this.onerror=null;this.src='/images/avatar-placeholder.png'"
+  />
+</div>
+
         <div class="testi-body">
           <p class="quote">“<%= t.quote %>”</p>
           <footer class="testi-meta"><strong><%= t.name %></strong><small><%= t.city || '' %></small></footer>

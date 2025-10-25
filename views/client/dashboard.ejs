@@ -177,6 +177,15 @@
           </div>
         </div>
       </div>
+      
+        <!-- include testimonial form so logged-in clients can submit -->
+  <div style="margin-top: 16px;">
+    <%- include('../partials/testimonial-form', {
+      currentUser: (typeof currentUser !== 'undefined' ? currentUser : (typeof user !== 'undefined' ? user : {})),
+      request: (typeof request !== 'undefined' ? request : null)
+    }) %>
+  </div>
+
 
       <!-- QUICK ACTIONS (appears under Manage account) -->
       <div
