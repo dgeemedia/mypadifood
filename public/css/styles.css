@@ -1548,3 +1548,20 @@ table tbody td {
   .homepage .vendor-media { height:180px; }
   .homepage .hero-image { max-width:100%; }
 }
+
+/* marquee helper styles */
+.marquee-container::-webkit-scrollbar { display:none; }
+.marquee-container { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* testimonial when converted to inline marquee */
+.homepage .testi-grid.marquee-active {
+  display:flex;
+  flex-wrap:nowrap;
+  gap:12px;
+  overflow:hidden;
+  align-items:center;
+}
+
+/* avatar & testimonial tweaks */
+.testi-photo img { width:64px; height:64px; object-fit:cover; border-radius:50%; display:block; }
+.testi-card .testi-body { flex:1; }

@@ -144,17 +144,20 @@ function foodImageUrl(term, w=600, h=400) {
       </div>
     <% } %>
   </div>
-  <p class="partners-note">Want your brand here? <a href="/partners">Partner with us</a>.</p>
+  <p class="partners-note">Want your brand here? <a href="mailto:support@mypadifood.com?subject=Partner%20with%20MyPadiFood">Partner with us</a>.</p>
 </section>
 
-<!-- Testimonials -->
+<!-- Testimonials block (replace existing loop) -->
 <section class="testimonials container homepage" aria-label="Customer testimonials">
   <h2>What our customers say</h2>
   <div class="testi-grid">
-    <% testimonialsList.forEach(function(t){ %>
+    <% testimonialsList.forEach(function(t){ 
+         // choose avatar: uploaded photo -> gender-based -> generic
+         let avatar = t.photo_url && t.photo_url.length ? t.photo_url : (t.gender === 'female' ? '/images/avatar-female.png' : (t.gender === 'male' ? '/images/avatar-male.png' : '/images/avatar-placeholder.png'));
+    %>
       <blockquote class="testi-card" tabindex="0">
         <div class="testi-photo">
-          <img src="<%= t.photo_url || ('/images/avatar-placeholder.png') %>" alt="<%= t.name %>" onerror="this.onerror=null;this.src='/images/avatar-placeholder.png'"/>
+          <img src="<%= avatar %>" alt="<%= t.name %>" onerror="this.onerror=null;this.src='/images/avatar-placeholder.png'"/>
         </div>
         <div class="testi-body">
           <p class="quote">“<%= t.quote %>”</p>
@@ -162,11 +165,13 @@ function foodImageUrl(term, w=600, h=400) {
         </div>
       </blockquote>
     <% }) %>
+
     <% if (!testimonialsList || testimonialsList.length === 0) { %>
       <p class="muted">No testimonials yet — ask customers to leave feedback after ordering.</p>
     <% } %>
   </div>
 </section>
+
 
 <!-- Investor / Footer CTA -->
 <section class="investor-cta container homepage">

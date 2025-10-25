@@ -3,7 +3,7 @@
   <h3>Share your experience</h3>
   <p class="muted">Your testimonial helps local vendors grow. Submitted testimonials are reviewed before publication.</p>
 
-  <form method="post" action="/testimonials">
+  <form method="post" action="/testimonials" enctype="multipart/form-data">
     <div class="form-row" style="margin-bottom:8px;">
       <label>
         Your name
@@ -20,6 +20,17 @@
 
     <div class="form-row" style="margin-bottom:8px;">
       <label>
+        Gender (optional)
+        <select name="gender">
+          <option value="">Prefer not to say</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="form-row" style="margin-bottom:8px;">
+      <label>
         Testimonial (short)
         <textarea name="quote" rows="3" required placeholder="What did you like?"></textarea>
       </label>
@@ -27,8 +38,8 @@
 
     <div class="form-row" style="margin-bottom:8px;">
       <label>
-        Photo URL (optional)
-        <input type="url" name="photo_url" placeholder="https://example.com/photo.jpg" />
+        Photo (optional) — upload a JPG/PNG/WebP (max 2MB)
+        <input type="file" name="photo" accept="image/*" />
       </label>
     </div>
 
@@ -38,6 +49,7 @@
       <% } else { %>
         <a class="btn btn-primary" href="/login?next=<%= encodeURIComponent(request && request.originalUrl ? request.originalUrl : '/') %>">Login to submit</a>
       <% } %>
+      <small class="muted" style="margin-left:10px">Submissions are reviewed before appearing publicly.</small>
     </div>
   </form>
 </section>

@@ -140,3 +140,112 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+/* =========================
+   Continuous marquee helpers
+   Append this to public/js/index.js (bottom)
+   ========================= */
+
+(function setupMarquees() {
+  // small helper to create a continuous horizontal marquee from a container's direct children
+  function createMarquee(containerSelector, speed = 40 /* px/s */, reverse = false) {
+    const container = document.querySelector(containerSelector);
+    if (!container) return;
+
+    // wrap children in a scroller
+    container.style.overflow = 'hidden';
+    container.style.position = 'relative';
+    container.style.whiteSpace = 'nowrap';
+    container.style.display = 'flex';
+    container.style.gap = '12px';
+    container.style.alignItems = 'center';
+
+    // hide scrollbar on all platforms
+    container.style.scrollBehavior = 'auto';
+    container.classList.add('marquee-container');
+
+    // build content wrapper that will be duplicated
+    const children = Array.from(container.children);
+    if (children.length === 0) return;
+
+    // if there's just one child, duplicate it to make a loop
+    // create inner wrapper and move children into it
+    const inner = document.createElement('div');
+    inner.className = 'marquee-inner';
+    inner.style.display = 'inline-flex';
+    inner.style.alignItems = 'center';
+    inner.style.gap = '12px';
+    inner.style.willChange = 'transform';
+
+    // move original children into inner
+    children.forEach((ch) => inner.appendChild(ch));
+
+    // duplicate content to allow seamless loop
+    const innerClone = inner.cloneNode(true);
+
+    // empty container then append wrappers
+    container.innerHTML = '';
+    container.appendChild(inner);
+    container.appendChild(innerClone);
+
+    // measure total width
+    function getContentWidth() {
+      return inner.getBoundingClientRect().width;
+    }
+
+    let contentWidth = getContentWidth();
+    let pos = 0;
+    let lastTs = performance.now();
+    let paused = false;
+
+    // pause on hover/focus
+    container.addEventListener('mouseenter', () => (paused = true));
+    container.addEventListener('mouseleave', () => (paused = false));
+    container.addEventListener('focusin', () => (paused = true));
+    container.addEventListener('focusout', () => (paused = false));
+
+    function step(ts) {
+      const dt = Math.min(60, ts - lastTs) / 1000;
+      lastTs = ts;
+      if (!paused) {
+        pos += (reverse ? -1 : 1) * speed * dt;
+        // wrap
+        if (pos > contentWidth) pos -= contentWidth;
+        if (pos < 0) pos += contentWidth;
+        inner.style.transform = `translateX(${ -pos }px)`;
+        innerClone.style.transform = `translateX(${ -pos }px)`;
+      }
+      requestAnimationFrame(step);
+    }
+
+    // on resize recalc width
+    window.addEventListener('resize', () => {
+      contentWidth = getContentWidth();
+    });
+
+    requestAnimationFrame(step);
+  }
+
+  // featured vendors marquee (selector used from home template)
+  createMarquee('.featured-scroller', 36);
+
+  // partners marquee (slower)
+  createMarquee('.partners-row', 28);
+
+  // testimonials marquee — if you want testimonials to flow horizontally instead of grid,
+  // change the markup of testimonials to a horizontal scroller. If you keep the grid,
+  // we will not transform it. Example below only applies if you swap .testi-grid to a row.
+  // To keep things simple: we toggle an auto-scroll for .testi-grid if it has many items
+  const testiGrid = document.querySelector('.testi-grid');
+  if (testiGrid && testiGrid.children.length > 3) {
+    // convert to a horizontal marquee layout only for desktop widths
+    if (window.innerWidth > 720) {
+      testiGrid.style.display = 'flex';
+      testiGrid.style.flexWrap = 'nowrap';
+      testiGrid.style.gap = '12px';
+      testiGrid.style.overflow = 'hidden';
+      testiGrid.style.alignItems = 'center';
+      createMarquee('.testi-grid', 24);
+    }
+  }
+})();
