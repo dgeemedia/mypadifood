@@ -1,4 +1,5 @@
 // controllers/clientController.js
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
@@ -29,6 +30,7 @@ const { toLocal10, maskLocalId } = require('../utils/phone');
 
 const SALT_ROUNDS = 10;
 const VERIFICATION_TOKEN_TTL_HOURS = 48;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
 
 function loadStatesLGAs() {
   try {
@@ -394,6 +396,171 @@ exports.login = async (req, res) => {
     console.error('Error in client login:', err);
     req.session.error = 'Login failed';
     return res.redirect('/client/login');
+  }
+};
+
+/**
+ * Show forgot password form
+ */
+exports.showForgotForm = (req, res) => {
+  return res.render('auth/forgot-password', { title: 'Forgot password', error: null, info: null });
+};
+
+/**
+ * Handle forgot password submit: create token and send email
+ */
+exports.postForgot = async (req, res) => {
+  try {
+    const email = (req.body && req.body.email) ? String(req.body.email).trim().toLowerCase() : '';
+    if (!email) {
+      return res.render('auth/forgot-password', { title: 'Forgot password', error: 'Please enter your email', info: null });
+    }
+
+    const user = await clientModel.findByEmail(email);
+    // neutral message so we don't reveal account existence
+    const infoMessage = 'If an account with that email exists, we have sent password reset instructions. Please check your inbox.';
+
+    if (!user) {
+      return res.render('auth/forgot-password', { title: 'Forgot password', error: null, info: infoMessage });
+    }
+
+    // create a secure random token & expiry
+    const token = uuidv4();
+    const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_TTL_HOURS * 3600 * 1000);
+
+    // store token (use existing createToken API)
+    // If your createToken supports an optional type param, pass it; otherwise this will work too:
+    if (typeof verificationModel.createToken === 'function') {
+      // try to call with type if supported (backwards-compatible)
+      try {
+        await verificationModel.createToken(token, user.id, expiresAt, 'pw_reset');
+      } catch (e) {
+        // fallback to three-arg call if the model doesn't accept type
+        await verificationModel.createToken(token, user.id, expiresAt);
+      }
+    } else {
+      console.warn('verificationModel.createToken is missing');
+    }
+
+    // build reset link using BASE_URL
+    const resetUrl = `${BASE_URL.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(token)}`;
+
+    try {
+      await sendMail({
+        to: user.email,
+        subject: 'Reset your MyPadiFood password',
+        html: `<p>Hello ${user.full_name || ''},</p>
+               <p>We received a request to reset your password. Click the link below to reset it. The link will expire in ${VERIFICATION_TOKEN_TTL_HOURS} hours.</p>
+               <p><a href="${resetUrl}">Reset password</a></p>
+               <p>If you did not request this, you can safely ignore this message.</p>`,
+        text: `Reset your password: ${resetUrl}`
+      });
+    } catch (mailErr) {
+      console.error('Error sending password reset email', mailErr);
+      // still show neutral message
+    }
+
+    return res.render('auth/forgot-password', { title: 'Forgot password', error: null, info: infoMessage });
+  } catch (err) {
+    console.error('postForgot error', err);
+    return res.status(500).render('auth/forgot-password', { title: 'Forgot password', error: 'Server error', info: null });
+  }
+};
+
+/**
+ * Show reset form (token in query)
+ */
+exports.showResetForm = async (req, res) => {
+  const token = (req.query && req.query.token) ? String(req.query.token) : '';
+  if (!token) {
+    return res.status(400).send('Invalid reset link');
+  }
+
+  try {
+    // use the model function available in your project
+    const rec = await verificationModel.findToken(token);
+    if (!rec) {
+      return res.render('auth/reset-password', { title: 'Reset password', error: 'Reset link is invalid or has expired', token: null });
+    }
+
+    // check expiry / optional 'consumed' flag if your model has it
+    if ((rec.expires_at && new Date(rec.expires_at) < new Date()) || rec.consumed) {
+      // if your model exposes deleteToken, remove it
+      if (typeof verificationModel.deleteToken === 'function') {
+        try { await verificationModel.deleteToken(token); } catch (e) { /* ignore */ }
+      }
+      return res.render('auth/reset-password', { title: 'Reset password', error: 'Reset link is invalid or has expired', token: null });
+    }
+
+    // If your verificationModel stores client_id (instead of user_id) use rec.client_id
+    return res.render('auth/reset-password', { title: 'Reset password', error: null, token });
+  } catch (err) {
+    console.error('showResetForm error', err);
+    return res.status(500).render('auth/reset-password', { title: 'Reset password', error: 'Server error', token: null });
+  }
+};
+
+/**
+ * Post reset: set new password and consume token
+ */
+exports.postReset = async (req, res) => {
+  try {
+    const token = (req.body && req.body.token) ? String(req.body.token) : '';
+    const password = (req.body && req.body.password) ? String(req.body.password) : '';
+    const passwordConfirm = (req.body && req.body.passwordConfirm) ? String(req.body.passwordConfirm) : '';
+
+    if (!token) return res.status(400).render('auth/reset-password', { title: 'Reset password', error: 'Missing token', token: null });
+    if (!password || password.length < 8) return res.render('auth/reset-password', { title: 'Reset password', error: 'Password must be at least 8 characters', token });
+
+    if (password !== passwordConfirm) return res.render('auth/reset-password', { title: 'Reset password', error: 'Passwords do not match', token });
+
+    const rec = await verificationModel.findToken(token);
+    if (!rec || (rec.expires_at && new Date(rec.expires_at) < new Date()) || rec.consumed) {
+      // consume/delete if expired
+      if (typeof verificationModel.deleteToken === 'function') {
+        try { await verificationModel.deleteToken(token); } catch (e) {}
+      }
+      return res.render('auth/reset-password', { title: 'Reset password', error: 'Reset link is invalid or has expired', token: null });
+    }
+
+    // determine client id field name (your model uses client_id earlier)
+    const clientId = rec.client_id || rec.user_id || rec.userId || rec.user;
+
+    // update password hash
+    const newHash = await bcrypt.hash(password, SALT_ROUNDS || 12);
+    if (!clientId) {
+      console.error('postReset: could not determine client id from token record', rec);
+      return res.status(500).render('auth/reset-password', { title: 'Reset password', error: 'Server error', token: null });
+    }
+    await clientModel.updatePassword(clientId, newHash);
+
+    // delete/consume the token so it cannot be reused
+    if (typeof verificationModel.deleteToken === 'function') {
+      try { await verificationModel.deleteToken(token); } catch (e) { /* ignore */ }
+    } else if (typeof verificationModel.consumeToken === 'function') {
+      try { await verificationModel.consumeToken(token); } catch (e) { /* ignore */ }
+    }
+
+    // optionally notify user
+    try {
+      const user = await clientModel.findById(clientId);
+      if (user && user.email) {
+        await sendMail({
+          to: user.email,
+          subject: 'Your password was changed',
+          html: `<p>Hello,</p><p>Your password was successfully changed. If you did not do this, please contact support immediately.</p>`,
+          text: 'Your password was changed.'
+        });
+      }
+    } catch (e) {
+      console.warn('notify password change failed', e);
+    }
+
+    // success -> show success page
+    return res.render('auth/reset-password-success', { title: 'Password reset' });
+  } catch (err) {
+    console.error('postReset error', err);
+    return res.status(500).render('auth/reset-password', { title: 'Reset password', error: 'Server error', token: null });
   }
 };
 

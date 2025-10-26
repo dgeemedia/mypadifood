@@ -31,6 +31,12 @@ router.get('/logout', (req, res) => {
   return res.redirect('/logout');
 });
 
+router.get('/forgot-password', clientController.showForgotForm);
+router.post('/forgot-password', clientController.postForgot);
+
+router.get('/reset-password', clientController.showResetForm); // ?token=...
+router.post('/reset-password', clientController.postReset);
+
 // Dashboard & booking (protected)
 router.get('/dashboard', auth.requireClient, clientController.dashboard);
 router.post('/book', auth.requireClient, clientController.bookVendor);
