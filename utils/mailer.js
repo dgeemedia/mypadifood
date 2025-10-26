@@ -1,8 +1,5 @@
 // utils/mailer.js
 // Flexible mailer: supports SendGrid (API) OR SMTP (nodemailer) and falls back to console.
-// Set MAIL_SEND_METHOD=sendgrid to force SendGrid, or MAIL_SEND_METHOD=smtp to force SMTP.
-// If neither configured, falls back to console logging.
-
 const nodemailer = require('nodemailer');
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || null;
@@ -11,25 +8,26 @@ const mailFrom =
   process.env.MAIL_FROM ||
   `no-reply@${process.env.APP_DOMAIN || 'mypadifood.local'}`;
 
-const sendGridClient = null;
 let smtpTransporter = null;
 let smtpVerified = false;
 
-// Lazy require for SendGrid so project doesn't fail if lib missing
+// SendGrid helper (lazy require)
 async function sendViaSendGrid({ to, subject, text, html }) {
-  const sg = require('@sendgrid/mail');
+  if (!SENDGRID_API_KEY) throw new Error('SENDGRID_API_KEY not configured');
+  let sg;
+  try {
+    sg = require('@sendgrid/mail');
+  } catch (e) {
+    throw new Error('@sendgrid/mail package not installed');
+  }
   sg.setApiKey(SENDGRID_API_KEY);
   const msg = { to, from: mailFrom, subject, text, html };
   try {
     const res = await sg.send(msg);
     return res;
   } catch (err) {
-    // Log full SendGrid response body (very helpful)
     if (err && err.response && err.response.body) {
-      console.error(
-        'SendGrid response body:',
-        JSON.stringify(err.response.body, null, 2)
-      );
+      console.error('SendGrid response body:', JSON.stringify(err.response.body, null, 2));
     }
     throw err;
   }
@@ -49,11 +47,16 @@ function createSmtpTransporterFromEnv() {
     port,
     secure,
     auth: { user, pass },
-    tls: { rejectUnauthorized: false },
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
     requireTLS: !secure,
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 10_000,
+    greetingTimeout: 5_000,
+    socketTimeout: 10_000,
   });
 
-  // verify but don't throw — record result
   transporter
     .verify()
     .then(() => {
@@ -62,10 +65,7 @@ function createSmtpTransporterFromEnv() {
     })
     .catch((err) => {
       smtpVerified = false;
-      console.error(
-        'SMTP verify failed:',
-        err && err.message ? err.message : err
-      );
+      console.error('SMTP verify failed:', err && err.message ? err.message : err);
     });
 
   return transporter;
@@ -78,58 +78,64 @@ function getSmtpTransporter() {
 }
 
 /**
- * Send an email. Attempts in this order:
- * 1) SendGrid (if configured or requested)
- * 2) SMTP (nodemailer)
- * 3) Console fallback
+ * Send an email. Behavior:
+ * - If MAIL_SEND_METHOD === 'smtp' => try SMTP only.
+ * - If MAIL_SEND_METHOD === 'sendgrid' => try SendGrid only.
+ * - If MAIL_SEND_METHOD unset => prefer SendGrid when key present, else SMTP if configured.
+ * - Falls back to console logging if no transport available.
  */
 async function sendMail({ to, subject, text = '', html = '' }) {
   if (!to || !subject) throw new Error('sendMail requires `to` and `subject`');
 
-  // Prefer explicit method
-  if (
-    (MAIL_SEND_METHOD === 'sendgrid' || !MAIL_SEND_METHOD) &&
-    SENDGRID_API_KEY
-  ) {
+  // 1. Forced SMTP
+  if (MAIL_SEND_METHOD === 'smtp') {
+    const t = getSmtpTransporter();
+    if (!t) throw new Error('SMTP transporter not configured (check env)');
     try {
-      // dynamic require to avoid startup error when package missing
-      return await sendViaSendGrid({ to, subject, text, html });
-    } catch (sgErr) {
-      console.error(
-        'SendGrid send failed:',
-        sgErr && sgErr.message ? sgErr.message : sgErr
-      );
-      // fall through to SMTP or console fallback
+      const info = await t.sendMail({ from: mailFrom, to, subject, text, html });
+      if (info && info.messageId) console.log('Email sent via SMTP:', info.messageId);
+      return info;
+    } catch (smtpErr) {
+      console.error('SMTP send failed:', smtpErr && smtpErr.message ? smtpErr.message : smtpErr);
+      throw smtpErr;
     }
   }
 
-  // Try SMTP if configured
+  // 2. Forced SendGrid
+  if (MAIL_SEND_METHOD === 'sendgrid') {
+    try {
+      return await sendViaSendGrid({ to, subject, text, html });
+    } catch (sgErr) {
+      console.error('SendGrid send failed:', sgErr && sgErr.message ? sgErr.message : sgErr);
+      throw sgErr;
+    }
+  }
+
+  // 3. Auto: prefer SendGrid if key present
+  if (SENDGRID_API_KEY) {
+    try {
+      return await sendViaSendGrid({ to, subject, text, html });
+    } catch (sgErr) {
+      console.error('SendGrid send failed (falling back to SMTP):', sgErr && sgErr.message ? sgErr.message : sgErr);
+      // fall through to SMTP attempt
+    }
+  }
+
+  // 4. Try SMTP if available
   const t = getSmtpTransporter();
   if (t) {
     try {
-      const info = await t.sendMail({
-        from: mailFrom,
-        to,
-        subject,
-        text,
-        html,
-      });
-      if (info && info.messageId)
-        console.log('Email sent via SMTP:', info.messageId);
+      const info = await t.sendMail({ from: mailFrom, to, subject, text, html });
+      if (info && info.messageId) console.log('Email sent via SMTP:', info.messageId);
       return info;
     } catch (smtpErr) {
-      console.error(
-        'SMTP send failed:',
-        smtpErr && smtpErr.message ? smtpErr.message : smtpErr
-      );
-      // fallthrough to console fallback
+      console.error('SMTP send failed:', smtpErr && smtpErr.message ? smtpErr.message : smtpErr);
+      // fall through to console fallback
     }
   }
 
-  // Final fallback: console log
-  console.warn(
-    'No working mail transport available — logging email to console (fallback).'
-  );
+  // 5. Final fallback: console log (non-blocking)
+  console.warn('No mail transport available — logging email to console (fallback).');
   console.log('=== EMAIL (fallback) ===');
   console.log('From:', mailFrom);
   console.log('To:', to);
