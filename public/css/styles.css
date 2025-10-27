@@ -1880,3 +1880,15 @@ table tbody td {
 
 /* compact vendor variant */
 .homepage .vendor-card.compact .vendor-media { height:140px; }
+
+/* rotating placeholder fade */
+.placeholder-rotating {
+  transition: opacity 360ms ease-in-out;
+  will-change: opacity;
+  opacity: 1;
+  /* keep image area stable: if your layout requires fixed aspect ratio, set width/height here */
+  /* width: 100%; height: auto; */
+}
+.placeholder-rotating.fade-out {
+  opacity: 0;
+}

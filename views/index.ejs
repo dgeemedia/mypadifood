@@ -151,11 +151,13 @@
       <a class="featured-item" href="/vendor/<%= v.id %>" role="listitem" aria-label="<%= v.name %> — <%= v.food_item %>">
         <div class="featured-thumb" aria-hidden="true">
           <img
-            alt="<%= v.food_item || 'meal' %>"
-            src="<%= imgSrc %>"
-            onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
-            loading="lazy"
-          />
+  alt="<%= v.food_item || 'meal' %>"
+  src="<%= imgSrc %>"
+  class="<%= (imgSrc === FOOD_IMAGES.placeholder) ? 'placeholder-rotating' : '' %>"
+  onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
+  loading="lazy"
+/>
+
           <!-- price badge -->
           <div class="featured-price">₦<%= v.base_price %></div>
         </div>
@@ -193,12 +195,13 @@
 
           <div class="vendor-media">
             <img
-              class="vendor-photo"
-              alt="Photo of <%= v.food_item %> by <%= v.name %>"
-              src="<%= vImg %>"
-              onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
-              loading="lazy"
-            />
+  class="vendor-photo <%= (vImg === FOOD_IMAGES.placeholder) ? 'placeholder-rotating' : '' %>"
+  alt="Photo of <%= v.food_item %> by <%= v.name %>"
+  src="<%= vImg %>"
+  onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
+  loading="lazy"
+/>
+
             <button class="fav-btn" title="Save vendor" aria-pressed="false" data-vendor-id="<%= v.id %>">♡</button>
           </div>
 
@@ -351,4 +354,12 @@
   </div>
 </div>
 
+<script>
+  window.FOOD_PLACEHOLDERS = [
+    '/images/food/placeholder.jpg',
+    '/images/food/moi_moi.jpg',
+    '/images/food/jollof.jpg'
+  ];
+  window.CANONICAL_PLACEHOLDER = '<%= FOOD_IMAGES.placeholder %>';
+</script>
 <script src="/js/index.js" defer></script>

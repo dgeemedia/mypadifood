@@ -243,6 +243,165 @@
       }
     }
   })();
-})();
+})(); // end main IIFE
 
-/* end of public/js/index.js */
+
+/* -------------------------------------------
+   Placeholder rotation IIFE (inserted/updated)
+   - Reads placeholders from:
+       1) window.FOOD_PLACEHOLDERS (preferred)
+       2) document.body.dataset.placeholders (JSON string) fallback
+       3) a small safe default
+   - Rotates images with class "placeholder-rotating" every 3000ms with fade.
+-------------------------------------------- */
+(function setupPlaceholderRotation() {
+  // helper: get pool from multiple locations
+  function readPool() {
+    try {
+      if (Array.isArray(window.FOOD_PLACEHOLDERS) && window.FOOD_PLACEHOLDERS.length) {
+        return window.FOOD_PLACEHOLDERS.slice();
+      }
+      if (document.body && document.body.dataset && document.body.dataset.placeholders) {
+        const parsed = JSON.parse(document.body.dataset.placeholders);
+        if (Array.isArray(parsed) && parsed.length) return parsed.slice();
+      }
+    } catch (e) {
+      console.warn('Could not parse placeholder list', e);
+    }
+    // safe default (keep small set)
+    return [
+      '/images/food/placeholder.jpg',
+      '/images/food/moi_moi.jpg',
+      '/images/food/beans_ewa_riro.jpg',
+      '/images/food/jollof.jpg'
+    ];
+  }
+
+  const pool = readPool();
+  if (!pool || !pool.length) return;
+
+  // canonical placeholder (optional): read from window or dataset
+  let CANONICAL_PLACEHOLDER = (typeof window.CANONICAL_PLACEHOLDER !== 'undefined') ? window.CANONICAL_PLACEHOLDER : null;
+  if (!CANONICAL_PLACEHOLDER && document.body && document.body.dataset && document.body.dataset.canonicalPlaceholder) {
+    CANONICAL_PLACEHOLDER = document.body.dataset.canonicalPlaceholder;
+  }
+
+  // preload pool images
+  const preloaded = [];
+  pool.forEach((src) => {
+    try {
+      const img = new Image();
+      img.src = src;
+      preloaded.push(img);
+    } catch (e) {
+      // ignore
+    }
+  });
+
+  function getRotatingElements() {
+    return Array.from(document.querySelectorAll('img.placeholder-rotating'));
+  }
+
+  // compare absolute urls to avoid relative path mismatch
+  function absUrl(src) {
+    try {
+      return new URL(src, location.origin).href;
+    } catch (e) {
+      return src;
+    }
+  }
+
+  // initialize per-element index (randomize)
+  function ensureIndexes() {
+    getRotatingElements().forEach((el) => {
+      if (el.dataset.rotateIndex == null) {
+        el.dataset.rotateIndex = Math.floor(Math.random() * pool.length);
+      }
+    });
+  }
+
+  // next index: sequential but avoid same if possible
+  function nextIndex(curr) {
+    if (pool.length <= 1) return curr;
+    let next = (Number(curr) + 1) % pool.length;
+    if (next === Number(curr)) next = (Number(curr) + 1) % pool.length;
+    return next;
+  }
+
+  // optional: pick a random different index (if you prefer random)
+  function randomDifferent(curr) {
+    if (pool.length <= 1) return curr;
+    let next = Math.floor(Math.random() * pool.length);
+    let attempts = 0;
+    while (next === Number(curr) && attempts < 6) {
+      next = Math.floor(Math.random() * pool.length);
+      attempts++;
+    }
+    return next;
+  }
+
+  // check if element already showing target
+  function isShowing(el, targetSrc) {
+    try {
+      const current = el.src || el.getAttribute('src') || '';
+      return absUrl(current) === absUrl(targetSrc);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // perform swap with smooth fade
+  async function swapElement(el, nextIdx) {
+    try {
+      const targetSrc = pool[nextIdx];
+      if (!targetSrc) return;
+
+      if (isShowing(el, targetSrc)) {
+        el.dataset.rotateIndex = nextIdx;
+        return;
+      }
+
+      // fade-out
+      el.classList.add('fade-out');
+
+      // wait slightly more than CSS transition (CSS should set ~360ms)
+      await new Promise((r) => setTimeout(r, 420));
+
+      // set new src (use dataset to avoid flicker on slow networks)
+      el.src = targetSrc;
+      el.dataset.rotateIndex = nextIdx;
+
+      // allow browser to update then fade-in
+      requestAnimationFrame(() => el.classList.remove('fade-out'));
+    } catch (e) {
+      console.error('swapElement error', e);
+    }
+  }
+
+  // tick: rotate elements
+  function tick() {
+    ensureIndexes();
+    const els = getRotatingElements();
+    if (!els.length) return;
+
+    els.forEach((el) => {
+      const curr = (typeof el.dataset.rotateIndex !== 'undefined') ? Number(el.dataset.rotateIndex) : Math.floor(Math.random() * pool.length);
+      // choose strategy: sequential (nextIndex) OR random (randomDifferent)
+      const nidx = nextIndex(curr); // keep sequential for predictable rotations
+      // const nidx = randomDifferent(curr); // uncomment to use random instead
+      swapElement(el, nidx);
+    });
+  }
+
+  // ensure DOM ready then start
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      ensureIndexes();
+      // initial tiny delay then start
+      setTimeout(() => { tick(); setInterval(tick, 3000); }, 600);
+    });
+  } else {
+    ensureIndexes();
+    setTimeout(() => { tick(); setInterval(tick, 3000); }, 600);
+  }
+})();
