@@ -1833,7 +1833,7 @@ table tbody td {
 .homepage .vendor-card:hover { transform: translateY(-6px); box-shadow:0 18px 40px rgba(11,92,255,0.08); }
 
 /* vendor image area with stable heights on breakpoints */
-.homepage .vendor-media { height:200px; overflow:hidden; background:linear-gradient(180deg,#f6f7fb,#fff); }
+.homepage .vendor-media { position: relative; overflow: hidden; background: linear-gradient(180deg,#f6f7fb,#fff); }
 @media (max-width:920px) { .homepage .vendor-media { height:180px; } }
 @media (max-width:520px) { .homepage .vendor-media { height:160px; } }
 .homepage .vendor-photo { width:100%; height:100%; object-fit:cover; display:block; }
@@ -1844,6 +1844,42 @@ table tbody td {
 .homepage .vendor-food, .homepage .vendor-price, .homepage .vendor-address { color:var(--muted); font-size:0.95rem; }
 .homepage .card-actions { display:flex; gap:8px; margin-top:auto; flex-wrap:wrap; }
 .homepage .card-actions .btn { min-width:120px; }
+.homepage .vendor-title a {
+  text-decoration: none;
+  color: inherit;        /* keep same color as surrounding text */
+  border-bottom: none;
+}
+
+/* keep visible focus ring for keyboard users */
+.homepage .vendor-title a:focus {
+  outline: 3px solid rgba(11,92,255,0.12);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.homepage .vendor-title a:hover { color: var(--brand-2); }
+
+/* anchor wraps the image and fills the media area */
+.homepage .vendor-thumb-link { display: block; width: 100%; height: 100%; text-decoration: none; color: inherit; }
+.homepage .vendor-thumb-link img, .homepage .vendor-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* keep favourite button above the image */
+.homepage .fav-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(15,23,42,0.06);
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(8,18,30,0.04);
+}
+
+/* ensure fav button stays tappable on mobile */
+@media (max-width:520px) {
+  .homepage .fav-btn { top: 8px; right: 8px; padding:5px 7px; }
+}
 
 /* PARTNERS ROW */
 .homepage .partners-row { display:flex; gap:14px; overflow-x:auto; padding:12px 0; align-items:center; }

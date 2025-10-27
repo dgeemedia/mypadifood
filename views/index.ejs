@@ -193,17 +193,24 @@
         <% const classes = ['vendor-card']; if (index >= initialVisible) classes.push('vendor-hidden'); %>
 <article class="<%= classes.join(' ') %>" data-vendor-id="<%= v.id %>" data-index="<%= index %>">
 
-          <div class="vendor-media">
-            <img
-  class="vendor-photo <%= (vImg === FOOD_IMAGES.placeholder) ? 'placeholder-rotating' : '' %>"
-  alt="Photo of <%= v.food_item %> by <%= v.name %>"
-  src="<%= vImg %>"
-  onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
-  loading="lazy"
-/>
-
-            <button class="fav-btn" title="Save vendor" aria-pressed="false" data-vendor-id="<%= v.id %>">♡</button>
-          </div>
+  <div class="vendor-media">
+  <!-- clickable thumbnail (like featured-item) -->
+  <a
+    class="vendor-thumb-link"
+    href="/vendor/<%= v.id %>"
+    aria-label="Open vendor <%= v.name %>"
+    title="View <%= v.name %>"
+  >
+    <img
+      class="vendor-photo <%= (vImg === FOOD_IMAGES.placeholder) ? 'placeholder-rotating' : '' %>"
+      alt="Photo of <%= v.food_item %> by <%= v.name %>"
+      src="<%= vImg %>"
+      onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
+      loading="lazy"
+    />
+  </a>
+  <button class="fav-btn" title="Save vendor" aria-pressed="false" data-vendor-id="<%= v.id %>">♡</button>
+</div>
 
           <div class="vendor-body">
             <h3 class="vendor-title">
