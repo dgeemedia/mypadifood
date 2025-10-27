@@ -277,29 +277,30 @@
 <section class="testimonials container homepage" aria-label="Customer testimonials">
   <h2>What our customers say</h2>
 
-  <div class="testi-grid">
+  <div class="testi-scroller" role="list" aria-label="Customer testimonials scroller">
     <% if (Array.isArray(testimonialsList) && testimonialsList.length) { %>
       <% testimonialsList.forEach(function(t) { %>
-        <% const avatarSrc = (t && t.avatar) || (t && t.photo_url) || (t && t.gender === 'female' ? '/images/avatars/human-female.jpg' : t && t.gender === 'male' ? '/images/avatars/human-male.jpg' : '/images/avatars/human-generic.jpg'); %>
-        <blockquote class="testi-card" tabindex="0" aria-label="Customer testimonial">
-          <div class="testi-photo" aria-hidden="false">
-            <img
-              src="<%= avatarSrc %>"
-              alt="<%= (t && (t.name || 'Customer')) %>'s avatar"
-              width="64" height="64"
-              onerror="this.onerror=null;this.src='/images/avatars/human-generic.jpg';"
-              class="testimonial-avatar"
-            />
-          </div>
+        <div class="testi-item" role="listitem">
+          <blockquote class="testi-card" tabindex="0" aria-label="Customer testimonial">
+            <div class="testi-photo" aria-hidden="false">
+              <img
+                src="<%= (t && t.avatar) || (t && t.photo_url) || (t && t.gender === 'female' ? '/images/avatars/human-female.jpg' : t && t.gender === 'male' ? '/images/avatars/human-male.jpg' : '/images/avatars/human-generic.jpg') %>"
+                alt="<%= (t && (t.name || 'Customer')) %>'s avatar"
+                width="64" height="64"
+                onerror="this.onerror=null;this.src='/images/avatars/human-generic.jpg';"
+                class="testimonial-avatar"
+              />
+            </div>
 
-          <div class="testi-body">
-            <p class="quote">“<%= (t && t.quote) ? t.quote : '' %>”</p>
-            <footer class="testi-meta">
-              <strong><%= (t && t.name) ? t.name : 'Anonymous' %></strong>
-              <% if (t && t.city) { %><small><%= t.city %></small><% } %>
-            </footer>
-          </div>
-        </blockquote>
+            <div class="testi-body">
+              <p class="quote">“<%= (t && t.quote) ? t.quote : '' %>”</p>
+              <footer class="testi-meta">
+                <strong><%= (t && t.name) ? t.name : 'Anonymous' %></strong>
+                <% if (t && t.city) { %><small><%= t.city %></small><% } %>
+              </footer>
+            </div>
+          </blockquote>
+        </div>
       <% }) %>
     <% } else { %>
       <p class="muted">No testimonials yet — ask customers to leave feedback after ordering.</p>

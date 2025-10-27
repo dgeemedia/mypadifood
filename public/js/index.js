@@ -231,17 +231,17 @@
     createMarquee('.featured-scroller', 36);
     createMarquee('.partners-row', 28);
 
-    const testiGrid = document.querySelector('.testi-grid');
-    if (testiGrid && testiGrid.children.length > 3) {
-      if (window.innerWidth > 720) {
-        testiGrid.style.display = 'flex';
-        testiGrid.style.flexWrap = 'nowrap';
-        testiGrid.style.gap = '12px';
-        testiGrid.style.overflow = 'hidden';
-        testiGrid.style.alignItems = 'center';
-        createMarquee('.testi-grid', 24);
-      }
-    }
+    // Updated: make testimonials flow like partners (uses .testi-scroller)
+    (function enableTestiMarquee() {
+      const testi = document.querySelector('.testi-scroller');
+      if (!testi) return;
+
+      // only enable marquee on wider screens to preserve mobile stacking
+      // if (window.innerWidth <= 720) return;
+
+      // apply marquee with a comfortable speed
+      createMarquee('.testi-scroller', 24);
+    })();
   })();
 })(); // end main IIFE
 

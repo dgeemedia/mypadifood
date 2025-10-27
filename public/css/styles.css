@@ -1850,9 +1850,88 @@ table tbody td {
 .homepage .partner { flex:0 0 auto; background:#fff; padding:8px 12px; border-radius:10px; box-shadow:0 8px 20px rgba(8,18,30,0.04); }
 .homepage .partner img { height:56px; width:auto; display:block; object-fit:contain; }
 
-/* TESTIMONIALS GRID */
-.homepage .testi-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-top:14px; }
-.homepage .testi-card { display:flex; gap:12px; padding:12px; border-radius:10px; background:#fff; border:1px solid rgba(240,242,245,0.8); align-items:flex-start; }
+/* Testimonials marquee + uniform cards */
+.homepage .testi-scroller {
+  display:flex;
+  gap:14px;
+  overflow:hidden;
+  padding:12px 0;
+  align-items:stretch;    /* ensure children stretch to same height */
+  min-height:220px;       /* adjust to taste */
+}
+
+/* wrapper item which defines width of each card */
+.homepage .testi-item {
+  flex: 0 0 300px;        /* fixed width per card; change 300px as desired */
+  display: flex;
+  height: 100%;
+}
+
+/* card stacked layout so avatar sits on top and body fills remaining space */
+.homepage .testimonial-card {
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  height:100%;
+  padding:14px;
+  border-radius:10px;
+  background:#fff;
+  border:1px solid rgba(240,242,245,0.9);
+  box-shadow: 0 6px 18px rgba(8,18,30,0.03);
+  box-sizing:border-box;
+}
+
+/* top area with centered avatar */
+.homepage .testimonial-top {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin-bottom:8px;
+}
+
+/* round avatar, forced size, crop to fit */
+.homepage .testimonial-avatar {
+  width:72px;
+  height:72px;
+  border-radius:50%;
+  object-fit:cover;
+  display:block;
+  flex:0 0 auto;
+  border: 2px solid rgba(0,0,0,0.04);
+}
+
+/* body stretches so quote can take remaining space */
+.homepage .testimonial-body {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  flex:1 1 auto;
+  min-height:0; /* allows flex children to scroll/clip correctly */
+}
+
+/* title/meta */
+.homepage .testimonial-name { font-size:1rem; display:block; }
+.homepage .testimonial-meta { color:#666; font-size:0.85rem; margin-top:2px; }
+
+/* clamp quote to max lines so cards remain same height */
+.homepage .testimonial-quote {
+  margin:0;
+  color:#222;
+  font-size:0.95rem;
+  line-height:1.35;
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-line-clamp:5;           /* number of lines to show */
+  -webkit-box-orient:vertical;
+  text-overflow:ellipsis;
+}
+
+/* small responsive tweak */
+@media (max-width:720px){
+  .homepage .testi-scroller { min-height: auto; overflow-x:auto; }
+  .homepage .testi-item { flex: 0 0 86%; } /* cards take most of width on mobile */
+}
+
 
 /* INVESTOR CTA */
 .homepage .investor-cta {
