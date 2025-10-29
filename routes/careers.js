@@ -57,12 +57,11 @@ router.post('/apply', upload.single('cvfile'), async (req, res) => {
     subject: `Application received — ${role}`,
     text: `Thanks ${name}, we’ve received your application for ${role}. We will review it.`,
     html: applicantHtml,
-    from: process.env.CAREERS_EMAIL || process.env.MAIL_FROM || mailFrom
+    from: process.env.CAREERS_EMAIL || process.env.MAIL_FROM
   });
 } catch (e) {
   console.error('Applicant confirmation email error:', e && e.message ? e.message : e);
 }
-
 
     // Notify internal hiring inbox
     const internalTo = process.env.CAREERS_EMAIL || process.env.MAIL_TO || `careers@${process.env.APP_DOMAIN || 'mypadifood.com'}`;
@@ -83,7 +82,7 @@ router.post('/apply', upload.single('cvfile'), async (req, res) => {
     subject: `New applicant — ${role} — ${name}`,
     text: `${name} applied for ${role}`,
     html: internalHtml,
-    from: process.env.CAREERS_EMAIL || process.env.MAIL_FROM || mailFrom
+    from: process.env.CAREERS_EMAIL || process.env.MAIL_FROM
   });
 } catch (e) {
   console.error('Internal notification email error:', e && e.message ? e.message : e);

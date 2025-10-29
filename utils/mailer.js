@@ -12,7 +12,8 @@ let smtpTransporter = null;
 let smtpVerified = false;
 
 // SendGrid helper (lazy require)
-async function sendViaSendGrid({ to, subject, text, html, from }) {
+// now supports attachments: [{ filename, content (Buffer|string), contentType }]
+async function sendViaSendGrid({ to, subject, text, html, from, replyTo, attachments = [] }) {
   if (!SENDGRID_API_KEY) throw new Error('SENDGRID_API_KEY not configured');
   let sg;
   try {
@@ -21,7 +22,44 @@ async function sendViaSendGrid({ to, subject, text, html, from }) {
     throw new Error('@sendgrid/mail package not installed');
   }
   sg.setApiKey(SENDGRID_API_KEY);
-  const msg = { to, from: from || mailFrom, subject, text, html };
+
+  const msg = {
+    to,
+    from: from || mailFrom,
+    subject,
+    text,
+    html,
+  };
+
+  if (replyTo) msg.replyTo = replyTo;
+
+  // map attachments to SendGrid format if present
+  if (attachments && attachments.length) {
+    msg.attachments = attachments.map((a) => {
+      // a.content may be Buffer (from multer.memoryStorage) or string
+      let content = a.content;
+      if (Buffer.isBuffer(content)) {
+        content = content.toString('base64');
+      } else if (typeof content === 'string') {
+        // assume string already base64 or plain text — convert to base64 to be safe
+        try {
+          content = Buffer.from(content).toString('base64');
+        } catch (e) {
+          content = Buffer.from(String(content)).toString('base64');
+        }
+      } else {
+        // fallback: stringify
+        content = Buffer.from(String(content || '')).toString('base64');
+      }
+      return {
+        filename: a.filename || 'attachment',
+        type: a.contentType || a.mimetype || undefined,
+        content,
+        disposition: 'attachment',
+      };
+    });
+  }
+
   try {
     const res = await sg.send(msg);
     return res;
@@ -32,7 +70,6 @@ async function sendViaSendGrid({ to, subject, text, html, from }) {
     throw err;
   }
 }
-
 
 function createSmtpTransporterFromEnv() {
   const host = process.env.SMTP_HOST;
@@ -84,8 +121,11 @@ function getSmtpTransporter() {
  * - If MAIL_SEND_METHOD === 'sendgrid' => try SendGrid only.
  * - If MAIL_SEND_METHOD unset => prefer SendGrid when key present, else SMTP if configured.
  * - Falls back to console logging if no transport available.
+ *
+ * Now supports attachments: attachments: [{ filename, content (Buffer|string), contentType, mimetype }]
+ * and replyTo.
  */
-async function sendMail({ to, subject, text = '', html = '', from = null }) {
+async function sendMail({ to, subject, text = '', html = '', from = null, attachments = [], replyTo = null }) {
   if (!to || !subject) throw new Error('sendMail requires `to` and `subject`');
 
   const effectiveFrom = from || mailFrom;
@@ -95,7 +135,22 @@ async function sendMail({ to, subject, text = '', html = '', from = null }) {
     const t = getSmtpTransporter();
     if (!t) throw new Error('SMTP transporter not configured (check env)');
     try {
-      const info = await t.sendMail({ from: effectiveFrom, to, subject, text, html });
+      const info = await t.sendMail({
+        from: effectiveFrom,
+        to,
+        subject,
+        text,
+        html,
+        attachments: attachments.map(a => {
+          // nodemailer expects { filename, content, contentType }
+          return {
+            filename: a.filename || 'attachment',
+            content: a.content,
+            contentType: a.contentType || a.mimetype || undefined,
+          };
+        }),
+        replyTo,
+      });
       if (info && info.messageId) console.log('Email sent via SMTP:', info.messageId);
       return info;
     } catch (smtpErr) {
@@ -107,7 +162,7 @@ async function sendMail({ to, subject, text = '', html = '', from = null }) {
   // 2. Forced SendGrid
   if (MAIL_SEND_METHOD === 'sendgrid') {
     try {
-      return await sendViaSendGrid({ to, subject, text, html, from: effectiveFrom });
+      return await sendViaSendGrid({ to, subject, text, html, from: effectiveFrom, replyTo, attachments });
     } catch (sgErr) {
       console.error('SendGrid send failed:', sgErr && sgErr.message ? sgErr.message : sgErr);
       throw sgErr;
@@ -117,7 +172,7 @@ async function sendMail({ to, subject, text = '', html = '', from = null }) {
   // 3. Auto: prefer SendGrid if key present
   if (SENDGRID_API_KEY) {
     try {
-      return await sendViaSendGrid({ to, subject, text, html, from: effectiveFrom });
+      return await sendViaSendGrid({ to, subject, text, html, from: effectiveFrom, replyTo, attachments });
     } catch (sgErr) {
       console.error('SendGrid send failed (falling back to SMTP):', sgErr && sgErr.message ? sgErr.message : sgErr);
       // fall through to SMTP attempt
@@ -128,7 +183,19 @@ async function sendMail({ to, subject, text = '', html = '', from = null }) {
   const t = getSmtpTransporter();
   if (t) {
     try {
-      const info = await t.sendMail({ from: effectiveFrom, to, subject, text, html });
+      const info = await t.sendMail({
+        from: effectiveFrom,
+        to,
+        subject,
+        text,
+        html,
+        attachments: attachments.map(a => ({
+          filename: a.filename || 'attachment',
+          content: a.content,
+          contentType: a.contentType || a.mimetype || undefined,
+        })),
+        replyTo,
+      });
       if (info && info.messageId) console.log('Email sent via SMTP:', info.messageId);
       return info;
     } catch (smtpErr) {
@@ -143,8 +210,12 @@ async function sendMail({ to, subject, text = '', html = '', from = null }) {
   console.log('From:', effectiveFrom);
   console.log('To:', to);
   console.log('Subject:', subject);
+  if (replyTo) console.log('Reply-To:', replyTo);
   if (text) console.log('Text:', text);
   if (html) console.log('HTML:', html);
+  if (attachments && attachments.length) {
+    console.log('Attachments:', attachments.map(a => a.filename || 'attachment'));
+  }
   console.log('=== END EMAIL ===');
 
   return { fallback: true };

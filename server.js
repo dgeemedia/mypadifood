@@ -9,6 +9,7 @@ const expressLayouts = require('express-ejs-layouts'); // layout middleware for 
 const cookieParser = require('cookie-parser');
 const authJwt = require('./middleware/authJwt'); // JWT middleware (check token + require helpers)
 const careersRouter = require('./routes/careers'); // careers router
+const contactRouter = require('./routes/contact');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -208,6 +209,7 @@ app.use('/client/transactions', require('./routes/clientTransactions'));
 app.use('/rider', require('./routes/rider'));
 app.use('/api/gpt4all', require('./routes/api/gpt4all'));
 app.use('/careers', careersRouter);
+app.use('/contact', contactRouter);
 
 // Admin partners management
 app.use('/admin/partners', require('./routes/adminPartners'));
