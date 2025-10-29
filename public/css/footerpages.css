@@ -7,6 +7,28 @@
   backdrop-filter: blur(10px);
 }
 
+.page-header h1 {
+  font-size: 2rem;
+  color: var(--brand-2, #006241);
+  margin-bottom: 8px;
+}
+.page-header .muted {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.about-card h2 {
+  font-size: 1.4rem;
+  margin-bottom: 12px;
+  color: var(--brand-2, #006241);
+}
+
+.story h2 {
+  font-size: 1.4rem;
+  margin-bottom: 12px;
+  color: var(--brand-2, #006241);
+}
+
 /* About section cards */
 .about-grid {
   display: grid;
