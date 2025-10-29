@@ -8,6 +8,7 @@ const path = require('path');
 const expressLayouts = require('express-ejs-layouts'); // layout middleware for EJS
 const cookieParser = require('cookie-parser');
 const authJwt = require('./middleware/authJwt'); // JWT middleware (check token + require helpers)
+const careersRouter = require('./routes/careers'); // careers router
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -103,7 +104,10 @@ app.use(require('./middleware/flash'));
 // Static assets
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// additionally serve CV uploads from public/uploads for Careers page
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use('/locations', express.static(path.join(__dirname, 'locations')));
+
 
 // expose currentUser (from JWT/session) to templates
 app.use((req, res, next) => {
@@ -203,6 +207,7 @@ app.use('/client/wallet', require('./routes/wallet')); // POST /client/wallet/fu
 app.use('/client/transactions', require('./routes/clientTransactions'));
 app.use('/rider', require('./routes/rider'));
 app.use('/api/gpt4all', require('./routes/api/gpt4all'));
+app.use('/careers', careersRouter);
 
 // Admin partners management
 app.use('/admin/partners', require('./routes/adminPartners'));

@@ -12,7 +12,7 @@ let smtpTransporter = null;
 let smtpVerified = false;
 
 // SendGrid helper (lazy require)
-async function sendViaSendGrid({ to, subject, text, html }) {
+async function sendViaSendGrid({ to, subject, text, html, from }) {
   if (!SENDGRID_API_KEY) throw new Error('SENDGRID_API_KEY not configured');
   let sg;
   try {
@@ -21,7 +21,7 @@ async function sendViaSendGrid({ to, subject, text, html }) {
     throw new Error('@sendgrid/mail package not installed');
   }
   sg.setApiKey(SENDGRID_API_KEY);
-  const msg = { to, from: mailFrom, subject, text, html };
+  const msg = { to, from: from || mailFrom, subject, text, html };
   try {
     const res = await sg.send(msg);
     return res;
@@ -32,6 +32,7 @@ async function sendViaSendGrid({ to, subject, text, html }) {
     throw err;
   }
 }
+
 
 function createSmtpTransporterFromEnv() {
   const host = process.env.SMTP_HOST;
@@ -84,15 +85,17 @@ function getSmtpTransporter() {
  * - If MAIL_SEND_METHOD unset => prefer SendGrid when key present, else SMTP if configured.
  * - Falls back to console logging if no transport available.
  */
-async function sendMail({ to, subject, text = '', html = '' }) {
+async function sendMail({ to, subject, text = '', html = '', from = null }) {
   if (!to || !subject) throw new Error('sendMail requires `to` and `subject`');
+
+  const effectiveFrom = from || mailFrom;
 
   // 1. Forced SMTP
   if (MAIL_SEND_METHOD === 'smtp') {
     const t = getSmtpTransporter();
     if (!t) throw new Error('SMTP transporter not configured (check env)');
     try {
-      const info = await t.sendMail({ from: mailFrom, to, subject, text, html });
+      const info = await t.sendMail({ from: effectiveFrom, to, subject, text, html });
       if (info && info.messageId) console.log('Email sent via SMTP:', info.messageId);
       return info;
     } catch (smtpErr) {
@@ -104,7 +107,7 @@ async function sendMail({ to, subject, text = '', html = '' }) {
   // 2. Forced SendGrid
   if (MAIL_SEND_METHOD === 'sendgrid') {
     try {
-      return await sendViaSendGrid({ to, subject, text, html });
+      return await sendViaSendGrid({ to, subject, text, html, from: effectiveFrom });
     } catch (sgErr) {
       console.error('SendGrid send failed:', sgErr && sgErr.message ? sgErr.message : sgErr);
       throw sgErr;
@@ -114,7 +117,7 @@ async function sendMail({ to, subject, text = '', html = '' }) {
   // 3. Auto: prefer SendGrid if key present
   if (SENDGRID_API_KEY) {
     try {
-      return await sendViaSendGrid({ to, subject, text, html });
+      return await sendViaSendGrid({ to, subject, text, html, from: effectiveFrom });
     } catch (sgErr) {
       console.error('SendGrid send failed (falling back to SMTP):', sgErr && sgErr.message ? sgErr.message : sgErr);
       // fall through to SMTP attempt
@@ -125,7 +128,7 @@ async function sendMail({ to, subject, text = '', html = '' }) {
   const t = getSmtpTransporter();
   if (t) {
     try {
-      const info = await t.sendMail({ from: mailFrom, to, subject, text, html });
+      const info = await t.sendMail({ from: effectiveFrom, to, subject, text, html });
       if (info && info.messageId) console.log('Email sent via SMTP:', info.messageId);
       return info;
     } catch (smtpErr) {
@@ -137,7 +140,7 @@ async function sendMail({ to, subject, text = '', html = '' }) {
   // 5. Final fallback: console log (non-blocking)
   console.warn('No mail transport available — logging email to console (fallback).');
   console.log('=== EMAIL (fallback) ===');
-  console.log('From:', mailFrom);
+  console.log('From:', effectiveFrom);
   console.log('To:', to);
   console.log('Subject:', subject);
   if (text) console.log('Text:', text);

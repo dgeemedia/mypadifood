@@ -1,5 +1,174 @@
 <!--views/pages/careers.ejs-->
-<section class="container page">
-  <h1>Careers</h1>
-  <p>We're hiring. Email jobs@mypadiman.example with your CV.</p>
+<% 
+  const fallbackAvatar = '/images/avatars/human-generic.jpg';
+%>
+<section class="container page careers-page">
+  <link rel="stylesheet" href="/css/footerpages.css" />
+  <link rel="stylesheet" href="/css/careers.css" />
+
+  <header class="page-header">
+    <h1>Careers</h1>
+    <p class="lead">Join MyPadiFood — help us connect neighbours to trusted local meals while creating income for micro food entrepreneurs.</p>
+  </header>
+
+  <div class="jobs-grid">
+    <!-- Job: Food Specialist -->
+    <article class="about-card job-card">
+      <h3>Food Specialist</h3>
+      <p class="muted">Open to caterers, restaurant owners and chefs who take joy in securing great food for communities.</p>
+      <div class="job-desc">
+        <p>
+          As a Food Specialist you will determine local food prices, build relationships with neighbourhood cooks,
+          and recommend menu items for platform-wide implementation. You will manage weekly food bookings (Monday–Friday),
+          map nearest vendors to each customer, and ensure customers' selected meals are available and prepared to standard.
+          You'll scout and validate vendors, propose additional meal concepts, maintain portion/price parity across locations,
+          and collaborate with the product team to implement promotional menus and seasonal offerings.
+        </p>
+        <p><strong>Key tasks:</strong> price surveys, menu curation, vendor tastings, menu rollout planning, quality checks.</p>
+      </div>
+      <button class="btn btn-apply" data-role="Food Specialist">Apply</button>
+    </article>
+
+    <!-- Job: Local Vendor Scout (Field Agent) -->
+    <article class="about-card job-card">
+      <h3>Local Vendor Scout</h3>
+      <p class="muted">(Previously 'Field Agent') Open to anyone across Nigeria passionate about helping neighbours earn extra income.</p>
+      <div class="job-desc">
+        <p>
+          The Local Vendor Scout sources and onboards small food vendors and home cooks. You will verify vendor locations, assess
+          hygiene and service readiness, advise on simple improvements for safety and presentation, and gather early feedback
+          and photos for their profiles. Scouts will also collect basic menu/pricing details and help vendors understand order and review flows.
+        </p>
+        <p><strong>Key tasks:</strong> vendor outreach, on-site assessments, onboarding assistance, hygiene coaching, location mapping.</p>
+      </div>
+      <button class="btn btn-apply" data-role="Local Vendor Scout">Apply</button>
+    </article>
+
+    <!-- Job: Social Media Manager -->
+    <article class="about-card job-card">
+      <h3>Social Media Manager</h3>
+      <p class="muted">A creative marketer with graphic design skills who can grow our user base through engaging campaigns.</p>
+      <div class="job-desc">
+        <p>
+          You'll design and execute social campaigns, create visual content and short-form video for Instagram, Facebook and TikTok,
+          run A/B experiments on messaging and creatives, and design funnels that convert viewers into registered customers and vendors.
+          Experience with paid acquisition, community-building strategies, influencer partnerships and analytics-driven creative iteration is a plus.
+        </p>
+        <p><strong>Key tasks:</strong> content calendar, campaign design, creative production, performance tracking, community moderation.</p>
+      </div>
+      <button class="btn btn-apply" data-role="Social Media Manager">Apply</button>
+    </article>
+
+    <!-- Job: Community Relations -->
+    <article class="about-card job-card">
+      <h3>Community Relations</h3>
+      <p class="muted">Build trust between MyPadiFood, customers, vendors and local communities.</p>
+      <div class="job-desc">
+        <p>
+          This role focuses on building long-term relationships with local stakeholders, resolving community issues, running
+          educational programs for vendors on food safety and customer service, and collecting ethnographic feedback to inform product decisions.
+          You will coordinate local events, pilot programmes and vendor training sessions.
+        </p>
+        <p><strong>Key tasks:</strong> stakeholder engagement, training coordination, dispute mediation, community outreach campaigns.</p>
+      </div>
+      <button class="btn btn-apply" data-role="Community Relations">Apply</button>
+    </article>
+
+    <!-- Job: Planner -->
+    <article class="about-card job-card">
+      <h3>Planner</h3>
+      <p class="muted">Design and coordinate weekly food booking schedules and operational plans.</p>
+      <div class="job-desc">
+        <p>
+          The Planner builds and optimises schedules for weekly bookings (Monday–Friday), aligns vendor capacity with demand forecasts,
+          manages inventory assumptions for partner kitchens, and supports route & delivery planning with the operations team. You'll run
+          simple demand forecasts, produce weekly vendor briefs and help set booking deadlines and cutoffs.
+        </p>
+        <p><strong>Key tasks:</strong> schedule design, demand forecasting, vendor-capacity matching, operations coordination.</p>
+      </div>
+      <button class="btn btn-apply" data-role="Planner">Apply</button>
+    </article>
+
+    <!-- Job: Customer Support -->
+    <article class="about-card job-card">
+      <h3>Customer Support</h3>
+      <p class="muted">Provide day-to-day support for customers, vendors and riders to ensure satisfaction.</p>
+      <div class="job-desc">
+        <p>
+          You will handle daily order queries and weekly booking concerns, connect customers with vendors and riders, resolve
+          issues, follow up on feedback and ensure every complaint or request reaches a conclusion. Experience with helpdesk
+          tooling, polite written communication and quick problem solving is required.
+        </p>
+        <p><strong>Key tasks:</strong> ticket resolution, vendor liaison, escalation management, follow-ups and customer retention actions.</p>
+      </div>
+      <button class="btn btn-apply" data-role="Customer Support">Apply</button>
+    </article>
+  </div>
+
+  <!-- Apply Modal / Form -->
+  <div id="applyModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card">
+      <button class="modal-close" data-close>&times;</button>
+      <h3 id="modalRole">Apply</h3>
+
+      <form id="applyForm" class="card form-card" enctype="multipart/form-data">
+  <input type="hidden" name="role" id="formRole" />
+
+  <!-- modal-body: scrollable area -->
+  <div class="modal-body">
+    <label class="field">
+      <span>Name</span>
+      <input name="name" type="text" required />
+    </label>
+
+    <label class="field">
+      <span>Email</span>
+      <input name="email" type="email" required />
+    </label>
+
+    <label class="field">
+      <span>Phone</span>
+      <input name="phone" type="tel" required />
+    </label>
+
+    <label class="field">
+      <span>Cover letter (optional)</span>
+      <textarea name="cover" rows="4" placeholder="Briefly tell us why you’re a fit"></textarea>
+    </label>
+
+    <div class="switch-cv">
+      <label><input type="radio" name="cvmethod" value="file" checked /> Upload CV</label>
+      <label><input type="radio" name="cvmethod" value="manual" /> Paste CV / Enter experience manually</label>
+    </div>
+
+    <label class="field cv-file">
+      <span>CV file (PDF/DOCX) — max 5MB</span>
+      <input name="cvfile" type="file" accept=".pdf,.doc,.docx" />
+    </label>
+
+    <label class="field cv-manual hidden">
+      <span>Paste your CV / experience</span>
+      <textarea name="cvtext" rows="8" placeholder="Paste your CV or write your experience here"></textarea>
+    </label>
+
+    <label class="field consent">
+      <input type="checkbox" name="consent" required /> I confirm the information provided is accurate and I consent to MyPadiFood contacting me.
+    </label>
+  </div>
+
+  <!-- sticky action bar (kept outside the scrollable area) -->
+  <div class="form-actions">
+    <button type="submit" class="btn btn-gold">Submit application</button>
+    <button type="button" class="btn" data-close>Cancel</button>
+  </div>
+
+  <div id="formMessage" class="muted"></div>
+</form>
+
+    </div>
+  </div>
+
+  <script src="/js/careers.js" defer></script>
 </section>
+
