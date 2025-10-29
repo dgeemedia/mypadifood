@@ -1,5 +1,6 @@
-// public/js/careers.js
-// careers.js — modal with sticky actions, improved submit feedback + dynamic layout
+// public/js/careers.js — modal with sticky actions, improved submit feedback + dynamic layout
+// Updated: includes top-screen flash helper and calls on submit success/failure
+
 document.addEventListener('DOMContentLoaded', () => {
   const applyButtons = document.querySelectorAll('.btn-apply');
   const modal = document.getElementById('applyModal');
@@ -17,6 +18,58 @@ document.addEventListener('DOMContentLoaded', () => {
   const card = modal.querySelector('.modal-card');
   const submitBtn = form.querySelector('button[type="submit"]');
   const cancelBtn = form.querySelector('button[data-close]');
+
+  // ---------- top-screen flash helper ----------
+  // creates a centered, transient top-level flash banner
+  function showTopFlash(text, type = 'success', opts = {}) {
+    const duration = typeof opts.duration === 'number' ? opts.duration : 5000;
+
+    // ensure single flash container
+    let top = document.querySelector('.top-flash-wrap');
+    if (!top) {
+      top = document.createElement('div');
+      top.className = 'top-flash-wrap';
+      document.body.appendChild(top);
+    }
+
+    // build flash element
+    const el = document.createElement('div');
+    el.className = `top-flash flash-${type}`;
+    el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+
+    // sanitize text by escaping angle brackets — minimal protection for insertion
+    const safeText = String(text).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    el.innerHTML = `
+      <div class="top-flash-inner">
+        <span class="top-flash-text">${safeText}</span>
+        <button class="top-flash-close" aria-label="Dismiss">&times;</button>
+      </div>
+    `;
+
+    // attach close handler
+    const closeBtn = el.querySelector('.top-flash-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 260);
+      });
+    }
+
+    // append & animate
+    top.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+
+    // auto remove
+    if (duration > 0) {
+      setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 260);
+      }, duration);
+    }
+
+    return el;
+  }
 
   // ensure modal is direct child of body
   function ensureModalInBody() {
@@ -109,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
   form.querySelectorAll('input[name="cvmethod"]').forEach(r => r.addEventListener('change', toggleCvMethod));
   toggleCvMethod();
 
-  // helper to show messages
+  // helper to show messages inside modal
   function showMessage(text, type = 'muted') {
     formMessage.textContent = text;
     formMessage.className = type;
@@ -146,11 +199,14 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/careers/apply', { method: 'POST', body: data });
       let json = null;
-      try { json = await res.json(); } catch(e) { /* ignore */ }
+      try { json = await res.json(); } catch(e) { /* ignore non-json */ }
 
       if (res.ok) {
         // --- UNIQUE SUCCESS SCREEN ---
         const ref = `MPF-${Date.now().toString().slice(-6)}-${Math.floor(Math.random()*900 + 100)}`;
+
+        // show top-level flash immediately so user sees confirmation at screen level
+        try { showTopFlash(`Application submitted — reference ${ref}`, 'success', { duration: 7000 }); } catch(e) { /* ignore */ }
 
         const successHtml = `
           <div class="apply-success" role="status" style="padding:18px; text-align:left;">
@@ -232,11 +288,14 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         const errText = (json && (json.error || json.message)) ? (json.error || json.message) : 'Submission failed. Try again later.';
         showMessage(errText, 'error');
+        try { showTopFlash(errText, 'error', { duration: 6000 }); } catch(e) { /* ignore */ }
         if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = origText; }
       }
     } catch (err) {
       console.error('Submit error:', err);
-      showMessage('Network error. Please try again.', 'error');
+      const netErr = 'Network error. Please try again.';
+      showMessage(netErr, 'error');
+      try { showTopFlash(netErr, 'error', { duration: 6000 }); } catch(e) { /* ignore */ }
       if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = origText; }
     }
   });

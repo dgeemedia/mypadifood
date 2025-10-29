@@ -152,3 +152,63 @@ body.modal-open { overflow: hidden; }
 .page-header .lead { color: #374151; margin-bottom: 16px; }
 
 @media (max-width:720px){ .modal-card{ padding:14px; margin:12px; } }
+
+/* top-screen flash container */
+.top-flash-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 12px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none; /* allow clicks through except the flash itself */
+  z-index: 1200;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+/* flash box */
+.top-flash {
+  pointer-events: auto;
+  max-width: 940px;
+  width: 100%;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  transform: translateY(-14px) scale(0.995);
+  opacity: 0;
+  transition: transform 220ms ease, opacity 200ms ease;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+/* visible state */
+.top-flash.show {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+/* inner layout */
+.top-flash-inner {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 12px 14px;
+  gap:12px;
+}
+
+.top-flash-text { font-size: 0.95rem; }
+
+/* types */
+.top-flash.flash-success { background: #e9f7ef; color: #064d33; border: 1px solid rgba(0,100,60,0.06); }
+.top-flash.flash-error   { background: #fff5f5; color: #6b0b0b; border: 1px solid rgba(170,20,20,0.06); }
+
+/* close button */
+.top-flash-close {
+  border: none;
+  background: transparent;
+  font-size: 1.05rem;
+  line-height:1;
+  cursor: pointer;
+  padding: 6px;
+  color: inherit;
+}
