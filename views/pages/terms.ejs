@@ -1,5 +1,109 @@
 <!--views/pages/terms.ejs-->
-<section class="container page">
-  <h1>Terms & Conditions</h1>
-  <p>Short terms summary — put your full legal text here.</p>
+<%
+  // defensive locals
+  const supportEmail = process.env.CONTACT_EMAIL || process.env.ADMIN_EMAIL || 'support@mypadifood.com';
+  // Use a different variable name to avoid TDZ when checking for an incoming `lastUpdated`
+  const lastUpdatedSafe = (typeof lastUpdated !== 'undefined' && lastUpdated) ? lastUpdated : (new Date()).toISOString().slice(0,10);
+%>
+
+<section class="container page terms-page">
+  <link rel="stylesheet" href="/css/footerpages.css" />
+
+  <header class="page-header">
+    <h1>Terms &amp; Conditions</h1>
+    <p class="lead">Short summary: By using MyPadiFood you agree to these terms. Read the sections below for details about ordering, payments, refunds and responsibilities.</p>
+    <p class="muted">Last updated: <strong><%= lastUpdatedSafe %></strong></p>
+  </header>
+
+  <nav class="terms-toc muted" aria-label="Terms table of contents" style="margin-bottom:12px;">
+    <strong>On this page:</strong>
+    <ul>
+      <li><a href="#acceptance">Acceptance</a></li>
+      <li><a href="#use">Using the Service</a></li>
+      <li><a href="#orders">Orders, Payment &amp; Fees</a></li>
+      <li><a href="#vendors">Vendors &amp; Delivery</a></li>
+      <li><a href="#refunds">Refunds &amp; Cancellations</a></li>
+      <li><a href="#liability">Limitation of Liability</a></li>
+      <li><a href="#privacy">Privacy</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <section id="acceptance" class="card about-card">
+    <h2>1. Acceptance of terms</h2>
+    <p>
+      These Terms &amp; Conditions ("Terms") govern your use of MyPadiFood's website and services (the "Service"). By accessing or using the Service you agree to be bound by these Terms. If you do not agree, do not use the Service.
+    </p>
+  </section>
+
+  <section id="use" class="card about-card">
+    <h2>2. Using the Service</h2>
+    <p>
+      You must be at least 18 years old (or of legal age in your jurisdiction) to register and place orders. You agree to provide accurate information and keep account details secure. You are responsible for activity that occurs under your account.
+    </p>
+    <p>
+      We may suspend or terminate accounts that violate these Terms or that present a safety risk.
+    </p>
+  </section>
+
+  <section id="orders" class="card about-card">
+    <h2>3. Orders, payment &amp; fees</h2>
+    <p>
+      When you place an order, you authorize MyPadiFood to charge the payment method you select. Prices shown by vendors include applicable fees and taxes unless otherwise stated. We may use third-party payment processors — please follow their terms as well.
+    </p>
+    <p>
+      You are responsible for correct delivery details. Additional charges may apply for refunds, chargebacks or corrections caused by incorrect information.
+    </p>
+  </section>
+
+  <section id="vendors" class="card about-card">
+    <h2>4. Vendors and delivery</h2>
+    <p>
+      Vendors are independent businesses who prepare and sell food using the platform. MyPadiFood facilitates discovery, ordering, and payments but does not employ vendors or riders directly unless otherwise stated.
+    </p>
+    <p>
+      Delivery times are estimates — actual delivery is subject to vendor preparation, rider availability and local conditions. We encourage customers to review vendor profiles and ratings.
+    </p>
+  </section>
+
+  <section id="refunds" class="card about-card">
+    <h2>5. Refunds &amp; cancellations</h2>
+    <p>
+      Refunds are handled on a case-by-case basis. If an order is incorrect, not received, or of unsatisfactory quality, contact support with your order reference and details. We will investigate and may offer a refund, credit or re-order depending on the situation.
+    </p>
+    <p>
+      Vendors may have their own cancellation windows; if you cancel within a vendor's cutoff you may be eligible for a refund in accordance with our refund policy.
+    </p>
+  </section>
+
+  <section id="liability" class="card about-card">
+    <h2>6. Limitation of liability</h2>
+    <p>
+      To the fullest extent permitted by law, MyPadiFood and its affiliates are not liable for indirect, incidental, special, punitive or consequential damages arising from use of the Service. Our aggregate liability for direct damages is limited to the amount paid by you for the relevant order(s) within the prior 90 days.
+    </p>
+  </section>
+
+  <section id="privacy" class="card about-card">
+    <h2>7. Privacy</h2>
+    <p>
+      Our <a href="/privacy">Privacy Policy</a> explains how we collect and use personal data. By using the Service you consent to those practices and to the use of electronic communications.
+    </p>
+  </section>
+
+  <section id="contact" class="card about-card">
+    <h2>8. Contact &amp; disputes</h2>
+    <p>
+      If you have questions, concerns or a dispute, email our support team at
+      <a href="mailto:<%= supportEmail %>"><%= supportEmail %></a> with your order/reference details. We aim to resolve issues quickly and fairly.
+    </p>
+  </section>
+
+  <section class="card about-card">
+    <h2>9. Changes to these Terms</h2>
+    <p>
+      We may update these Terms — material changes will be posted with a new effective date. Continued use after changes indicates acceptance.
+    </p>
+  </section>
+
 </section>
+
