@@ -1,10 +1,200 @@
 <!--views/pages/faq.ejs-->
-<section class="container page">
-  <h1>Support</h1>
-  <p>
-    Check the FAQ or email support at
-    <a href="mailto:<%= process.env.SUPPORT_EMAIL %>"
-      ><%= process.env.SUPPORT_EMAIL %></a
-    >.
-  </p>
+<%
+  // defensive locals
+  const supportEmail =
+    process.env.SUPPORT_EMAIL ||
+    process.env.CONTACT_EMAIL ||
+    process.env.ADMIN_EMAIL ||
+    'support@mypadifood.com';
+  const lastUpdatedSafe =
+    (typeof lastUpdated !== 'undefined' && lastUpdated) ? lastUpdated : (new Date()).toISOString().slice(0,10);
+%>
+
+<section class="container page faq-page">
+  <link rel="stylesheet" href="/css/footerpages.css" />
+
+  <header class="page-header">
+    <h1>Support — Frequently Asked Questions</h1>
+    <p class="lead">Need help? Search these FAQs first or email <a href="mailto:<%= supportEmail %>"><%= supportEmail %></a>.</p>
+    <p class="muted">Last updated: <strong><%= lastUpdatedSafe %></strong></p>
+  </header>
+
+  <div class="card about-card">
+    <label for="faqSearch" style="display:block; margin-bottom:8px; font-weight:600;">Search FAQs</label>
+    <input id="faqSearch" type="search" placeholder="Search questions (e.g. refund, delivery, vendor)" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #e6e6e8; font-size:0.95rem;" />
+    <small class="muted" style="display:block; margin-top:8px;">Tip: try keywords like "refund", "order reference", "vendor", "delivery".</small>
+  </div>
+
+  <section class="card about-card" style="margin-top:16px;">
+    <h2>Common questions</h2>
+
+    <div id="faqList" class="faq-list" style="margin-top:12px;">
+      <!-- Each faq-item uses <button> as the accordion header for accessibility -->
+      <article class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq1" id="faq1-btn" style="width:100%; text-align:left; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.04); background:transparent; font-weight:600;">
+          How long will my order take?
+        </button>
+        <div id="faq1" class="faq-a" role="region" aria-labelledby="faq1-btn" hidden style="padding:10px 12px; margin-top:8px;">
+          Delivery time varies by vendor and your location. Typical delivery windows are shown on vendor pages — if an order is delayed, check the order status in your dashboard or contact support with your order reference.
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq1b" id="faq1b-btn" style="width:100%; text-align:left; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.04); background:transparent; font-weight:600;">
+          Where do you operate / what areas do you deliver to?
+        </button>
+        <div id="faq1b" class="faq-a" role="region" aria-labelledby="faq1b-btn" hidden style="padding:10px 12px; margin-top:8px;">
+          Coverage varies by city and neighbourhood. We launch in selected towns and expand progressively — to check availability in your area, search the site by State or LGA, or try placing an order. If you don’t see vendors near you, email <a href="mailto:<%= supportEmail %>"><%= supportEmail %></a> and include your city/LGA; we’ll let you know when we’re coming to your area.
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq2" id="faq2-btn" style="width:100%; text-align:left; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.04); background:transparent; font-weight:600;">
+          How do I request a refund?
+        </button>
+        <div id="faq2" class="faq-a" role="region" aria-labelledby="faq2-btn" hidden style="padding:10px 12px; margin-top:8px;">
+          If something is wrong with your order, contact support with your order reference and details (photos help). We investigate and may offer a refund, credit or re-order depending on the situation.
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq2b" id="faq2b-btn" style="width:100%; text-align:left; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.04); background:transparent; font-weight:600;">
+          Where is my order? How do I track it?
+        </button>
+        <div id="faq2b" class="faq-a" role="region" aria-labelledby="faq2b-btn" hidden style="padding:10px 12px; margin-top:8px;">
+          You can track active orders in your dashboard — open the order and view live status updates (vendor accepted, rider assigned, out for delivery). If tracking info is missing or delayed, email support with your order reference and we'll investigate.
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq3" id="faq3-btn" style="width:100%; text-align:left; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.04); background:transparent; font-weight:600;">
+          What payment methods do you accept?
+        </button>
+        <div id="faq3" class="faq-a" role="region" aria-labelledby="faq3-btn" hidden style="padding:10px 12px; margin-top:8px;">
+          We support pay-on-delivery, and online payments via integrated providers (Paystack, Flutterwave) where available. You can also pay from your wallet balance if you have funds.
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq4" id="faq4-btn" style="width:100%; text-align:left; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.04); background:transparent; font-weight:600;">
+          How do vendors join the platform?
+        </button>
+        <div id="faq4" class="faq-a" role="region" aria-labelledby="faq4-btn" hidden style="padding:10px 12px; margin-top:8px;">
+          Vendors can register via the <a href="/vendor/register">vendor registration</a> page. We run a simple onboarding and validation process to ensure food safety and consistent quality.
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq5" id="faq5-btn" style="width:100%; text-align:left; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.04); background:transparent; font-weight:600;">
+          Who delivers the food?
+        </button>
+        <div id="faq5" class="faq-a" role="region" aria-labelledby="faq5-btn" hidden style="padding:10px 12px; margin-top:8px;">
+          Deliveries are handled by independent riders who accept trips via the platform. Rider availability may vary by area. You’ll see rider details in the live order view once a rider accepts your delivery.
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq6" id="faq6-btn" style="width:100%; text-align:left; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.04); background:transparent; font-weight:600;">
+          I forgot my password — how do I sign in?
+        </button>
+        <div id="faq6" class="faq-a" role="region" aria-labelledby="faq6-btn" hidden style="padding:10px 12px; margin-top:8px;">
+          Use the "Forgot password" link on the login page to reset your password. If you have trouble, email <a href="mailto:<%= supportEmail %>"><%= supportEmail %></a> and include the email address tied to your account.
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq7" id="faq7-btn" style="width:100%; text-align:left; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.04); background:transparent; font-weight:600;">
+          Can I change my order after placing it?
+        </button>
+        <div id="faq7" class="faq-a" role="region" aria-labelledby="faq7-btn" hidden style="padding:10px 12px; margin-top:8px;">
+          Changes after placing an order depend on vendor and preparation status. Contact support quickly with your order reference — we’ll try to help, but changes cannot always be guaranteed.
+        </div>
+      </article>
+
+      <article class="faq-item">
+        <button class="faq-q" aria-expanded="false" aria-controls="faq8" id="faq8-btn" style="width:100%; text-align:left; padding:12px; border-radius:8px; border:1px solid rgba(0,0,0,0.04); background:transparent; font-weight:600;">
+          How do I report a problem with a vendor or rider?
+        </button>
+        <div id="faq8" class="faq-a" role="region" aria-labelledby="faq8-btn" hidden style="padding:10px 12px; margin-top:8px;">
+          Email support with the order reference and details. For urgent safety issues, include clear description and any photos. We review reports and take action where necessary.
+        </div>
+      </article>
+    </div> <!-- #faqList -->
+  </section>
+
+  <section class="card about-card" style="margin-top:16px;">
+    <h2>Still need help?</h2>
+    <p>
+      If the FAQ didn't answer your question, email <a href="mailto:<%= supportEmail %>"><%= supportEmail %></a> with relevant details (order reference, screenshots). We aim to reply within 1–2 business days.
+    </p>
+  </section>
+
+  <script>
+    // FAQ accordion + search (keeps behaviour accessible)
+    (function () {
+      const faqList = document.getElementById('faqList');
+      if (!faqList) return;
+
+      // toggle handler for accordion buttons
+      faqList.addEventListener('click', (e) => {
+        const btn = e.target.closest && e.target.closest('.faq-q');
+        if (!btn) return;
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        const targetId = btn.getAttribute('aria-controls');
+        const region = document.getElementById(targetId);
+        if (!region) return;
+
+        // Close any open panel (single-open behaviour); remove this block to allow multiple open
+        faqList.querySelectorAll('.faq-q').forEach((b) => {
+          if (b !== btn) {
+            b.setAttribute('aria-expanded', 'false');
+            const r = document.getElementById(b.getAttribute('aria-controls'));
+            if (r) r.hidden = true;
+          }
+        });
+
+        // toggle this one
+        btn.setAttribute('aria-expanded', String(!expanded));
+        region.hidden = expanded;
+        if (!expanded) {
+          // move focus into region for keyboard users
+          region.setAttribute('tabindex', '-1');
+          region.focus({ preventScroll: true });
+        } else {
+          region.removeAttribute('tabindex');
+        }
+      });
+
+      // keyboard support (Enter/Space)
+      faqList.addEventListener('keydown', (e) => {
+        const btn = e.target.closest && e.target.closest('.faq-q');
+        if (!btn) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          btn.click();
+        }
+      });
+
+      // search filter
+      const search = document.getElementById('faqSearch');
+      if (search) {
+        search.addEventListener('input', (ev) => {
+          const q = (ev.target.value || '').trim().toLowerCase();
+          const items = Array.from(faqList.querySelectorAll('.faq-item'));
+          if (!q) {
+            items.forEach(it => { it.style.display = ''; });
+            return;
+          }
+          items.forEach(it => {
+            const qText = (it.querySelector('.faq-q') && it.querySelector('.faq-q').textContent) ? it.querySelector('.faq-q').textContent.toLowerCase() : '';
+            const aText = (it.querySelector('.faq-a') && it.querySelector('.faq-a').textContent) ? it.querySelector('.faq-a').textContent.toLowerCase() : '';
+            if (qText.includes(q) || aText.includes(q)) it.style.display = '';
+            else it.style.display = 'none';
+          });
+        });
+      }
+    })();
+  </script>
 </section>
+
+

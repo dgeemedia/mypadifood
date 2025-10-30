@@ -1,4 +1,3 @@
-// routes/index.js
 const express = require('express');
 const router = express.Router();
 
@@ -11,6 +10,9 @@ const testimonialModel =
 
 // avatar helper for testimonial avatars
 const avatarUtil = require('../utils/avatar');
+
+// reuse support router (routes/support.js should exist and export a Router)
+const supportRouter = require('./support');
 
 // Home
 router.get('/', async (req, res) => {
@@ -143,7 +145,15 @@ router.get(`/vendor/:id(${uuidPattern})`, async (req, res) => {
 router.get('/about', (req, res) => res.render('pages/about'));
 router.get('/contact', (req, res) => res.render('pages/contact'));
 router.get('/careers', (req, res) => res.render('pages/careers'));
-router.get('/support', (req, res) => res.render('pages/support'));
+
+// Mount support router so POST /support works and GET /support shows the contact form
+router.use('/support', supportRouter);
+
+// FAQ route (fixes "Cannot GET /faq")
+router.get('/faq', (req, res) => {
+  res.render('pages/faq', { title: 'Support / FAQ' });
+});
+
 router.get('/terms', (req, res) => res.render('pages/terms'));
 router.get('/privacy', (req, res) => res.render('pages/privacy'));
 
