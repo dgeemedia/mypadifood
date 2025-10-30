@@ -1,3 +1,10 @@
+<!--views/partials/footer.ejs-->
+<%
+  // optional: provide youtubeVideoId when rendering, or use env var
+  const youtubeId = (typeof youtubeVideoId !== 'undefined' && youtubeVideoId) ? youtubeVideoId : (process.env.YOUTUBE_VIDEO_ID || null);
+  const youtubeChannel = process.env.YOUTUBE_CHANNEL || 'https://www.youtube.com/@MyPadiFood';
+%>
+
 <footer class="site-footer">
   <div class="container footer-grid">
     <div class="footer-col">
@@ -57,14 +64,6 @@
         </li>
 
         <li>
-          <a href="https://www.youtube.com/@MyPadiFood" target="_blank"
-            rel="noopener noreferrer" aria-label="YouTube">
-            <i class="fa-brands fa-youtube" aria-hidden="true"></i>
-            <span class="social-label">YouTube</span>
-          </a>
-        </li>
-
-        <li>
           <a
             href="https://www.linkedin.com/company/109748993/"
             target="_blank"
@@ -75,7 +74,34 @@
             <span class="social-label">LinkedIn</span>
           </a>
         </li>
+
+        <li>
+          <a href="https://www.youtube.com/@MyPadiFood" target="_blank"
+            rel="noopener noreferrer" aria-label="YouTube">
+            <i class="fa-brands fa-youtube" aria-hidden="true"></i>
+            <span class="social-label">YouTube</span>
+          </a>
+        </li>
+
       </ul>
+
+      <!-- YouTube embed / CTA -->
+      <div class="footer-youtube">
+        <% if (youtubeId) { %>
+          <div class="youtube-embed" aria-hidden="false">
+            <iframe
+              src="https://www.youtube.com/embed/<%= youtubeId %>?rel=0&modestbranding=1"
+              title="MyPadiFood video"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+          </div>
+          <p class="muted" style="margin-top:8px;">Watch more on <a href="<%= youtubeChannel %>" target="_blank" rel="noopener noreferrer">our YouTube channel</a>.</p>
+        <% } else { %>
+          <p class="muted">Watch our videos on <a href="<%= youtubeChannel %>" target="_blank" rel="noopener noreferrer">YouTube</a>.</p>
+        <% } %>
+      </div>
     </div>
   </div>
 
