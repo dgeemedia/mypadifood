@@ -753,8 +753,27 @@
   </main>
 </div>
 
+
+<script src="/js/index.js" defer></script>
 <script src="/js/client-dashboard.js" defer></script>
 <script src="/js/wallet-dashboard.js" defer></script>
+
+<script>
+  // same pool used on index.ejs — tweak order or items as you like
+  window.FOOD_PLACEHOLDERS = [
+    '/images/food/placeholder.jpg',
+    '/images/food/moi_moi.jpg',
+    '/images/food/jollof.jpg',
+    '/images/food/bread_beans.jpg'
+  ];
+
+  // canonical placeholder path from server-side partial (fallback to literal)
+  <% try { %>
+    window.CANONICAL_PLACEHOLDER = '<%= (typeof FOOD_IMAGES !== "undefined" && FOOD_IMAGES && FOOD_IMAGES.placeholder) ? FOOD_IMAGES.placeholder : "/images/food/placeholder.jpg" %>';
+  <% } catch (e) { %>
+    window.CANONICAL_PLACEHOLDER = '/images/food/placeholder.jpg';
+  <% } %>
+</script>
 
 <script>
   <% if (typeof recentOrderId !== 'undefined' && recentOrderId) { %>
