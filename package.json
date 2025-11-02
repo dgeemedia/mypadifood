@@ -6,6 +6,7 @@
     "start": "node server.js",
     "swagger": "node swagger.js",
     "dev": "nodemon server.js",
+    "build-sitemap": "node scripts/generate-sitemap.js > public/sitemap.xml",
     "prepare": "husky install",
     "lint": "eslint . --ext .js,.cjs",
     "lint:fix": "eslint . --ext .js,.cjs --fix",

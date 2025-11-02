@@ -1,4 +1,3 @@
-// server.js - main entrypoint
 require('dotenv').config(); // load .env
 
 const express = require('express');
@@ -13,6 +12,9 @@ const contactRouter = require('./routes/contact');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// If behind a proxy (nginx, load balancer), trust proxy so req.ip, req.protocol, etc work correctly
+app.set('trust proxy', true);
 
 // database pool used by connect-pg-simple and controllers
 const { pool } = require('./database/database'); // see database/database.js
@@ -110,10 +112,42 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use('/locations', express.static(path.join(__dirname, 'locations')));
 
 
-// expose currentUser (from JWT/session) to templates
+// === Improved middleware: expose request + currentUser to templates and force preferred host ===
+// Put this AFTER session and auth, and BEFORE routes
+const SITE_URL = process.env.SITE_URL || 'https://www.mypadifood.com';
+let PREFERRED_HOST;
+try {
+  PREFERRED_HOST = new URL(SITE_URL).host; // e.g. 'www.mypadifood.com'
+} catch (e) {
+  PREFERRED_HOST = SITE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+}
+
 app.use((req, res, next) => {
+  // expose request + currentUser to views safely
+  res.locals.request = req;
   res.locals.currentUser =
     req.user || (req.session && req.session.user) || null;
+
+  // Do not force redirect in development or when SITE_URL is not configured
+  if (process.env.NODE_ENV === 'development' || !PREFERRED_HOST) {
+    return next();
+  }
+
+  // Normalize incoming host (strip port if present)
+  const incomingHost = (req.headers.host || '').replace(/:\d+$/, '');
+
+  // If incoming host is different from preferred host, redirect (301) to SITE_URL + path
+  if (incomingHost && incomingHost !== PREFERRED_HOST) {
+    // Avoid redirect for requests to known local hostnames
+    const isLocalHost =
+      incomingHost === 'localhost' || incomingHost === '127.0.0.1';
+
+    if (!isLocalHost) {
+      const target = SITE_URL.replace(/\/$/, '') + req.originalUrl;
+      return res.redirect(301, target);
+    }
+  }
+
   next();
 });
 
@@ -384,9 +418,7 @@ io.on('connection', (socket) => {
       try {
         if (!orderId) return;
         const sess =
-          socket.request &&
-          socket.request.session &&
-          socket.request.session.user;
+          socket.request && socket.request.session && socket.request.session.user;
         if (sess && sess.type === 'client') {
           const payload = {
             orderId,
