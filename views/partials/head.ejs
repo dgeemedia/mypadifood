@@ -1,4 +1,4 @@
-<!-- views/partials/head.ejs (patched) -->
+<!-- views/partials/head.ejs (updated) -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title><%= typeof title !== 'undefined' ? title : 'MyPadiFood' %></title>
@@ -23,24 +23,51 @@ const phone = '+234-811-025-2143';
 // Preferred site URL: strip surrounding quotes and trailing slash if present
 const SITE_URL = (process.env.SITE_URL || 'https://www.mypadifood.com').toString().replace(/^['"]+|['"]+$/g, '').replace(/\/$/, '');
 
-// safe helper to sanitize incoming request.originalUrl (strip quotes and embedded SITE_URL)
-function sanitizeOriginalUrl(orig, site) {
-  if (!orig) return '';
-  let s = String(orig).replace(/^['"\s]+|['"\s]+$/g, '').trim();
-  // remove any embedded instances of SITE_URL (prevents duplicated fragments)
+// Robust helper to produce a safe path for canonical URLs.
+// - decodes safely
+// - strips surrounding quotes/whitespace
+// - removes quoted/unquoted full-URL fragments (e.g. 'https://www.mypadifood.com')
+// - removes repeated SITE_URL fragments
+// - ensures single leading slash
+function sanitizePathForCanonical(origUrl, site) {
+  if (!origUrl) return '/';
+  let p = String(origUrl);
+  // safe decode attempt
+  try { p = decodeURIComponent(p); } catch (e) { /* ignore */ }
+
+  // trim surrounding quotes/whitespace
+  p = p.replace(/^['"\s]+|['"\s]+$/g, '').trim();
+
+  // remove any quoted or unquoted full-URL fragments (host + optional path start)
+  // e.g. "'https://www.mypadifood.com", "https://other-host.com", etc.
+  p = p.replace(/['"]?https?:\/\/[^\/]+/gi, '');
+
+  // remove any remaining explicit SITE_URL fragments (defensive)
   try {
     const esc = site.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    s = s.replace(new RegExp(esc, 'g'), '');
+    p = p.replace(new RegExp(esc, 'g'), '');
   } catch (e) {
     // ignore regex errors
   }
-  return s;
+
+  // strip any duplicate slashes introduced, then ensure a single leading slash
+  p = p.replace(/\/\/+/g, '/').trim();
+  if (!p.startsWith('/')) p = '/' + p;
+
+  // collapse trailing multiple SITE_URL-like beginnings (defensive)
+  // e.g. '/https:/about' => '/about' (handle broken fragments)
+  p = p.replace(/^\/+https?:\/+/i, '/');
+
+  return p;
 }
 
-const defaultImage = loc_metaImage || `${SITE_URL}/images/hero.jpg`;
-const sanitizedOriginal = (typeof request !== 'undefined' && request && request.originalUrl) ? sanitizeOriginalUrl(request.originalUrl, SITE_URL) : '';
-const canonical = loc_canonicalUrl || (sanitizedOriginal ? (SITE_URL + (sanitizedOriginal.startsWith('/') ? sanitizedOriginal : '/' + sanitizedOriginal)) : SITE_URL);
+// compute canonical: prefer explicit loc_canonicalUrl, otherwise build from request.originalUrl safely
+const canonicalPath = (typeof request !== 'undefined' && request && request.originalUrl)
+  ? sanitizePathForCanonical(request.originalUrl, SITE_URL)
+  : '/';
+const canonical = loc_canonicalUrl || (SITE_URL + (canonicalPath || '/'));
 
+const defaultImage = loc_metaImage || `${SITE_URL}/images/hero.jpg`;
 const metaDefaults = {
   home: {
     title: `${siteName} — Fast, Affordable Food Delivery`,
