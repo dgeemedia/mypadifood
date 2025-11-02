@@ -710,48 +710,16 @@
         <p>No vendors found. Try another location or search term.</p>
         <% } else { %>
         <div class="vendors-list">
-          <% vendors.forEach(function(v) { %>
-          <article class="vendor-card">
-            <h4><a href="/vendor/<%= v.id %>"><%= v.name %></a></h4>
-            <p>
-              <strong>Food:</strong>
-              <%= v.food_item %>
-            </p>
-            <p><strong>Price (per plate):</strong> ₦<%= v.base_price %></p>
-            <p>
-              <strong>Address:</strong>
-              <%= v.address %>
-              (<%= v.lga %>,
-              <%= v.state %>)
-            </p>
-            <form method="post" action="/client/book">
-              <input type="hidden" name="vendorId" value="<%= v.id %>" />
-              <input
-                type="text"
-                name="item"
-                placeholder="Special request (optional)"
-              />
-              <select name="payment_method">
-                <option value="cod">Pay on delivery</option>
-                <option value="wallet">Pay from wallet</option>
-                <option value="paystack">Pay online (Paystack)</option>
-                <option value="flutterwave">Pay online (Flutterwave)</option>
-              </select>
-              <button type="submit" class="btn">Book / Order</button>
+          <% if (!vendors || !vendors.length) { %>
+            <p>No vendors found. Try another location or search term.</p>
+            <% } else { %>
+  <div class="vendors-list">
+    <% vendors.forEach(function(v) { %>
+      <%- include('../partials/vendor-card', { v: v, currentUser: (typeof currentUser !== 'undefined' ? currentUser : (typeof user !== 'undefined' ? user : {})) }) %>
+    <% }); %>
+  </div>
+<% } %>
 
-              <!-- ADD THIS BUTTON (insert here) -->
-              <button
-                type="button"
-                class="btn btn-sm btn-leave-review"
-                data-vendor-id="<%= v.id %>"
-                data-vendor-name="<%= v.name %>"
-                style="margin-left: 8px"
-              >
-                Leave a Review
-              </button>
-            </form>
-          </article>
-          <% }); %>
         </div>
         <% } %>
       </section>
