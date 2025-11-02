@@ -5,14 +5,16 @@ const models = require('../models');
 const vendorModel = models.vendor;
 const reviewModel = models.review || require('../models/reviewModel'); // guard if exported differently
 const partnerModel = models.partner || require('../models/partnerModel');
-const testimonialModel =
-  models.testimonial || require('../models/testimonialModel');
+const testimonialModel = models.testimonial || require('../models/testimonialModel');
 
 // avatar helper for testimonial avatars
 const avatarUtil = require('../utils/avatar');
 
 // reuse support router (routes/support.js should exist and export a Router)
 const supportRouter = require('./support');
+
+// Helper: safe SITE URL for canonical
+const SITE = (process.env.SITE_URL || 'https://www.mypadifood.com').replace(/\/$/, '');
 
 // Home
 router.get('/', async (req, res) => {
@@ -85,13 +87,22 @@ router.get('/', async (req, res) => {
 
     const filters = { q: q || '', state: state || '', lga: lga || '' };
 
+    // explicit SEO locals for the homepage
+    const metaTitle = 'Discover local food vendors — MyPadiFood';
+    const metaDescription = 'Discover home-cooked meals from trusted local vendors. Fast delivery or pickup across Lagos and beyond.';
+
     res.render('index', {
       vendors: vendorsWithSummaries,
       partners,
       testimonials,
       stats: res.locals.stats || {},
       filters,
-      title: 'Discover local food vendors',
+      title: metaTitle,
+      pageType: 'home',
+      metaTitle,
+      metaDescription,
+      metaKeywords: 'food delivery, order food online, local vendors, mypadifood',
+      canonicalUrl: SITE + req.originalUrl,
       currentUser: res.locals.currentUser || null,
     });
   } catch (err) {
@@ -108,7 +119,7 @@ router.get(`/vendor/:id(${uuidPattern})`, async (req, res) => {
     const { id } = req.params;
     const vendor = await vendorModel.findById(id);
     if (!vendor) {
-      return res.status(404).render('404', { message: 'Vendor not found' });
+      return res.status(404).render('404', { message: 'Vendor not found', pageType: 'default' });
     }
 
     // load menu items or reviews if you have those models (safe guards)
@@ -129,10 +140,20 @@ router.get(`/vendor/:id(${uuidPattern})`, async (req, res) => {
       console.warn('Could not load reviews for vendor', id, e);
     }
 
+    // SEO locals for vendor page
+    const metaTitle = vendor.name ? `${vendor.name} — Menu & Delivery | MyPadiFood` : 'Vendor — MyPadiFood';
+    const metaDescription = vendor.description || vendor.food_item || `Order from ${vendor.name} for quick delivery or pickup.`;
+    const metaImage = vendor.photo_url || '/images/hero.jpg';
+
     res.render('vendor/detail', {
       vendor,
       menuItems,
       reviews,
+      pageType: 'vendor',
+      metaTitle,
+      metaDescription,
+      metaImage,
+      canonicalUrl: SITE + req.originalUrl,
       currentUser: res.locals.currentUser || null,
     });
   } catch (err) {
@@ -142,19 +163,58 @@ router.get(`/vendor/:id(${uuidPattern})`, async (req, res) => {
 });
 
 // Footer / static pages
-router.get('/about', (req, res) => res.render('pages/about'));
-router.get('/contact', (req, res) => res.render('pages/contact'));
-router.get('/careers', (req, res) => res.render('pages/careers'));
+router.get('/about', (req, res) =>
+  res.render('pages/about', {
+    pageType: 'about',
+    metaTitle: 'About MyPadiFood — Our mission & story',
+    metaDescription: 'Learn about MyPadiFood — our mission to connect neighbours to trusted local food vendors and help micro-entrepreneurs grow.',
+    canonicalUrl: SITE + req.originalUrl,
+  })
+);
+router.get('/contact', (req, res) =>
+  res.render('pages/contact', {
+    pageType: 'contact',
+    metaTitle: 'Contact — MyPadiFood',
+    metaDescription: 'Contact MyPadiFood for support, partnerships or press enquiries.',
+    canonicalUrl: SITE + req.originalUrl,
+  })
+);
+router.get('/careers', (req, res) =>
+  res.render('pages/careers', {
+    pageType: 'careers',
+    metaTitle: 'Careers at MyPadiFood',
+    metaDescription: 'Join MyPadiFood — help us connect neighbours to trusted local meals while creating income for micro food entrepreneurs.',
+    canonicalUrl: SITE + req.originalUrl,
+  })
+);
 
 // Mount support router so POST /support works and GET /support shows the contact form
 router.use('/support', supportRouter);
 
 // FAQ route (fixes "Cannot GET /faq")
 router.get('/faq', (req, res) => {
-  res.render('pages/faq', { title: 'Support / FAQ' });
+  res.render('pages/faq', {
+    title: 'Support / FAQ',
+    pageType: 'faq',
+    metaTitle: 'Help & FAQs — MyPadiFood',
+    metaDescription: 'Find answers to common questions about ordering, delivery, refunds and vendor onboarding on MyPadiFood.',
+    canonicalUrl: SITE + req.originalUrl,
+  });
 });
 
-router.get('/terms', (req, res) => res.render('pages/terms'));
-router.get('/privacy', (req, res) => res.render('pages/privacy'));
+router.get('/terms', (req, res) =>
+  res.render('pages/terms', {
+    pageType: 'default',
+    metaTitle: 'Terms — MyPadiFood',
+    canonicalUrl: SITE + req.originalUrl,
+  })
+);
+router.get('/privacy', (req, res) =>
+  res.render('pages/privacy', {
+    pageType: 'default',
+    metaTitle: 'Privacy Policy — MyPadiFood',
+    canonicalUrl: SITE + req.originalUrl,
+  })
+);
 
 module.exports = router;

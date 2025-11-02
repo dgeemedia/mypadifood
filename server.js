@@ -114,6 +114,7 @@ app.use('/locations', express.static(path.join(__dirname, 'locations')));
 app.use((req, res, next) => {
   res.locals.currentUser =
     req.user || (req.session && req.session.user) || null;
+  res.locals.pageType = res.locals.pageType || 'home';
   next();
 });
 

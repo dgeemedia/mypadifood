@@ -1,0 +1,153 @@
+<%
+// views/partials/seo.ejs
+// Defensive SEO partial — safe defaults, never assumes locals exist.
+
+// Site-level defaults
+const SITE = (process.env.SITE_URL || 'https://www.mypadifood.com').replace(/\/$/,'');
+const SITE_NAME = 'MyPadiFood';
+const PHONE = (typeof phone !== 'undefined' && phone) ? phone : (process.env.CONTACT_PHONE || '+234-811-025-2143');
+
+// Safe local copies (avoid TDZ / ReferenceErrors)
+const loc_page = (typeof pageType !== 'undefined' && pageType) ? pageType : 'home';
+const loc_title = (typeof title !== 'undefined') ? title : undefined;
+const loc_metaTitle = (typeof metaTitle !== 'undefined') ? metaTitle : undefined;
+const loc_metaDescription = (typeof metaDescription !== 'undefined') ? metaDescription : undefined;
+const loc_metaKeywords = (typeof metaKeywords !== 'undefined') ? metaKeywords : undefined;
+const loc_metaImage = (typeof metaImage !== 'undefined') ? metaImage : undefined;
+const loc_canonical = (typeof canonicalUrl !== 'undefined') ? canonicalUrl : undefined;
+const loc_vendor = (typeof vendor !== 'undefined') ? vendor : undefined;
+const loc_post = (typeof post !== 'undefined') ? post : undefined;
+const loc_categoryName = (typeof categoryName !== 'undefined') ? categoryName : undefined;
+
+// Page-specific defaults
+const defaults = {
+  home: {
+    title: `${SITE_NAME} — Fast, Affordable Food Delivery`,
+    description: 'MyPadiFood connects you to local canteens, vendors and restaurants for fast, affordable food delivery and pickup.',
+    keywords: 'food delivery, order food online, food near me, affordable meals, local canteen, mypadifood'
+  },
+  vendor: {
+    title: (loc_vendor && loc_vendor.name) ? `${loc_vendor.name} — Menu & Delivery | ${SITE_NAME}` : `${SITE_NAME} — Vendor`,
+    description: (loc_vendor && (loc_vendor.description || loc_vendor.food_item)) ? (loc_vendor.description || `${loc_vendor.food_item || ''} available.`) : 'Order local food for delivery or pickup from trusted vendors and restaurants.',
+    keywords: (loc_vendor && loc_vendor.name) ? `${loc_vendor.name} menu, ${loc_vendor.name} delivery, order ${loc_vendor.name} online` : 'vendor food delivery, local vendor, food delivery near me'
+  },
+  category: {
+    title: (loc_categoryName) ? `${loc_categoryName} Near Me — ${SITE_NAME}` : `${SITE_NAME} — Food Categories`,
+    description: (loc_categoryName) ? `Find ${loc_categoryName} near you — affordable meals, restaurants, and canteens offering delivery or pickup.` : 'Discover nearby restaurants, canteens, and food vendors by category.',
+    keywords: (loc_categoryName) ? `${loc_categoryName} near me, ${loc_categoryName} delivery, ${loc_categoryName} restaurants` : 'food category, cheap food, local canteen'
+  },
+  blog: {
+    title: (loc_post && loc_post.title) ? `${loc_post.title} — ${SITE_NAME} Blog` : `${SITE_NAME} Blog`,
+    description: (loc_post && loc_post.excerpt) ? loc_post.excerpt : 'News, tips, and stories about food delivery, recipes, and vendor spotlights from MyPadiFood.',
+    keywords: 'food blog, recipes, food delivery tips, mypadifood blog'
+  },
+  about: {
+    title: `${SITE_NAME} — About Us`,
+    description: `${SITE_NAME} connects neighbours to trusted local food vendors for easy ordering, delivery and pickup.`,
+    keywords: 'about mypadifood, food delivery startup, local vendors'
+  },
+  contact: {
+    title: `${SITE_NAME} — Contact`,
+    description: `Contact ${SITE_NAME} for support, partnerships, or press enquiries.`,
+    keywords: 'contact mypadifood, support mypadifood'
+  },
+  careers: {
+    title: `${SITE_NAME} — Careers`,
+    description: `Work with ${SITE_NAME} — join a team building local food solutions and creating income for micro-entrepreneurs.`,
+    keywords: 'jobs mypadifood, careers food startup'
+  },
+  faq: {
+    title: `${SITE_NAME} — Help & FAQs`,
+    description: `Find answers to common questions about ordering, delivery, refunds and vendor onboarding on MyPadiFood.`,
+    keywords: 'faq mypadifood, help food delivery'
+  },
+  auth: {
+    title: `${SITE_NAME} — Account`,
+    description: `Sign in or create an account to order food, register as a vendor or join as a rider.`,
+    keywords: 'login mypadifood, signup mypadifood'
+  },
+  default: {
+    title: loc_title || SITE_NAME,
+    description: loc_metaDescription || `${SITE_NAME} — fast, affordable food delivery from local vendors.`,
+    keywords: loc_metaKeywords || 'food delivery, food near me, affordable meals'
+  }
+};
+
+// choose defaults for current page
+const chosen = defaults[loc_page] || defaults.default;
+const finalTitle = loc_metaTitle || loc_title || chosen.title;
+const finalDescription = loc_metaDescription || chosen.description;
+const finalKeywords = loc_metaKeywords || chosen.keywords;
+const finalImage = loc_metaImage || (SITE + '/images/hero.jpg');
+const canonical = loc_canonical || ( (typeof request !== 'undefined' && request && request.originalUrl) ? (SITE + request.originalUrl) : SITE );
+%>
+
+<title><%= finalTitle %></title>
+<meta name="description" content="<%= finalDescription %>" />
+<meta name="keywords" content="<%= finalKeywords %>" />
+<link rel="canonical" href="<%= canonical %>" />
+<meta name="robots" content="index, follow" />
+
+<!-- Open Graph -->
+<meta property="og:site_name" content="<%= SITE_NAME %>" />
+<meta property="og:title" content="<%= finalTitle %>" />
+<meta property="og:description" content="<%= finalDescription %>" />
+<meta property="og:url" content="<%= canonical %>" />
+<meta property="og:type" content="<%= (loc_page === 'vendor') ? 'restaurant' : 'website' %>" />
+<meta property="og:image" content="<%= finalImage %>" />
+<meta property="og:image:alt" content="Delicious meals from MyPadiFood" />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@mypadifood" />
+<meta name="twitter:title" content="<%= finalTitle %>" />
+<meta name="twitter:description" content="<%= finalDescription %>" />
+<meta name="twitter:image" content="<%= finalImage %>" />
+
+<%
+// JSON-LD structured data (safe: only uses guarded locals)
+const jsonld = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "FoodEstablishment",
+      "@id": SITE + '/#foodestablishment',
+      "name": SITE_NAME,
+      "url": SITE,
+      "logo": SITE + '/images/logo.png',
+      "image": finalImage,
+      "description": finalDescription,
+      "telephone": PHONE,
+      "address": { "@type": "PostalAddress", "addressLocality": "Lagos", "addressRegion": "Lagos", "addressCountry": "NG" },
+      "servesCuisine": ["Nigerian","Continental","Fast Food","Local Canteen"],
+      "sameAs": [
+        "https://www.facebook.com/profile.php?id=61583088390559",
+        "https://x.com/MyPadiFood",
+        "https://www.instagram.com/mypadifood/",
+        "https://www.linkedin.com/company/109748993/",
+        "https://www.youtube.com/@MyPadiFood"
+      ]
+    }
+  ]
+};
+
+// Add a vendor-specific graph node only when vendor data exists
+if (loc_vendor && loc_vendor.id) {
+  jsonld['@graph'].push({
+    "@type": "Restaurant",
+    "@id": SITE + '/vendor/' + loc_vendor.id + '/#restaurant',
+    "name": loc_vendor.name || SITE_NAME,
+    "image": (loc_vendor.photo_url && (/^https?:\/\//i.test(loc_vendor.photo_url))) ? loc_vendor.photo_url : (loc_vendor.photo_url ? (SITE + loc_vendor.photo_url) : finalImage),
+    "description": loc_vendor.description || loc_vendor.food_item || finalDescription,
+    "telephone": loc_vendor.phone || PHONE,
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": loc_vendor.lga || '',
+      "addressRegion": loc_vendor.state || '',
+      "addressCountry": "NG"
+    },
+    "servesCuisine": (loc_vendor && loc_vendor.food_item) ? [loc_vendor.food_item] : ["Nigerian"]
+  });
+}
+%>
+<script type="application/ld+json"><%- JSON.stringify(jsonld) %></script>
