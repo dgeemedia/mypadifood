@@ -112,44 +112,54 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use('/locations', express.static(path.join(__dirname, 'locations')));
 
 
-// === Improved middleware: expose request + currentUser to templates and force preferred host ===
-// Put this AFTER session and auth, and BEFORE routes
-const SITE_URL = process.env.SITE_URL || 'https://www.mypadifood.com';
+// --- Site URL middleware (robust, avoids redirect loops) ---
+const rawSiteUrl = process.env.SITE_URL || 'https://www.mypadifood.com';
+// strip surrounding single/double quotes that might appear if .env added them
+const SITE_URL = String(rawSiteUrl).replace(/^['"]+|['"]+$/g, '').replace(/\/$/, '');
 let PREFERRED_HOST;
 try {
   PREFERRED_HOST = new URL(SITE_URL).host; // e.g. 'www.mypadifood.com'
-} catch (e) {
+} catch (err) {
   PREFERRED_HOST = SITE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
 }
 
 app.use((req, res, next) => {
-  // expose request + currentUser to views safely
+  // expose request + currentUser
   res.locals.request = req;
-  res.locals.currentUser =
-    req.user || (req.session && req.session.user) || null;
+  res.locals.currentUser = req.user || (req.session && req.session.user) || null;
 
-  // Do not force redirect in development or when SITE_URL is not configured
-  if (process.env.NODE_ENV === 'development' || !PREFERRED_HOST) {
-    return next();
-  }
+  // don't force redirect in development
+  if (process.env.NODE_ENV === 'development' || !PREFERRED_HOST) return next();
 
-  // Normalize incoming host (strip port if present)
+  // normalize incoming host
   const incomingHost = (req.headers.host || '').replace(/:\d+$/, '');
 
-  // If incoming host is different from preferred host, redirect (301) to SITE_URL + path
-  if (incomingHost && incomingHost !== PREFERRED_HOST) {
-    // Avoid redirect for requests to known local hostnames
-    const isLocalHost =
-      incomingHost === 'localhost' || incomingHost === '127.0.0.1';
+  // if host matches preferred, nothing to do
+  if (!incomingHost || incomingHost === PREFERRED_HOST) return next();
 
-    if (!isLocalHost) {
-      const target = SITE_URL.replace(/\/$/, '') + req.originalUrl;
-      return res.redirect(301, target);
+  // avoid redirect for localhost-like traffic
+  if (incomingHost === 'localhost' || incomingHost === '127.0.0.1') return next();
+
+  // build a safe path component — if originalUrl already contains a full URL, extract the path
+  let safePath = req.originalUrl || '/';
+  if (/^https?:\/\//i.test(safePath)) {
+    try {
+      const parsed = new URL(safePath);
+      safePath = parsed.pathname + (parsed.search || '');
+    } catch (e) {
+      safePath = '/';
     }
   }
 
-  next();
+  // prevent loop: if safePath already begins with SITE_URL, remove it
+  if (safePath.startsWith(SITE_URL)) {
+    safePath = safePath.slice(SITE_URL.length) || '/';
+  }
+
+  const target = SITE_URL + (safePath.startsWith('/') ? safePath : '/' + safePath);
+  return res.redirect(301, target);
 });
+
 
 // homepage helpers: cached stats + partners + testimonials
 // NOTE: place this before route registrations so index route and layout can use res.locals.*
