@@ -113,7 +113,7 @@ app.use('/locations', express.static(path.join(__dirname, 'locations')));
 
 // --- Site URL middleware (robust, avoids redirect loops) ---
 const rawSiteUrl = process.env.SITE_URL || 'https://www.mypadifood.com';
-// strip surrounding single/double quotes that might appear if .env added them
+// strip surrounding single/double quotes and trailing slash
 const SITE_URL = String(rawSiteUrl).replace(/^['"]+|['"]+$/g, '').replace(/\/$/, '');
 let PREFERRED_HOST;
 try {
@@ -123,66 +123,83 @@ try {
 }
 
 app.use((req, res, next) => {
+  // expose request + currentUser
   res.locals.request = req;
   res.locals.currentUser = req.user || (req.session && req.session.user) || null;
 
-  // don't force redirect in development or if no preferred host configured
+  // don't force redirect in development or when PREFERRED_HOST isn't set
   if (process.env.NODE_ENV === 'development' || !PREFERRED_HOST) return next();
 
-  // normalize incoming host (strip port)
   const incomingHost = (req.headers.host || '').replace(/:\d+$/, '');
 
-  // if host already matches preferred host -> nothing to do
+  // nothing to do if host matches preferred host
   if (!incomingHost || incomingHost === PREFERRED_HOST) return next();
 
-  // avoid redirect for localhost-like traffic
+  // allow local testing
   if (incomingHost === 'localhost' || incomingHost === '127.0.0.1') return next();
 
-  // Start with the raw originalUrl and try to sanitize it
-  let rawPath = String(req.originalUrl || '/');
+  // build safe path out of req.originalUrl (very defensive)
+  let raw = req.originalUrl || '/';
+  // remove whitespace that sometimes appears
+  raw = String(raw).trim();
 
-  // 1) decode any percent encoding (safe guard)
+  // 1) If the original URL contains one or more full http(s):// fragments, pick the LAST one and use its pathname+search
+  let safePath = '/';
   try {
-    rawPath = decodeURIComponent(rawPath);
+    const urlMatches = raw.match(/https?:\/\/[^'"\s)]+/gi);
+    if (urlMatches && urlMatches.length > 0) {
+      // take the last full-URL fragment (most likely the intended one)
+      const last = urlMatches[urlMatches.length - 1];
+      try {
+        const parsed = new URL(last);
+        safePath = (parsed.pathname || '/') + (parsed.search || '');
+      } catch (e) {
+        // fallback: strip protocol+host fragments and use what's left
+        safePath = raw.replace(/https?:\/\/[^\/]+/gi, '');
+      }
+    } else {
+      // 2) No full URL fragments: strip any SITE_URL substrings (case-insensitive), then collapse duplicates
+      const esc = SITE_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      safePath = raw.replace(new RegExp(esc, 'gi'), '');
+    }
   } catch (e) {
-    // ignore decode errors
+    // Emergency fallback
+    safePath = raw;
   }
 
-  // 2) strip leading/trailing whitespace and surrounding single/double quotes
-  rawPath = rawPath.replace(/^['"\s]+|['"\s]+$/g, '').trim();
+  // Final sanitization: strip surrounding quotes, collapse repeated slashes, remove accidental '/https:/' prefix
+  safePath = String(safePath).replace(/^['"\s]+|['"\s]+$/g, '').trim();
+  safePath = safePath.replace(/\/{2,}/g, '/'); // collapse multiple slashes
+  safePath = safePath.replace(/^\/+https?:\/+/i, '/'); // strip broken '/https:/' starts
+  if (!safePath.startsWith('/')) safePath = '/' + safePath;
 
-  // 3) remove any embedded full-URL fragments (examples that cause repeats)
-  //    Patterns handled:
-  //      /'https://www.mypadifood.com/..., /"https://www.mypadifood.com/..., /https://www.mypadifood.com/...
-  //    and any repeated SITE_URL occurrences.
-  const urlFragmentPattern = /['"]?https?:\/\/[^\/]+/gi; // catches quoted or unquoted full host fragments
-  rawPath = rawPath.replace(urlFragmentPattern, '');
+  // final target URL
+  const target = SITE_URL + safePath;
 
-  // 4) remove any remaining exact SITE_URL fragments (safety)
-  const escSite = SITE_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  rawPath = rawPath.replace(new RegExp(escSite, 'g'), '');
-
-  // 5) ensure single leading slash
-  if (!rawPath.startsWith('/')) rawPath = '/' + rawPath;
-
-  // Build canonical target
-  const target = SITE_URL + rawPath;
-
-  // Prevent redirect loops: compute full incoming URL and compare
+  // Compose full incoming url taking proxy proto into account
   const proto = req.headers['x-forwarded-proto'] || req.protocol;
   const fullIncoming = `${proto}://${incomingHost}${req.originalUrl}`;
 
-  if (target === fullIncoming) return next();
+  // Avoid redirect loops / no-op redirects:
+  // - If the computed target exactly equals the incoming full URL, *don't redirect*.
+  // - If the incoming already contains repeated SITE_URL fragments, skip redirect (we've normalized)
+  if (
+    fullIncoming === target ||
+    fullIncoming === (SITE_URL + SITE_URL) ||
+    fullIncoming.includes(SITE_URL + SITE_URL)
+  ) {
+    return next();
+  }
 
-  // Debug log to help trace — safe text only
-  console.log('host-normalize redirect ->', {
+  // helpful debug: copy this log line into your deploy logs if it still misbehaves
+  console.log('redirect to preferred host', {
     incomingHost,
     originalUrl: req.originalUrl,
-    sanitizedPath: rawPath,
+    safePath,
     target,
+    fullIncoming,
   });
 
-  // Perform a single 301 canonical redirect to preferred host + sanitized path
   return res.redirect(301, target);
 });
 
