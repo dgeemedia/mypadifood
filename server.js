@@ -1,5 +1,6 @@
-// server.js (patched)
+// server.js - main entrypoint
 require('dotenv').config(); // load .env
+
 const express = require('express');
 const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session); // store sessions in Postgres
@@ -12,9 +13,6 @@ const contactRouter = require('./routes/contact');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// If behind a proxy (nginx, load balancer), trust proxy so req.ip, req.protocol, etc work correctly
-app.set('trust proxy', true);
 
 // database pool used by connect-pg-simple and controllers
 const { pool } = require('./database/database'); // see database/database.js
@@ -87,6 +85,7 @@ app.use(sessionMiddleware);
 app.use(authJwt.checkJWTToken); // makes req.user and res.locals.currentUser available
 
 // === Compatibility shim: copy JWT payload into session.user for legacy code & sockets ===
+// This is executed immediately after authJwt.checkJWTToken so req.user (if any) is present.
 app.use((req, res, next) => {
   try {
     if (req.user && req.session) {
@@ -111,98 +110,12 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use('/locations', express.static(path.join(__dirname, 'locations')));
 
 
-// --- Site URL middleware (robust, avoids redirect loops) ---
-const rawSiteUrl = process.env.SITE_URL || 'https://www.mypadifood.com';
-// strip surrounding single/double quotes and trailing slash
-const SITE_URL = String(rawSiteUrl).replace(/^['"]+|['"]+$/g, '').replace(/\/$/, '');
-let PREFERRED_HOST;
-try {
-  PREFERRED_HOST = new URL(SITE_URL).host; // e.g. 'www.mypadifood.com'
-} catch (err) {
-  PREFERRED_HOST = SITE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
-}
-
+// expose currentUser (from JWT/session) to templates
 app.use((req, res, next) => {
-  // expose request + currentUser
-  res.locals.request = req;
-  res.locals.currentUser = req.user || (req.session && req.session.user) || null;
-
-  // don't force redirect in development or when PREFERRED_HOST isn't set
-  if (process.env.NODE_ENV === 'development' || !PREFERRED_HOST) return next();
-
-  const incomingHost = (req.headers.host || '').replace(/:\d+$/, '');
-
-  // nothing to do if host matches preferred host
-  if (!incomingHost || incomingHost === PREFERRED_HOST) return next();
-
-  // allow local testing
-  if (incomingHost === 'localhost' || incomingHost === '127.0.0.1') return next();
-
-  // build safe path out of req.originalUrl (very defensive)
-  let raw = req.originalUrl || '/';
-  // remove whitespace that sometimes appears
-  raw = String(raw).trim();
-
-  // 1) If the original URL contains one or more full http(s):// fragments, pick the LAST one and use its pathname+search
-  let safePath = '/';
-  try {
-    const urlMatches = raw.match(/https?:\/\/[^'"\s)]+/gi);
-    if (urlMatches && urlMatches.length > 0) {
-      // take the last full-URL fragment (most likely the intended one)
-      const last = urlMatches[urlMatches.length - 1];
-      try {
-        const parsed = new URL(last);
-        safePath = (parsed.pathname || '/') + (parsed.search || '');
-      } catch (e) {
-        // fallback: strip protocol+host fragments and use what's left
-        safePath = raw.replace(/https?:\/\/[^\/]+/gi, '');
-      }
-    } else {
-      // 2) No full URL fragments: strip any SITE_URL substrings (case-insensitive), then collapse duplicates
-      const esc = SITE_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      safePath = raw.replace(new RegExp(esc, 'gi'), '');
-    }
-  } catch (e) {
-    // Emergency fallback
-    safePath = raw;
-  }
-
-  // Final sanitization: strip surrounding quotes, collapse repeated slashes, remove accidental '/https:/' prefix
-  safePath = String(safePath).replace(/^['"\s]+|['"\s]+$/g, '').trim();
-  safePath = safePath.replace(/\/{2,}/g, '/'); // collapse multiple slashes
-  safePath = safePath.replace(/^\/+https?:\/+/i, '/'); // strip broken '/https:/' starts
-  if (!safePath.startsWith('/')) safePath = '/' + safePath;
-
-  // final target URL
-  const target = SITE_URL + safePath;
-
-  // Compose full incoming url taking proxy proto into account
-  const proto = req.headers['x-forwarded-proto'] || req.protocol;
-  const fullIncoming = `${proto}://${incomingHost}${req.originalUrl}`;
-
-  // Avoid redirect loops / no-op redirects:
-  // - If the computed target exactly equals the incoming full URL, *don't redirect*.
-  // - If the incoming already contains repeated SITE_URL fragments, skip redirect (we've normalized)
-  if (
-    fullIncoming === target ||
-    fullIncoming === (SITE_URL + SITE_URL) ||
-    fullIncoming.includes(SITE_URL + SITE_URL)
-  ) {
-    return next();
-  }
-
-  // helpful debug: copy this log line into your deploy logs if it still misbehaves
-  console.log('redirect to preferred host', {
-    incomingHost,
-    originalUrl: req.originalUrl,
-    safePath,
-    target,
-    fullIncoming,
-  });
-
-  return res.redirect(301, target);
+  res.locals.currentUser =
+    req.user || (req.session && req.session.user) || null;
+  next();
 });
-
 
 // homepage helpers: cached stats + partners + testimonials
 // NOTE: place this before route registrations so index route and layout can use res.locals.*
@@ -444,7 +357,9 @@ io.on('connection', (socket) => {
       try {
         if (!orderId) return;
         const sess =
-          socket.request && socket.request.session && socket.request.session.user;
+          socket.request &&
+          socket.request.session &&
+          socket.request.session.user;
         if (!sess || sess.type !== 'client') return;
 
         const order = await models.order.findById(orderId);
@@ -469,7 +384,9 @@ io.on('connection', (socket) => {
       try {
         if (!orderId) return;
         const sess =
-          socket.request && socket.request.session && socket.request.session.user;
+          socket.request &&
+          socket.request.session &&
+          socket.request.session.user;
         if (sess && sess.type === 'client') {
           const payload = {
             orderId,
@@ -497,3 +414,4 @@ io.on('connection', (socket) => {
 server.listen(PORT, () => {
   console.log(`MyPadifood server running on http://localhost:${PORT}`);
 });
+ 

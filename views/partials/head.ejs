@@ -1,189 +1,33 @@
-<!-- views/partials/head.ejs (updated) -->
+<!-- views/partials/head.ejs -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title><%= typeof title !== 'undefined' ? title : 'MyPadiFood' %></title>
 <link rel="icon" href="/images/favicon.ico" />
 
-<!-- Dynamic EJS helper for SEO values -->
-<%
-// Capture incoming locals into safe variables to avoid self-referential TDZ issues
-const loc_page = typeof pageType !== 'undefined' ? pageType : 'home';
-const loc_vendor = typeof vendorName !== 'undefined' ? vendorName : '';
-const loc_category = typeof categoryName !== 'undefined' ? categoryName : '';
-const loc_postTitle = typeof postTitle !== 'undefined' ? postTitle : '';
-const loc_title = typeof title !== 'undefined' ? title : undefined;
-const loc_metaTitle = typeof metaTitle !== 'undefined' ? metaTitle : undefined;
-const loc_metaDescription = typeof metaDescription !== 'undefined' ? metaDescription : undefined;
-const loc_metaKeywords = typeof metaKeywords !== 'undefined' ? metaKeywords : undefined;
-const loc_metaImage = typeof metaImage !== 'undefined' ? metaImage : undefined;
-const loc_canonicalUrl = typeof canonicalUrl !== 'undefined' ? canonicalUrl : undefined;
-
-const siteName = 'MyPadiFood';
-const phone = '+234-811-025-2143';
-// Preferred site URL: strip surrounding quotes and trailing slash if present
-const SITE_URL = (process.env.SITE_URL || 'https://www.mypadifood.com').toString().replace(/^['"]+|['"]+$/g, '').replace(/\/$/, '');
-
-// Robust helper to produce a safe path for canonical URLs.
-// - decodes safely
-// - strips surrounding quotes/whitespace
-// - removes quoted/unquoted full-URL fragments (e.g. 'https://www.mypadifood.com')
-// - removes repeated SITE_URL fragments
-// - ensures single leading slash
-function sanitizePathForCanonical(origUrl, site) {
-  if (!origUrl) return '/';
-  let p = String(origUrl);
-  // safe decode attempt
-  try { p = decodeURIComponent(p); } catch (e) { /* ignore */ }
-
-  // trim surrounding quotes/whitespace
-  p = p.replace(/^['"\s]+|['"\s]+$/g, '').trim();
-
-  // remove any quoted or unquoted full-URL fragments (host + optional path start)
-  // e.g. "'https://www.mypadifood.com", "https://other-host.com", etc.
-  p = p.replace(/['"]?https?:\/\/[^\/]+/gi, '');
-
-  // remove any remaining explicit SITE_URL fragments (defensive)
-  try {
-    const esc = site.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    p = p.replace(new RegExp(esc, 'g'), '');
-  } catch (e) {
-    // ignore regex errors
-  }
-
-  // strip any duplicate slashes introduced, then ensure a single leading slash
-  p = p.replace(/\/\/+/g, '/').trim();
-  if (!p.startsWith('/')) p = '/' + p;
-
-  // collapse trailing multiple SITE_URL-like beginnings (defensive)
-  // e.g. '/https:/about' => '/about' (handle broken fragments)
-  p = p.replace(/^\/+https?:\/+/i, '/');
-
-  return p;
-}
-
-// compute canonical: prefer explicit loc_canonicalUrl, otherwise build from request.originalUrl safely
-const canonicalPath = (typeof request !== 'undefined' && request && request.originalUrl)
-  ? sanitizePathForCanonical(request.originalUrl, SITE_URL)
-  : '/';
-const canonical = loc_canonicalUrl || (SITE_URL + (canonicalPath || '/'));
-
-const defaultImage = loc_metaImage || `${SITE_URL}/images/hero.jpg`;
-const metaDefaults = {
-  home: {
-    title: `${siteName} — Fast, Affordable Food Delivery`,
-    description: 'MyPadiFood connects you to local canteens, vendors and restaurants for fast, affordable food delivery and pickup.',
-    keywords: 'food delivery, order food online, food near me, affordable meals, local canteen, mypadifood'
-  },
-  vendor: {
-    title: loc_vendor ? `${loc_vendor} — Menu & Delivery | ${siteName}` : `${siteName} — Vendor`,
-    description: loc_vendor ? `Order from ${loc_vendor} for quick delivery or pickup. Local meals, trusted riders, and affordable prices.` : 'Order local food for delivery or pickup from trusted vendors and restaurants.',
-    keywords: loc_vendor ? `${loc_vendor} menu, ${loc_vendor} delivery, order ${loc_vendor} online` : 'vendor food delivery, local vendor, food delivery near me'
-  },
-  category: {
-    title: loc_category ? `${loc_category} Near Me — ${siteName}` : `${siteName} — Food Categories`,
-    description: loc_category ? `Find ${loc_category} near you — affordable meals, restaurants, and canteens offering delivery or pickup.` : 'Discover nearby restaurants, canteens, and food vendors by category.',
-    keywords: loc_category ? `${loc_category} near me, ${loc_category} delivery, ${loc_category} restaurants` : 'food category, cheap food, local canteen'
-  },
-  blog: {
-    title: loc_postTitle ? `${loc_postTitle} — ${siteName} Blog` : `${siteName} Blog`,
-    description: loc_postTitle ? `${loc_postTitle} — Tips, recipes and stories from local vendors and riders on MyPadiFood.` : 'News, tips, and stories about food delivery, recipes, and vendor spotlights from MyPadiFood.',
-    keywords: 'food blog, recipes, food delivery tips, mypadifood blog'
-  },
-  default: {
-    title: loc_title || `${siteName}`,
-    description: loc_metaDescription || 'Fast, affordable food delivery from local vendors, canteens, restaurants and riders near you.',
-    keywords: loc_metaKeywords || 'food delivery, food near me, affordable meals, mypadifood'
-  }
-};
-
-const chosen = metaDefaults[loc_page] || metaDefaults.default;
-const finalMetaTitle = loc_metaTitle || chosen.title;
-const finalMetaDescription = loc_metaDescription || chosen.description;
-const finalMetaKeywords = loc_metaKeywords || chosen.keywords;
-const finalMetaImage = defaultImage;
-%>
-
-<!-- Primary SEO tags -->
-<meta name="description" content="<%= finalMetaDescription %>" />
-<meta name="keywords" content="<%= finalMetaKeywords %>" />
-<meta name="robots" content="index, follow" />
-<link rel="canonical" href="<%= canonical %>" />
-
-<!-- Open Graph (Facebook, LinkedIn) -->
-<meta property="og:site_name" content="MyPadiFood" />
-<meta property="og:title" content="<%= finalMetaTitle %>" />
-<meta property="og:description" content="<%= finalMetaDescription %>" />
-<meta property="og:url" content="<%= canonical %>" />
-<meta property="og:type" content="website" />
-<meta property="og:image" content="<%= finalMetaImage %>" />
-<meta property="og:image:alt" content="Delicious meals delivered by MyPadiFood rider" />
-
-<!-- Twitter Card -->
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:site" content="@mypadifood" />
-<meta name="twitter:title" content="<%= finalMetaTitle %>" />
-<meta name="twitter:description" content="<%= finalMetaDescription %>" />
-<meta name="twitter:image" content="<%= finalMetaImage %>" />
-
-<!-- Structured Data: LocalBusiness + DeliveryService (JSON-LD) -->
-<%
-const structuredData = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "FoodEstablishment",
-      "@id": `${SITE_URL}/#foodestablishment`,
-      "name": "MyPadiFood",
-      "url": SITE_URL,
-      "logo": `${SITE_URL}/images/logo.png`,
-      "image": finalMetaImage,
-      "description": finalMetaDescription,
-      "telephone": phone,
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Lagos",
-        "addressRegion": "Lagos",
-        "addressCountry": "NG"
-      },
-      "servesCuisine": ["Nigerian","Continental","Fast Food","Local Canteen"],
-      "sameAs": [
-        "https://www.facebook.com/profile.php?id=61583088390559",
-        "https://x.com/MyPadiFood",
-        "https://www.instagram.com/mypadifood/",
-        "https://www.linkedin.com/company/109748993/",
-        "https://www.youtube.com/@MyPadiFood"
-      ]
-    },
-    {
-      "@type": "DeliveryService",
-      "@id": `${SITE_URL}/#delivery`,
-      "name": "MyPadiFood Delivery",
-      "provider": { "@type": "Organization", "name": "MyPadiFood" },
-      "areaServed": { "@type": "AdministrativeArea", "name": "Lagos" }
-    }
-  ]
-};
-%>
-<script type="application/ld+json"><%= JSON.stringify(structuredData) %></script>
-
-<!-- Helpful extras -->
-<link rel="manifest" href="/site.webmanifest" />
-<meta name="theme-color" content="#0b6623" />
-
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
+  rel="stylesheet"
+/>
 
-<!-- Font Awesome (CDN) -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<!-- Font Awesome (CDN) - no integrity attribute to avoid mismatches -->
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+/>
 
-<!-- Main CSS -->
+<!-- Main CSS (your file) -->
 <link rel="stylesheet" href="/css/styles.css" />
+
 <link rel="stylesheet" href="/css/client-dashboard.css" />
 
-<!-- Payment SDKs -->
+<!-- Paystack inline -->
 <script src="https://js.paystack.co/v1/inline.js"></script>
+<!-- Flutterwave inline -->
 <script src="https://checkout.flutterwave.com/v3.js"></script>
 
-<!-- end head.ejs -->
+
