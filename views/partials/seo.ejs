@@ -93,7 +93,10 @@ const canonical = loc_canonical || ( (typeof request !== 'undefined' && request 
 <meta property="og:title" content="<%= finalTitle %>" />
 <meta property="og:description" content="<%= finalDescription %>" />
 <meta property="og:url" content="<%= canonical %>" />
-<meta property="og:type" content="<%= (loc_page === 'vendor') ? 'restaurant' : 'website' %>" />
+<meta
+  property="og:type"
+  content="<%= (loc_page === 'vendor') ? 'restaurant' : 'website' %>"
+/>
 <meta property="og:image" content="<%= finalImage %>" />
 <meta property="og:image:alt" content="Delicious meals from MyPadiFood" />
 
@@ -150,4 +153,6 @@ if (loc_vendor && loc_vendor.id) {
   });
 }
 %>
-<script type="application/ld+json"><%- JSON.stringify(jsonld) %></script>
+<script type="application/ld+json">
+  <%- JSON.stringify(jsonld) %>
+</script>
