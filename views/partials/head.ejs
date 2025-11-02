@@ -1,8 +1,4 @@
-<!-- views/partials/head.ejs - MyPadiFood
-     Includes: dynamic EJS helper for metaTitle/metaDescription/metaKeywords/metaImage/canonical
-     Usage: set `pageType` to one of ['home','vendor','category','blog'] and optionally set
-            vendorName, categoryName, postTitle, title, metaDescription, metaKeywords, metaImage, canonicalUrl in the route render.
--->
+<!-- views/partials/head.ejs (patched) -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title><%= typeof title !== 'undefined' ? title : 'MyPadiFood' %></title>
@@ -24,11 +20,26 @@ const loc_canonicalUrl = typeof canonicalUrl !== 'undefined' ? canonicalUrl : un
 
 const siteName = 'MyPadiFood';
 const phone = '+234-811-025-2143';
-// Preferred site URL
-const SITE_URL = process.env.SITE_URL || 'https://www.mypadifood.com';
+// Preferred site URL: strip surrounding quotes and trailing slash if present
+const SITE_URL = (process.env.SITE_URL || 'https://www.mypadifood.com').toString().replace(/^['"]+|['"]+$/g, '').replace(/\/$/, '');
+
+// safe helper to sanitize incoming request.originalUrl (strip quotes and embedded SITE_URL)
+function sanitizeOriginalUrl(orig, site) {
+  if (!orig) return '';
+  let s = String(orig).replace(/^['"\s]+|['"\s]+$/g, '').trim();
+  // remove any embedded instances of SITE_URL (prevents duplicated fragments)
+  try {
+    const esc = site.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    s = s.replace(new RegExp(esc, 'g'), '');
+  } catch (e) {
+    // ignore regex errors
+  }
+  return s;
+}
 
 const defaultImage = loc_metaImage || `${SITE_URL}/images/hero.jpg`;
-const canonical = loc_canonicalUrl || (typeof request !== 'undefined' && request && request.originalUrl ? (SITE_URL + request.originalUrl) : SITE_URL);
+const sanitizedOriginal = (typeof request !== 'undefined' && request && request.originalUrl) ? sanitizeOriginalUrl(request.originalUrl, SITE_URL) : '';
+const canonical = loc_canonicalUrl || (sanitizedOriginal ? (SITE_URL + (sanitizedOriginal.startsWith('/') ? sanitizedOriginal : '/' + sanitizedOriginal)) : SITE_URL);
 
 const metaDefaults = {
   home: {

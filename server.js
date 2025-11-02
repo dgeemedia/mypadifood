@@ -1,5 +1,5 @@
+// server.js (patched)
 require('dotenv').config(); // load .env
-
 const express = require('express');
 const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session); // store sessions in Postgres
@@ -87,7 +87,6 @@ app.use(sessionMiddleware);
 app.use(authJwt.checkJWTToken); // makes req.user and res.locals.currentUser available
 
 // === Compatibility shim: copy JWT payload into session.user for legacy code & sockets ===
-// This is executed immediately after authJwt.checkJWTToken so req.user (if any) is present.
 app.use((req, res, next) => {
   try {
     if (req.user && req.session) {
@@ -140,8 +139,14 @@ app.use((req, res, next) => {
   // avoid redirect for localhost-like traffic
   if (incomingHost === 'localhost' || incomingHost === '127.0.0.1') return next();
 
-  // build a safe path component — if originalUrl already contains a full URL, extract the path
+  // build a safe path component — if originalUrl already contains a full URL (maybe quoted),
+  // extract the path. Also strip surrounding quotes and repeated SITE_URL fragments.
   let safePath = req.originalUrl || '/';
+
+  // strip surrounding single/double quotes and surrounding whitespace
+  safePath = String(safePath).replace(/^['"\s]+|['"\s]+$/g, '').trim();
+
+  // if safePath looks like a full URL (maybe after removing quotes), parse it
   if (/^https?:\/\//i.test(safePath)) {
     try {
       const parsed = new URL(safePath);
@@ -151,12 +156,24 @@ app.use((req, res, next) => {
     }
   }
 
-  // prevent loop: if safePath already begins with SITE_URL, remove it
-  if (safePath.startsWith(SITE_URL)) {
-    safePath = safePath.slice(SITE_URL.length) || '/';
-  }
+  // remove any accidental embedded SITE_URL fragments (prevents repeated appends)
+  const escSite = SITE_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  safePath = safePath.replace(new RegExp(escSite, 'g'), '');
 
-  const target = SITE_URL + (safePath.startsWith('/') ? safePath : '/' + safePath);
+  // ensure it starts with a single leading slash
+  if (!safePath.startsWith('/')) safePath = '/' + safePath;
+
+  // final target
+  const target = SITE_URL + safePath;
+
+  // Prevent redirect loops and no-op redirects: if target equals full incoming URL, skip
+  const proto = req.headers['x-forwarded-proto'] || req.protocol;
+  const fullIncoming = `${proto}://${incomingHost}${req.originalUrl}`;
+  if (target === fullIncoming) return next();
+
+  // debug log (one-liner) to help trace problematic redirects for /about
+  console.log('redirecting to preferred host', { incomingHost, originalUrl: req.originalUrl, safePath, target });
+
   return res.redirect(301, target);
 });
 
@@ -401,9 +418,7 @@ io.on('connection', (socket) => {
       try {
         if (!orderId) return;
         const sess =
-          socket.request &&
-          socket.request.session &&
-          socket.request.session.user;
+          socket.request && socket.request.session && socket.request.session.user;
         if (!sess || sess.type !== 'client') return;
 
         const order = await models.order.findById(orderId);
