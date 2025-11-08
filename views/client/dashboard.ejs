@@ -604,30 +604,32 @@
                 <td data-label="Status"><%= o.status %></td>
                 <td data-label="Amount">₦<%= o.total_amount %></td>
                 <td data-label="Chat">
-                  <button
-                    class="btn btn-ghost btn-view-chat"
-                    data-order-id="<%= o.id %>"
-                  >
-                    View Chat
-                  </button>
-                  <button
-                    class="btn btn-ghost btn-add-menu"
-                    data-order-id="<%= o.id %>"
-                  >
-                    Add / Update Menu
-                  </button>
+  <div class="cell-actions" role="group" aria-label="Order actions">
+    <button
+      class="btn btn-ghost btn-view-chat"
+      data-order-id="<%= o.id %>"
+    >
+      View Chat
+    </button>
+    <button
+      class="btn btn-ghost btn-add-menu"
+      data-order-id="<%= o.id %>"
+    >
+      Add / Update Menu
+    </button>
 
-                  <!-- TEMP: always show review button for testing -->
-                  <button
-                    class="btn btn-primary btn-leave-review"
-                    data-order-id="<%= o.id %>"
-                    data-vendor-id="<%= o.vendor_id %>"
-                    data-vendor-name="<%= o.vendor_name ? o.vendor_name : '' %>"
-                    style="margin-left: 8px"
-                  >
-                    Leave review
-                  </button>
-                </td>
+    <!-- TEMP: always show review button for testing -->
+    <button
+      class="btn btn-primary btn-leave-review"
+      data-order-id="<%= o.id %>"
+      data-vendor-id="<%= o.vendor_id %>"
+      data-vendor-name="<%= o.vendor_name ? o.vendor_name : '' %>"
+    >
+      Leave review
+    </button>
+  </div>
+</td>
+
               </tr>
               <% }) %>
             </tbody>

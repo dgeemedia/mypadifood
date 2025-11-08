@@ -987,3 +987,40 @@ form#weeklyPlanForm {
   z-index: 99999 !important;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
+
+/* Action buttons container - allow horizontal scroll on narrow screens */
+.table-wrap td .cell-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+
+/* Keep buttons from shrinking and ensure they remain readable */
+.table-wrap td .cell-actions .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  margin: 0; /* let gap handle spacing */
+}
+
+/* Override the generic "max-width: 64%" on mobile for the Chat cell so actions can use the full width */
+@media (max-width: 720px) {
+  .table-wrap td[data-label="Chat"] > * {
+    max-width: 100% !important;
+    text-align: right;
+  }
+}
+
+/* On very small screens, stack the buttons vertically (if horizontal scroll looks bad) */
+@media (max-width: 420px) {
+  .table-wrap td .cell-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .table-wrap td .cell-actions .btn {
+    width: 100%;
+    display: block;
+  }
+}
