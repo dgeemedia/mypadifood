@@ -9,14 +9,26 @@
   <input type="hidden" id="currentWeeklyPlanId" value="<%= plan.id %>" />
 
   <!-- Arrange items into days (server-side ordering Mon→Fri) -->
-  <% const weekdayOrder = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4,
-  friday: 5 }; const orderedDays =
-  ['monday','tuesday','wednesday','thursday','friday']; // Group items by day
-  and sort slots ascending const itemsByDay = {}; (plan.items || []).forEach(it
-  => { const day = (it.day_of_week || '').toLowerCase(); if (!itemsByDay[day])
-  itemsByDay[day] = []; itemsByDay[day].push(it); }); orderedDays.forEach(d => {
-  if (itemsByDay[d]) itemsByDay[d].sort((a,b)=> (Number(a.slot)||0) -
-  (Number(b.slot)||0)); }); %>
+  <%
+  const weekdayOrder = {
+    monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5
+  };
+  const orderedDays = ['monday','tuesday','wednesday','thursday','friday'];
+
+  // Group items by day and sort slots ascending
+  const itemsByDay = {};
+  (plan.items || []).forEach(it => {
+    const day = (it.day_of_week || '').toLowerCase();
+    if (!itemsByDay[day]) itemsByDay[day] = [];
+    itemsByDay[day].push(it);
+  });
+
+  orderedDays.forEach(d => {
+    if (itemsByDay[d]) {
+      itemsByDay[d].sort((a, b) => (Number(a.slot) || 0) - (Number(b.slot) || 0));
+    }
+  });
+%>
 
   <section class="weekly-summary">
     <h3>Summary</h3>
@@ -129,10 +141,13 @@
     <h3>Messages</h3>
     <div id="weeklyPlanMessages" class="weekly-messages" aria-live="polite">
       <% if (messages && messages.length) { %> <% messages.forEach(function(m) {
-      var senderName = m.display_name; if (!senderName) { if (m.sender_type ===
-      'client') senderName = plan.client_name || 'Customer'; else if
-      (m.sender_type === 'admin') senderName = plan.assigned_admin_name || 'Food
-      Specialist'; else senderName = m.sender_type || 'Support'; } %>
+      var senderName = m.display_name;
+      if (!senderName) {
+        if (m.sender_type === 'client') senderName = plan.client_name || 'Customer';
+        else if (m.sender_type === 'admin') senderName = plan.assigned_admin_name || 'Food Specialist';
+        else senderName = m.sender_type || 'Support';
+      }
+      %>
       <div class="weekly-plan-msg">
         <strong><%= senderName %></strong>
         <div><%= m.message %></div>
