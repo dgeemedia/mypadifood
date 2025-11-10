@@ -109,6 +109,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use('/locations', express.static(path.join(__dirname, 'locations')));
 
+// explicit /robots.txt
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send("User-agent: *\nDisallow:\n\nSitemap: https://www.mypadifood.com/sitemap.xml");
+});
 
 // expose currentUser (from JWT/session) to templates
 app.use((req, res, next) => {
