@@ -9,12 +9,12 @@
   const statsSafe = (typeof stats !== 'undefined' && stats) ? stats : {};
   const currentUserSafe = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
 
-  // small SVG fallback encoded
+  // small SVG fallback (encoded safely using concatenation to avoid template literal issues)
   const fallbackSvg = encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">
-       <rect width="100%" height="100%" fill="#f6f7fb"/>
-       <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="18" fill="#888">Image unavailable</text>
-     </svg>`
+    '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">' +
+      '<rect width="100%" height="100%" fill="#f6f7fb"/>' +
+      '<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="18" fill="#888">Image unavailable</text>' +
+    '</svg>'
   );
 
   // FOOD images map (place files under /public/images/food/)
@@ -93,10 +93,18 @@
       </form>
 
       <div class="hero-ctas">
-        <a class="btn btn-secondary" href="/client/register">Join as Customer</a>
+        <a class="btn btn-secondary" href="/client/register"
+          >Join as Customer</a
+        >
         <a class="btn" href="/vendor/register">Register Your Food Stall</a>
-        <a class="btn btn-secondary" href="/rider/register">Want to earn extra income? Join as a Rider</a>
-        <a class="btn btn-gold" href="mailto:support@mypadifood.com?subject=Partner%20with%20MyPadiFood">Invest / Partner</a>
+        <a class="btn btn-secondary" href="/rider/register"
+          >Want to earn extra income? Join as a Rider</a
+        >
+        <a
+          class="btn btn-gold"
+          href="mailto:support@mypadifood.com?subject=Partner%20with%20MyPadiFood"
+          >Invest / Partner</a
+        >
       </div>
 
       <div class="platform-metrics cards" aria-hidden="true">
@@ -144,110 +152,137 @@
   <h2>Featured vendors</h2>
 
   <div class="featured-scroller" tabindex="0" role="list">
-    <% (vendorsList || []).slice(0,6).forEach(function(v) { %>
-      <% const imgSrc = vendorImageFor(v); %>
+    <% (vendorsList || []).slice(0,6).forEach(function(v) { %> <% const imgSrc =
+    vendorImageFor(v); %>
 
-      <!-- entire card is clickable; include aria-label for screen readers -->
-      <a class="featured-item" href="/vendor/<%= v.id %>" role="listitem" aria-label="<%= v.name %> — <%= v.food_item %>">
-        <div class="featured-thumb" aria-hidden="true">
-          <img
-  alt="<%= v.food_item || 'meal' %>"
-  src="<%= imgSrc %>"
-  class="<%= (imgSrc === FOOD_IMAGES.placeholder) ? 'placeholder-rotating' : '' %>"
-  onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
-  loading="lazy"
-/>
+    <!-- entire card is clickable; include aria-label for screen readers -->
+    <a
+      class="featured-item"
+      href="/vendor/<%= v.id %>"
+      role="listitem"
+      aria-label="<%= v.name %> — <%= v.food_item %>"
+    >
+      <div class="featured-thumb" aria-hidden="true">
+        <img
+          alt="<%= v.food_item || 'meal' %>"
+          src="<%= imgSrc %>"
+          class="<%= (imgSrc === FOOD_IMAGES.placeholder) ? 'placeholder-rotating' : '' %>"
+          onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
+          loading="lazy"
+        />
 
-          <!-- price badge -->
-          <div class="featured-price">₦<%= v.base_price %></div>
-        </div>
+        <!-- price badge -->
+        <div class="featured-price">₦<%= v.base_price %></div>
+      </div>
 
-        <div class="featured-meta">
-          <div class="featured-title"><%= v.name %></div>
-          <div class="featured-sub"><%= v.food_item %></div>
-        </div>
-      </a>
+      <div class="featured-meta">
+        <div class="featured-title"><%= v.name %></div>
+        <div class="featured-sub"><%= v.food_item %></div>
+      </div>
+    </a>
     <% }) %>
 
     <% if (!(vendorsList && vendorsList.length)) { %>
-      <div class="featured-empty muted">No featured vendors yet.</div>
+    <div class="featured-empty muted">No featured vendors yet.</div>
     <% } %>
   </div>
 </section>
-
 
 <!-- Vendors grid -->
 <section class="vendors container homepage">
   <h2>Nearby Vendors</h2>
 
   <% if (!vendorsList.length) { %>
-    <p>No vendors found. Try another location.</p>
+  <p>No vendors found. Try another location.</p>
   <% } else { %>
 
-    <div id="vendors-grid" class="vendors-grid" data-initial="<%= initialVisible %>">
-      <% vendorsList.forEach(function(v, index) { %>
-        <% const avg = (v.reviewsSummary && v.reviewsSummary.avg_rating) || 0; %>
-        <% const rounded = Math.round(Number(avg || 0)); %>
-        <% const vImg = vendorImageFor(v); %>
-
-        <% const classes = ['vendor-card']; if (index >= initialVisible) classes.push('vendor-hidden'); %>
-<article class="<%= classes.join(' ') %>" data-vendor-id="<%= v.id %>" data-index="<%= index %>">
-
-  <div class="vendor-media">
-  <!-- clickable thumbnail (like featured-item) -->
-  <a
-    class="vendor-thumb-link"
-    href="/vendor/<%= v.id %>"
-    aria-label="Open vendor <%= v.name %>"
-    title="View <%= v.name %>"
+  <div
+    id="vendors-grid"
+    class="vendors-grid"
+    data-initial="<%= initialVisible %>"
   >
-    <img
-      class="vendor-photo <%= (vImg === FOOD_IMAGES.placeholder) ? 'placeholder-rotating' : '' %>"
-      alt="Photo of <%= v.food_item %> by <%= v.name %>"
-      src="<%= vImg %>"
-      onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
-      loading="lazy"
-    />
-  </a>
-  <button class="fav-btn" title="Save vendor" aria-pressed="false" data-vendor-id="<%= v.id %>">♡</button>
-</div>
+    <% vendorsList.forEach(function(v, index) { %> <% const avg =
+    (v.reviewsSummary && v.reviewsSummary.avg_rating) || 0; %> <% const rounded
+    = Math.round(Number(avg || 0)); %> <% const vImg = vendorImageFor(v); %> <%
+    const classes = ['vendor-card']; if (index >= initialVisible)
+    classes.push('vendor-hidden'); %>
+    <article
+      class="<%= classes.join(' ') %>"
+      data-vendor-id="<%= v.id %>"
+      data-index="<%= index %>"
+    >
+      <div class="vendor-media">
+        <!-- clickable thumbnail (like featured-item) -->
+        <a
+          class="vendor-thumb-link"
+          href="/vendor/<%= v.id %>"
+          aria-label="Open vendor <%= v.name %>"
+          title="View <%= v.name %>"
+        >
+          <img
+            class="vendor-photo <%= (vImg === FOOD_IMAGES.placeholder) ? 'placeholder-rotating' : '' %>"
+            alt="Photo of <%= v.food_item %> by <%= v.name %>"
+            src="<%= vImg %>"
+            onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<%= fallbackSvg %>'"
+            loading="lazy"
+          />
+        </a>
+        <button
+          class="fav-btn"
+          title="Save vendor"
+          aria-pressed="false"
+          data-vendor-id="<%= v.id %>"
+        >
+          ♡
+        </button>
+      </div>
 
-          <div class="vendor-body">
-            <h3 class="vendor-title">
-              <a href="/vendor/<%= v.id %>"><%= v.name %></a>
-            </h3>
-            <p class="vendor-food"><strong>Food:</strong> <%= v.food_item %></p>
-            <p class="vendor-price"><strong>Price:</strong> ₦<%= v.base_price %></p>
-            <p class="vendor-address"><%= v.lga %>, <%= v.state %></p>
+      <div class="vendor-body">
+        <h3 class="vendor-title">
+          <a href="/vendor/<%= v.id %>"><%= v.name %></a>
+        </h3>
+        <p class="vendor-food">
+          <strong>Food:</strong>
+          <%= v.food_item %>
+        </p>
+        <p class="vendor-price"><strong>Price:</strong> ₦<%= v.base_price %></p>
+        <p class="vendor-address"><%= v.lga %>, <%= v.state %></p>
 
-            <div class="rating-inline" aria-hidden="true">
-              <span class="stars" title="<%= typeof avg.toFixed === 'function' ? avg.toFixed(2) : avg %>">
-                <% for (let i = 1; i <= 5; i++) { %><%= i <= rounded ? '★' : '☆' %><% } %>
-              </span>
-              <small class="muted"><%= (v.reviewsSummary && v.reviewsSummary.review_count) || 0 %> reviews</small>
-            </div>
+        <div class="rating-inline" aria-hidden="true">
+          <span
+            class="stars"
+            title="<%= typeof avg.toFixed === 'function' ? avg.toFixed(2) : avg %>"
+          >
+            <% for (let i = 1; i <= 5; i++) { %><%= i <= rounded ? '★' : '☆'
+            %><% } %>
+          </span>
+          <small class="muted"
+            ><%= (v.reviewsSummary && v.reviewsSummary.review_count) || 0 %>
+            reviews</small
+          >
+        </div>
 
-            <div class="card-actions">
-              <button
-                class="btn btn-gold quick-order"
-                data-vendor-id="<%= v.id %>"
-                data-vendor-name="<%= v.name %>"
-                data-logged-in="<%= currentUserSafe ? '1' : '' %>"
-              >
-                Quick order
-              </button>
+        <div class="card-actions">
+          <button
+            class="btn btn-gold quick-order"
+            data-vendor-id="<%= v.id %>"
+            data-vendor-name="<%= v.name %>"
+            data-logged-in="<%= currentUserSafe ? '1' : '' %>"
+          >
+            Quick order
+          </button>
 
-              <a class="btn btn-muted" href="/vendor/<%= v.id %>">View vendor</a>
-            </div>
-          </div>
-        </article>
+          <a class="btn btn-muted" href="/vendor/<%= v.id %>">View vendor</a>
+        </div>
+      </div>
+    </article>
 
-      <% }) /* end vendors foreach */ %>
-    </div>
+    <% }) /* end vendors foreach */ %>
+  </div>
 
-    <div class="vendors-actions container">
-      <button id="show-more" class="btn">Show more vendors</button>
-    </div>
+  <div class="vendors-actions container">
+    <button id="show-more" class="btn">Show more vendors</button>
+  </div>
 
   <% } %>
 </section>
@@ -256,60 +291,77 @@
 <section class="partners container homepage" aria-label="Partners & supporters">
   <h2>Our Partners</h2>
   <div class="partners-row" role="list">
-    <% if (partnersList && partnersList.length) { %>
-      <% partnersList.forEach(function(p) { %>
-        <div class="partner" role="listitem">
-          <img
-            src="<%= p.logo_url || '/images/partner-placeholder.png' %>"
-            alt="<%= p.name %>"
-            onerror="this.onerror=null;this.src='/images/partner-placeholder.png'"
-          />
-        </div>
-      <% }) %>
+    <% if (partnersList && partnersList.length) { %> <%
+    partnersList.forEach(function(p) { %>
+    <div class="partner" role="listitem">
+      <img
+        src="<%= p.logo_url || '/images/partner-placeholder.png' %>"
+        alt="<%= p.name %>"
+        onerror="this.onerror=null;this.src='/images/partner-placeholder.png'"
+      />
+    </div>
+    <% }) %>
     <% } else { %>
-      <div class="partner">
-        <img src="/images/partner-placeholder.png" alt="No partners yet" />
-      </div>
+    <div class="partner">
+      <img src="/images/partner-placeholder.png" alt="No partners yet" />
+    </div>
     <% } %>
   </div>
 
   <p class="partners-note">
     Want your brand here?
-    <a href="mailto:support@mypadifood.com?subject=Partner%20with%20MyPadiFood">Partner with us</a>.
+    <a href="mailto:support@mypadifood.com?subject=Partner%20with%20MyPadiFood"
+      >Partner with us</a
+    >.
   </p>
 </section>
 
 <!-- Testimonials -->
-<section class="testimonials container homepage" aria-label="Customer testimonials">
+<section
+  class="testimonials container homepage"
+  aria-label="Customer testimonials"
+>
   <h2>What our customers say</h2>
 
-  <div class="testi-scroller" role="list" aria-label="Customer testimonials scroller">
-    <% if (Array.isArray(testimonialsList) && testimonialsList.length) { %>
-      <% testimonialsList.forEach(function(t) { %>
-        <div class="testi-item" role="listitem">
-          <blockquote class="testi-card" tabindex="0" aria-label="Customer testimonial">
-            <div class="testi-photo" aria-hidden="false">
-              <img
-                src="<%= (t && t.avatar) || (t && t.photo_url) || (t && t.gender === 'female' ? '/images/avatars/human-female.jpg' : t && t.gender === 'male' ? '/images/avatars/human-male.jpg' : '/images/avatars/human-generic.jpg') %>"
-                alt="<%= (t && (t.name || 'Customer')) %>'s avatar"
-                width="64" height="64"
-                onerror="this.onerror=null;this.src='/images/avatars/human-generic.jpg';"
-                class="testimonial-avatar"
-              />
-            </div>
-
-            <div class="testi-body">
-              <p class="quote">“<%= (t && t.quote) ? t.quote : '' %>”</p>
-              <footer class="testi-meta">
-                <strong><%= (t && t.name) ? t.name : 'Anonymous' %></strong>
-                <% if (t && t.city) { %><small><%= t.city %></small><% } %>
-              </footer>
-            </div>
-          </blockquote>
+  <div
+    class="testi-scroller"
+    role="list"
+    aria-label="Customer testimonials scroller"
+  >
+    <% if (Array.isArray(testimonialsList) && testimonialsList.length) { %> <%
+    testimonialsList.forEach(function(t) { %>
+    <div class="testi-item" role="listitem">
+      <blockquote
+        class="testi-card"
+        tabindex="0"
+        aria-label="Customer testimonial"
+      >
+        <div class="testi-photo" aria-hidden="false">
+          <img
+            src="<%= (t && t.avatar) || (t && t.photo_url) || (t && t.gender === 'female' ? '/images/avatars/human-female.jpg' : t && t.gender === 'male' ? '/images/avatars/human-male.jpg' : '/images/avatars/human-generic.jpg') %>"
+            alt="<%= (t && (t.name || 'Customer')) %>'s avatar"
+            width="64"
+            height="64"
+            onerror="this.onerror=null;this.src='/images/avatars/human-generic.jpg';"
+            class="testimonial-avatar"
+          />
         </div>
-      <% }) %>
+
+        <div class="testi-body">
+          <p class="quote">“<%= (t && t.quote) ? t.quote : '' %>”</p>
+          <footer class="testi-meta">
+            <strong><%= (t && t.name) ? t.name : 'Anonymous' %></strong>
+            <% if (t && t.city) { %><small><%= t.city %></small
+            ><% } %>
+          </footer>
+        </div>
+      </blockquote>
+    </div>
+    <% }) %>
     <% } else { %>
-      <p class="muted">No testimonials yet — ask customers to leave feedback after ordering.</p>
+    <p class="muted">
+      No testimonials yet — ask customers to leave feedback after ordering.
+    </p>
     <% } %>
   </div>
 </section>
@@ -326,7 +378,14 @@
       </p>
     </div>
     <div class="investor-actions">
-      <a href="/invest" class="btn btn-gold">See pitch deck</a>
+      <a
+        href="https://www.youtube.com/watch?v=TQx2wypl1pk"
+        class="btn btn-gold"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Watch pitch video
+      </a>
       <a href="/contact" class="btn btn-gold">Contact sales</a>
     </div>
   </div>
@@ -342,7 +401,12 @@
       <input type="hidden" name="vendorId" id="qo-vendorId" value="" />
       <label>
         Item (optional)
-        <input type="text" name="item" id="qo-item" placeholder="E.g. 2 plates, extra pepper" />
+        <input
+          type="text"
+          name="item"
+          id="qo-item"
+          placeholder="E.g. 2 plates, extra pepper"
+        />
       </label>
       <label>
         Payment method

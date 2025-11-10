@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://www.mypadifood.com/sitemap.xml
+Host: https://www.mypadifood.com
