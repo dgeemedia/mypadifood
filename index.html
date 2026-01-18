@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyPadiFood - Launch Your Online Store in Minutes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components/header.css">
+    <link rel="stylesheet" href="css/components/hero.css">
+    <link rel="stylesheet" href="css/components/features.css">
+    <link rel="stylesheet" href="css/components/how-it-works.css">
+    <link rel="stylesheet" href="css/components/enterprise.css">
+    <link rel="stylesheet" href="css/components/testimonials.css">
+    <link rel="stylesheet" href="css/components/cta.css">
+    <link rel="stylesheet" href="css/components/footer.css">
+    <link rel="stylesheet" href="css/components/forms.css">
+</head>
+<body>
+    <!-- Header -->
+    <header id="header">
+        <div class="container header-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-store"></i> My<span>Padi</span>Food
+            </a>
+            
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="#enterprise">Enterprise</a></li>
+                    <li><a href="#testimonials">Testimonials</a></li>
+                    <li class="dropdown">
+                        <a href="resources.html">Resources <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-content">
+                            <a href="resources.html#documentation">Documentation</a>
+                            <a href="resources.html#api">API Reference</a>
+                            <a href="resources.html#help">Help Center</a>
+                            <a href="resources.html#blog">Blog</a>
+                            <a href="resources.html#community">Community</a>
+                        </div>
+                    </li>
+                    <li class="dropdown">
+                        <a href="about.html">Company <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-content">
+                            <a href="about.html">About Us</a>
+                            <a href="contact.html">Contact</a>
+                            <a href="privacy-policy.html">Privacy Policy</a>
+                            <a href="terms-of-service.html">Terms of Service</a>
+                            <a href="careers.html">Careers</a>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+            
+            <a href="contact.html" class="cta-button">Get Started</a>
+            
+            <button class="mobile-menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div class="mobile-menu-overlay"></div>
+        <div class="mobile-menu">
+            <div class="mobile-menu-header">
+                <a href="index.html" class="logo">
+                    <i class="fas fa-store"></i> My<span>Padi</span>Food
+                </a>
+                <button class="mobile-menu-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <ul class="mobile-nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#enterprise">Enterprise</a></li>
+                <li><a href="#testimonials">Testimonials</a></li>
+                <li><a href="resources.html">Resources</a></li>
+                <li><a href="about.html">Company</a></li>
+                <li><a href="contact.html" class="cta-button">Get Started</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <div class="container hero-container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    ⭐ No Coding Required • Launch in 5 Minutes
+                </div>
+                <h1 class="hero-title">Your Branded Store at <span>YourName.mypadifood.com</span></h1>
+                <p class="hero-subtitle">
+                    Transform your small business with a professional online store. Custom subdomain, 
+                    beautiful dashboard, order management, and WhatsApp integration—all in one platform.
+                </p>
+                
+                <div class="subdomain-demo">
+                    <span>https://</span>
+                    <input type="text" class="subdomain-input" placeholder="yourbusiness">
+                    <span class="domain-suffix">.mypadifood.com</span>
+                </div>
+                
+                <div class="hero-cta">
+                    <a href="#cta" class="cta-button primary">Launch Your Store <i class="fas fa-arrow-right"></i></a>
+                    <a href="#how-it-works" class="cta-button secondary">See How It Works</a>
+                </div>
+                
+                <div class="trust-badges">
+                    <div class="badge-item">
+                        <span class="badge-icon">⚡</span>
+                        <span class="badge-text">Setup in 5 minutes</span>
+                    </div>
+                    <div class="badge-item">
+                        <span class="badge-icon">✓</span>
+                        <span class="badge-text">No coding needed</span>
+                    </div>
+                    <div class="badge-item">
+                        <span class="badge-icon">❤️</span>
+                        <span class="badge-text">Made for small businesses</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hero-visual">
+                <div class="dashboard-preview">
+                    <div class="dashboard-header">
+                        <div class="store-logo">
+                            <i class="fas fa-utensils"></i> TasteBuds
+                        </div>
+                        <div class="online-status">🟢 Online</div>
+                    </div>
+                    <div class="dashboard-content">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value">12</div>
+                                <div class="stat-label">Today's Orders</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">₦45,800</div>
+                                <div class="stat-label">Revenue</div>
+                            </div>
+                        </div>
+                        <div class="recent-orders">
+                            <h4>Recent Orders</h4>
+                            <div class="order-item">
+                                <div class="order-id">#0012</div>
+                                <div class="order-status confirmed">Confirmed</div>
+                            </div>
+                            <div class="order-item">
+                                <div class="order-id">#0011</div>
+                                <div class="order-status preparing">Preparing</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-title">
+                <h2>Everything You Need to Sell Online</h2>
+                <p>Powerful features designed for small business success</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <h3>Custom Subdomain</h3>
+                    <p>Get your own branded URL: yourbusiness.mypadifood.com. No technical setup required.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <h3>WhatsApp Orders</h3>
+                    <p>Customers order directly via WhatsApp. Manage everything from your dashboard.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Smart Dashboard</h3>
+                    <p>Beautiful admin panel to manage products, orders, customers, and track sales.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <h3>Order Tracking</h3>
+                    <p>Real-time order status updates. Customers can track their orders easily.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h3>Mobile-First Design</h3>
+                    <p>Your store works perfectly on all devices. No app installation needed.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h3>Easy Customization</h3>
+                    <p>Set your business name, logo, colors, currency, and language in minutes.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <div class="section-title">
+                <h2>Get Started in 4 Simple Steps</h2>
+                <p>Launch your online store in under 30 minutes</p>
+            </div>
+            
+            <div class="steps-container">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Contact Us</h3>
+                    <p>Fill our simple form or WhatsApp us. We'll contact you within 24 hours to discuss your needs.</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Customize Your Store</h3>
+                    <p>We set up your business name, upload logo, choose colors, and configure your WhatsApp number.</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Add Your Products</h3>
+                    <p>You upload your products with images, descriptions, and prices through our easy interface.</p>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>Go Live & Start Selling</h3>
+                    <p>Share your store link with customers and start receiving orders via WhatsApp immediately!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Enterprise Ecosystem -->
+    <section class="enterprise" id="enterprise">
+        <div class="container">
+            <div class="section-title">
+                <h2>Complete Business Ecosystem</h2>
+                <p>Advanced solutions for enterprise businesses, riders, and customers</p>
+            </div>
+            
+            <div class="ecosystem-grid">
+                <div class="ecosystem-card">
+                    <div class="ecosystem-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <h3>For Large Businesses</h3>
+                    <p>Full enterprise solution with custom hosting, rider management, and advanced analytics.</p>
+                    <ul class="ecosystem-features">
+                        <li><i class="fas fa-check"></i> Custom Domain Support</li>
+                        <li><i class="fas fa-check"></i> Rider Management System</li>
+                        <li><i class="fas fa-check"></i> Advanced Analytics Dashboard</li>
+                        <li><i class="fas fa-check"></i> Inventory Management</li>
+                    </ul>
+                    <a href="#waiting-list" class="cta-button secondary">Join Waiting List</a>
+                </div>
+                
+                <div class="ecosystem-card">
+                    <div class="ecosystem-icon">
+                        <i class="fas fa-motorcycle"></i>
+                    </div>
+                    <h3>For Riders & Delivery</h3>
+                    <p>Earn more with our delivery platform. Real-time tracking and optimized routes.</p>
+                    <ul class="ecosystem-features">
+                        <li><i class="fas fa-check"></i> Real-time GPS Tracking</li>
+                        <li><i class="fas fa-check"></i> Optimized Delivery Routes</li>
+                        <li><i class="fas fa-check"></i> Secure Payment System</li>
+                        <li><i class="fas fa-check"></i> Performance Analytics</li>
+                    </ul>
+                    <a href="#waiting-list" class="cta-button secondary">Join Waiting List</a>
+                </div>
+                
+                <div class="ecosystem-card">
+                    <div class="ecosystem-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>For Customers</h3>
+                    <p>Run errands, track deliveries on map, and use our unique wallet system.</p>
+                    <ul class="ecosystem-features">
+                        <li><i class="fas fa-check"></i> Live Map Tracking</li>
+                        <li><i class="fas fa-check"></i> Errand Creation & Management</li>
+                        <li><i class="fas fa-check"></i> Digital Wallet System</li>
+                        <li><i class="fas fa-check"></i> Airtime to Cash Conversion</li>
+                    </ul>
+                    <a href="#waiting-list" class="cta-button secondary">Join Waiting List</a>
+                </div>
+            </div>
+            
+            <!-- Waiting List Form -->
+            <div class="waiting-list" id="waiting-list">
+                <h3>Join Our Waiting List</h3>
+                <p>Be the first to know when our complete ecosystem launches. Fill the form below.</p>
+                
+                <form id="waitingListForm" class="waiting-list-form" action="https://formspree.io/f/mypadifood@gmail.com" method="POST">
+                    <input type="hidden" name="_subject" value="New Waiting List Submission - Enterprise Ecosystem">
+                    
+                    <div class="form-group">
+                        <label for="waiting-name">Full Name *</label>
+                        <input type="text" id="waiting-name" name="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="waiting-email">Email Address *</label>
+                        <input type="email" id="waiting-email" name="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="waiting-phone">Phone Number *</label>
+                        <input type="tel" id="waiting-phone" name="phone" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="waiting-interest">I'm interested in *</label>
+                        <select id="waiting-interest" name="interest" required>
+                            <option value="">Select option</option>
+                            <option value="enterprise">Enterprise Solution for Large Business</option>
+                            <option value="rider">Rider/Delivery Platform</option>
+                            <option value="customer">Customer App & Wallet System</option>
+                            <option value="all">All of the above</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="waiting-business">Business Name (if applicable)</label>
+                        <input type="text" id="waiting-business" name="business">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="waiting-message">Additional Information</label>
+                        <textarea id="waiting-message" name="message" rows="3"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="cta-button primary">Join Waiting List</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials" id="testimonials">
+        <div class="container">
+            <div class="section-title">
+                <h2>Trusted by Small Businesses</h2>
+                <p>See what our users say about MyPadiFood</p>
+            </div>
+            
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">
+                        "MyPadiFood transformed my food business. I got my store at tasteofhome.mypadifood.com 
+                        and started receiving orders via WhatsApp the same day!"
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">AA</div>
+                        <div class="author-info">
+                            <div class="author-name">Amina Ahmed</div>
+                            <div class="author-business">Owner, Taste of Home</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">
+                        "The dashboard is so easy to use. I manage all my orders, update product stock, 
+                        and track sales from one place. Perfect for non-technical people like me."
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">CE</div>
+                        <div class="author-info">
+                            <div class="author-name">Chinonso Eze</div>
+                            <div class="author-business">CT Fashion Hub</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="rating">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">
+                        "Customer support is amazing! They helped me set up everything and even 
+                        customized my store colors to match my brand. Highly recommended!"
+                    </p>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">BT</div>
+                        <div class="author-info">
+                            <div class="author-name">Bola Thompson</div>
+                            <div class="author-business">BT Electronics</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section" id="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Launch Your Online Store?</h2>
+                <p>Fill out our simple form and we'll contact you within 24 hours to set up your store.</p>
+                
+                <!-- Main Contact Form -->
+                <form id="mainContactForm" class="contact-form" action="https://formspree.io/f/mypadifood@gmail.com" method="POST">
+                    <input type="hidden" name="_subject" value="New Store Inquiry - Main Contact Form">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="contact-name">Full Name *</label>
+                            <input type="text" id="contact-name" name="name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="contact-email">Email Address *</label>
+                            <input type="email" id="contact-email" name="email" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="contact-phone">Phone Number *</label>
+                            <input type="tel" id="contact-phone" name="phone" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="contact-business">Business Name *</label>
+                            <input type="text" id="contact-business" name="business" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contact-subdomain">Desired Subdomain *</label>
+                        <div class="subdomain-input-group">
+                            <span class="subdomain-prefix">https://</span>
+                            <input type="text" id="contact-subdomain" name="subdomain" required placeholder="yourbusiness">
+                            <span class="subdomain-suffix">.mypadifood.com</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contact-type">Business Type *</label>
+                        <select id="contact-type" name="business_type" required>
+                            <option value="">Select business type</option>
+                            <option value="food">Food & Restaurant</option>
+                            <option value="fashion">Fashion & Boutique</option>
+                            <option value="electronics">Electronics</option>
+                            <option value="pharmacy">Pharmacy</option>
+                            <option value="general">General Store</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="contact-message">Tell us about your business</label>
+                        <textarea id="contact-message" name="message" rows="4" placeholder="What products/services do you offer? How many orders do you get daily?"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="cta-button primary">Submit Application</button>
+                </form>
+                
+                <div class="cta-alternative">
+                    <p>Or reach out directly:</p>
+                    <div class="contact-methods">
+                        <a href="https://wa.me/2348110252143" class="contact-method whatsapp" target="_blank">
+                            <i class="fab fa-whatsapp"></i> Chat on WhatsApp
+                        </a>
+                        <a href="mailto:mypadifood@gmail.com" class="contact-method email">
+                            <i class="fas fa-envelope"></i> mypadifood@gmail.com
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <a href="index.html" class="footer-logo">
+                        <i class="fas fa-store"></i> My<span>Padi</span>Food
+                    </a>
+                    <p class="footer-description">
+                        Empowering small businesses with easy-to-use online store solutions. 
+                        Launch your branded store in minutes.
+                    </p>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Platform</h3>
+                    <ul class="footer-links">
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#how-it-works">How It Works</a></li>
+                        <li><a href="#enterprise">Enterprise Solutions</a></li>
+                        <li><a href="#testimonials">Testimonials</a></li>
+                        <li><a href="#cta">Get Started</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Company</h3>
+                    <ul class="footer-links">
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+                        <li><a href="terms-of-service.html">Terms of Service</a></li>
+                        <li><a href="careers.html">Careers</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Resources</h3>
+                    <ul class="footer-links">
+                        <li><a href="resources.html#documentation">Documentation</a></li>
+                        <li><a href="resources.html#api">API Reference</a></li>
+                        <li><a href="resources.html#help">Help Center</a></li>
+                        <li><a href="resources.html#blog">Blog</a></li>
+                        <li><a href="resources.html#community">Community</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Contact Info</h3>
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <i class="fas fa-envelope"></i>
+                            <a href="mailto:mypadifood@gmail.com">mypadifood@gmail.com</a>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fab fa-whatsapp"></i>
+                            <a href="https://wa.me/2348110252143" target="_blank">+234 811 025 2143</a>
+                        </div>
+                    </div>
+                    
+                    <div class="newsletter-form">
+                        <h4>Stay Updated</h4>
+                        <form id="newsletterForm" action="https://formspree.io/f/mypadifood@gmail.com" method="POST">
+                            <input type="hidden" name="_subject" value="Newsletter Subscription">
+                            <input type="email" name="email" placeholder="Your email" required class="newsletter-input">
+                            <button type="submit" class="newsletter-button">Subscribe</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="copyright">
+                <p>&copy; 2026 MyPadiFood. All rights reserved.</p>
+                <div class="copyright-links">
+                    <a href="privacy-policy.html">Privacy</a>
+                    <a href="terms-of-service.html">Terms</a>
+                </div>
+            </div>
+        </div>
+        
+        <a href="#hero" class="back-to-top">
+            <i class="fas fa-arrow-up"></i>
+        </a>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

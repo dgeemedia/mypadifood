@@ -1,0 +1,308 @@
+<!--careers.html-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Careers - MyPadiFood</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components/header.css">
+    <link rel="stylesheet" href="css/components/footer.css">
+    <link rel="stylesheet" href="css/components/forms.css">
+    <link rel="stylesheet" href="css/components/careers.css">
+</head>
+<body>
+    <header id="header">
+        <div class="container header-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-store"></i> My<span>Padi</span>Food
+            </a>
+            
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="index.html#features">Features</a></li>
+                    <li><a href="index.html#how-it-works">How It Works</a></li>
+                    <li><a href="index.html#enterprise">Enterprise</a></li>
+                    <li><a href="index.html#testimonials">Testimonials</a></li>
+                    <li class="dropdown">
+                        <a href="resources.html">Resources <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-content">
+                            <a href="resources.html#documentation">Documentation</a>
+                            <a href="resources.html#api">API Reference</a>
+                            <a href="resources.html#help">Help Center</a>
+                            <a href="resources.html#blog">Blog</a>
+                            <a href="resources.html#community">Community</a>
+                        </div>
+                    </li>
+                    <li class="dropdown">
+                        <a href="about.html">Company <i class="fas fa-chevron-down"></i></a>
+                        <div class="dropdown-content">
+                            <a href="about.html">About Us</a>
+                            <a href="contact.html">Contact</a>
+                            <a href="privacy-policy.html">Privacy Policy</a>
+                            <a href="terms-of-service.html">Terms of Service</a>
+                            <a href="careers.html" class="active">Careers</a>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+            
+            <a href="contact.html" class="cta-button">Get Started</a>
+            
+            <button class="mobile-menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div class="mobile-menu-overlay"></div>
+        <div class="mobile-menu">
+            <div class="mobile-menu-header">
+                <a href="index.html" class="logo">
+                    <i class="fas fa-store"></i> My<span>Padi</span>Food
+                </a>
+                <button class="mobile-menu-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <ul class="mobile-nav-links">
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="index.html#how-it-works">How It Works</a></li>
+                <li><a href="index.html#enterprise">Enterprise</a></li>
+                <li><a href="index.html#testimonials">Testimonials</a></li>
+                <li><a href="resources.html">Resources</a></li>
+                <li><a href="about.html">Company</a></li>
+                <li><a href="contact.html" class="cta-button">Get Started</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <section class="page-hero">
+        <div class="container">
+            <h1>Join Our Team</h1>
+            <p>Help us empower small businesses across Africa</p>
+        </div>
+    </section>
+
+    <section class="careers-content">
+        <div class="container">
+            <div class="careers-intro">
+                <h2>Build the Future with Us</h2>
+                <p>We're looking for passionate individuals to join our mission of making e-commerce accessible to every small business.</p>
+                <p>At MyPadiFood, you'll work with a talented team, solve challenging problems, and make a real impact on small businesses across Africa.</p>
+            </div>
+
+            <div class="job-openings">
+                <h3>Current Openings</h3>
+                <div class="job-list">
+                    <div class="job-card">
+                        <div class="job-header">
+                            <h4>Frontend Developer</h4>
+                            <span class="job-type">Full-time • Remote</span>
+                        </div>
+                        <p class="job-description">Build beautiful, responsive user interfaces for our platform using modern web technologies.</p>
+                        <div class="job-tags">
+                            <span class="job-tag">React</span>
+                            <span class="job-tag">JavaScript</span>
+                            <span class="job-tag">CSS</span>
+                        </div>
+                    </div>
+                    
+                    <div class="job-card">
+                        <div class="job-header">
+                            <h4>Backend Developer</h4>
+                            <span class="job-type">Full-time • Lagos</span>
+                        </div>
+                        <p class="job-description">Build scalable APIs and services that power our e-commerce platform.</p>
+                        <div class="job-tags">
+                            <span class="job-tag">Node.js</span>
+                            <span class="job-tag">PostgreSQL</span>
+                            <span class="job-tag">API Design</span>
+                        </div>
+                    </div>
+                    
+                    <div class="job-card">
+                        <div class="job-header">
+                            <h4>Business Development Manager</h4>
+                            <span class="job-type">Full-time • Lagos</span>
+                        </div>
+                        <p class="job-description">Help small businesses adopt our platform and grow our customer base.</p>
+                        <div class="job-tags">
+                            <span class="job-tag">Sales</span>
+                            <span class="job-tag">Business Development</span>
+                            <span class="job-tag">Customer Success</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="apply-section">
+                <h3>Apply Now</h3>
+                <p>Fill out the form below to apply for any position or submit a general application.</p>
+                
+                <form id="careersForm" class="contact-form" action="https://formspree.io/f/mypadifood@gmail.com" method="POST">
+                    <input type="hidden" name="_subject" value="Career Application - MyPadiFood">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="career-name">Full Name *</label>
+                            <input type="text" id="career-name" name="name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="career-email">Email Address *</label>
+                            <input type="email" id="career-email" name="email" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="career-phone">Phone Number *</label>
+                            <input type="tel" id="career-phone" name="phone" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="career-position">Position Applying For *</label>
+                            <select id="career-position" name="position" required>
+                                <option value="">Select a position</option>
+                                <option value="frontend">Frontend Developer</option>
+                                <option value="backend">Backend Developer</option>
+                                <option value="business-dev">Business Development Manager</option>
+                                <option value="other">Other (specify in message)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="career-location">Preferred Location</label>
+                        <select id="career-location" name="location">
+                            <option value="">Select location</option>
+                            <option value="lagos">Lagos, Nigeria</option>
+                            <option value="remote">Remote</option>
+                            <option value="hybrid">Hybrid (Lagos + Remote)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="career-experience">Years of Experience *</label>
+                        <select id="career-experience" name="experience" required>
+                            <option value="">Select experience level</option>
+                            <option value="0-1">0-1 years</option>
+                            <option value="1-3">1-3 years</option>
+                            <option value="3-5">3-5 years</option>
+                            <option value="5+">5+ years</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="career-skills">Key Skills & Technologies</label>
+                        <textarea id="career-skills" name="skills" rows="3" placeholder="List your key skills, technologies you're proficient in, etc."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="career-portfolio">Portfolio/GitHub/LinkedIn URL</label>
+                        <input type="url" id="career-portfolio" name="portfolio" placeholder="https://">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="career-message">Cover Letter *</label>
+                        <textarea id="career-message" name="message" rows="6" required placeholder="Tell us why you're interested in joining MyPadiFood and why you'd be a great fit..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="cta-button primary">Submit Application</button>
+                </form>
+                
+                <div class="application-note">
+                    <p><strong>Note:</strong> We don't require CV attachments. Your application will be reviewed based on the information you provide in this form.</p>
+                    <p>We review applications within 5 business days and will contact you if there's a match with our current needs.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer id="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <a href="index.html" class="footer-logo">
+                        <i class="fas fa-store"></i> My<span>Padi</span>Food
+                    </a>
+                    <p class="footer-description">
+                        Empowering small businesses with easy-to-use online store solutions. 
+                        Launch your branded store in minutes.
+                    </p>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Platform</h3>
+                    <ul class="footer-links">
+                        <li><a href="index.html#features">Features</a></li>
+                        <li><a href="index.html#how-it-works">How It Works</a></li>
+                        <li><a href="index.html#enterprise">Enterprise Solutions</a></li>
+                        <li><a href="index.html#testimonials">Testimonials</a></li>
+                        <li><a href="index.html#cta">Get Started</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Company</h3>
+                    <ul class="footer-links">
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+                        <li><a href="terms-of-service.html">Terms of Service</a></li>
+                        <li><a href="careers.html" class="active">Careers</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Resources</h3>
+                    <ul class="footer-links">
+                        <li><a href="resources.html#documentation">Documentation</a></li>
+                        <li><a href="resources.html#api">API Reference</a></li>
+                        <li><a href="resources.html#help">Help Center</a></li>
+                        <li><a href="resources.html#blog">Blog</a></li>
+                        <li><a href="resources.html#community">Community</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-column">
+                    <h3>Contact Info</h3>
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <i class="fas fa-envelope"></i>
+                            <a href="mailto:mypadifood@gmail.com">mypadifood@gmail.com</a>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fab fa-whatsapp"></i>
+                            <a href="https://wa.me/2348110252143" target="_blank">+234 811 025 2143</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="copyright">
+                <p>&copy; 2024 MyPadiFood. All rights reserved.</p>
+                <div class="copyright-links">
+                    <a href="privacy-policy.html">Privacy</a>
+                    <a href="terms-of-service.html">Terms</a>
+                </div>
+            </div>
+        </div>
+        
+        <a href="#header" class="back-to-top">
+            <i class="fas fa-arrow-up"></i>
+        </a>
+    </footer>
+
+    <script src="js/script.js"></script>
+    
+</body>
+</html>

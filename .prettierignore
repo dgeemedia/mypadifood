@@ -1,6 +1,0 @@
-node_modules
-*.min.js
-locations
-public/vendor
-dist
-build

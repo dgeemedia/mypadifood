@@ -1,6 +1,0 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-npm test
-pnpm -s lint-staged
-pnpm lint-staged
