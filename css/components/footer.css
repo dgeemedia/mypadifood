@@ -322,6 +322,7 @@ footer {
     
     .footer-logo .logo-text {
         font-size: 1.5rem;
+        color: aliceblue;
     }
 }
 
@@ -347,6 +348,7 @@ footer {
     
     .footer-logo .logo-text {
         font-size: 1.25rem;
+        color: aliceblue;
     }
 }
 
@@ -368,5 +370,7 @@ footer {
     
     .footer-logo .logo-text {
         font-size: 1.125rem;
+        color: aliceblue;
     }
+    
 }

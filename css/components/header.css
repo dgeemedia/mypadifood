@@ -27,7 +27,7 @@ header.scrolled {
     align-items: center;
     font-weight: 700;
     font-size: var(--font-size-2xl);
-    color: var(--primary);
+    color: var(--secondary-dark);
     text-decoration: none;
     transition: var(--transition);
 }
@@ -49,11 +49,10 @@ header.scrolled {
 .logo-text {
     font-weight: 700;
     font-size: var(--font-size-2xl);
-    color: var(--primary);
 }
 
 .logo-text span {
-    color: var(--dark);
+    color: darkgoldenrod;
 }
 
 /* Navigation */
