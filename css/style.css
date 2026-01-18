@@ -516,3 +516,17 @@ body {
         display: none;
     }
 }
+
+.mobile-menu-overlay {
+    display: block !important;
+}
+
+.mobile-menu {
+    display: block !important;
+}
+
+@media (min-width: 769px) {
+    .mobile-menu-toggle {
+        display: none !important;
+    }
+}
